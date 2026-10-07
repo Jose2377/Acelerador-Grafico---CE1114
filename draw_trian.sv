@@ -1,16 +1,19 @@
 module draw_trian #(
-  parameter int SCREEN_W = 64,
-  parameter int SCREEN_H = 48
+  parameter int SCREEN_W   = 64,
+  parameter int SCREEN_H   = 48,
+  parameter int PIXEL_BITS = 16
 )(
-  input  logic               clk,
-  input  logic               rst_n,
-  input  logic               start,
-  input  logic               fill,
-  input  logic signed [15:0] x0, y0, x1, y1, x2, y2,
-  output logic               busy,
-  output logic               done,
-  output logic               px_valid,
-  output logic signed [15:0] px_x, px_y
+  input  logic                    clk,
+  input  logic                    rst_n,
+  input  logic                    start,
+  input  logic                    fill,
+  input  logic signed [15:0]      x0, y0, x1, y1, x2, y2,
+  input  logic [PIXEL_BITS-1:0]   color_in,
+  output logic                    busy,
+  output logic                    done,
+  output logic                    px_valid,
+  output logic signed [15:0]      px_x, px_y,
+  output logic [PIXEL_BITS-1:0]   px_color
 );
   typedef enum logic [2:0] {
     T_IDLE, T_E0, T_E1, T_E2, T_SETUP, T_FILL, T_DONE
@@ -21,15 +24,18 @@ module draw_trian #(
   logic signed [15:0] bx0, bx1, by0, by1, cx, cy;
   logic signed [35:0] e0, e1, e2, e0r, e1r, e2r;
   logic signed [35:0] sx0, sx1, sx2, sy0, sy1, sy2;
+  logic [PIXEL_BITS-1:0] col;
 
   logic               lg_start, lg_busy, lg_done, lg_valid;
   logic signed [15:0] lg_x0, lg_y0, lg_x1, lg_y1, lg_px, lg_py;
+  logic [PIXEL_BITS-1:0] lg_color;
 
-  draw_line u_gen (
+  draw_line #(.PIXEL_BITS(PIXEL_BITS)) u_gen (
     .clk(clk), .rst_n(rst_n), .start(lg_start),
-    .x0_i(lg_x0), .y0_i(lg_y0), .x1_i(lg_x1), .y1_i(lg_y1),
+    .x0_in(lg_x0), .y0_in(lg_y0), .x1_in(lg_x1), .y1_in(lg_y1),
+    .color_in(col),
     .busy(lg_busy), .done(lg_done),
-    .px_valid(lg_valid), .px_x(lg_px), .px_y(lg_py));
+    .px_valid(lg_valid), .px_x(lg_px), .px_y(lg_py), .px_color(lg_color));
 
   always_comb begin
     case (st)
@@ -49,12 +55,11 @@ module draw_trian #(
       bx0 <= '0; bx1 <= '0; by0 <= '0; by1 <= '0; cx <= '0; cy <= '0;
       e0 <= '0; e1 <= '0; e2 <= '0; e0r <= '0; e1r <= '0; e2r <= '0;
       sx0 <= '0; sx1 <= '0; sx2 <= '0; sy0 <= '0; sy1 <= '0; sy2 <= '0;
+      col <= '0;
     end else begin
       lg_start <= 1'b0;
       case (st)
         T_IDLE: if (start) begin
-          // Normalizacion del giro: si el area con signo es negativa se
-          // intercambian v1 y v2, de modo que la prueba de signo sea unica.
           area = (36'(x1) - 36'(x0)) * (36'(y2) - 36'(y0))
                - (36'(y1) - 36'(y0)) * (36'(x2) - 36'(x0));
           if (area >= 0) begin v1x = x1; v1y = y1; v2x = x2; v2y = y2; end
@@ -63,10 +68,9 @@ module draw_trian #(
           ax <= x0;  ay <= y0;
           bx <= v1x; by <= v1y;
           gx <= v2x; gy <= v2y;
+          col <= color_in;
 
           if (fill) begin
-            // Caja envolvente acotada a la pantalla: ahorra ciclos sin
-            // cambiar el resultado, porque el recorte por pixel sigue activo.
             mnx = (((x0 < v1x) ? ((x0 < v2x) ? x0 : v2x)
                                : ((v1x < v2x) ? v1x : v2x)) > 0)
                   ? ((x0 < v1x) ? ((x0 < v2x) ? x0 : v2x)
@@ -139,9 +143,10 @@ module draw_trian #(
   assign done = (st == T_DONE);
 
   always_comb begin
-    px_valid = 1'b0;  px_x = '0;  px_y = '0;
+    px_valid = 1'b0;  px_x = '0;  px_y = '0;  px_color = col;
     if ((st == T_E0) || (st == T_E1) || (st == T_E2)) begin
       px_valid = lg_valid;  px_x = lg_px;  px_y = lg_py;
+      px_color = lg_color;
     end else if (st == T_FILL) begin
       px_valid = (e0 >= 0) && (e1 >= 0) && (e2 >= 0);
       px_x     = cx;        px_y = cy;

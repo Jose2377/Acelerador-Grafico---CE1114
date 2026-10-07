@@ -1,14 +1,18 @@
-module draw_circle (
-  input  logic               clk,
-  input  logic               rst_n,
-  input  logic               start,
-  input  logic               fill,
-  input  logic signed [15:0] cx_i, cy_i,
-  input  logic        [9:0]  r_i,
-  output logic               busy,
-  output logic               done,
-  output logic               px_valid,
-  output logic signed [15:0] px_x, px_y
+module draw_circle #(
+  parameter int PIXEL_BITS = 16
+)(
+  input  logic                    clk,
+  input  logic                    rst_n,
+  input  logic                    start,
+  input  logic                    fill,
+  input  logic signed [15:0]      cx_in, cy_in,
+  input  logic        [9:0]       r_in,
+  input  logic [PIXEL_BITS-1:0]   color_in,
+  output logic                    busy,
+  output logic                    done,
+  output logic                    px_valid,
+  output logic signed [15:0]      px_x, px_y,
+  output logic [PIXEL_BITS-1:0]   px_color
 );
   typedef enum logic [2:0] {K_IDLE, K_SETUP, K_OUT, K_UPD, K_FILL, K_DONE} kst_e;
   kst_e st;
@@ -17,6 +21,7 @@ module draw_circle (
   logic signed [21:0] err, r2, dx2, dy2;
   logic        [2:0]  oct;
   logic signed [15:0] ox, oy;
+  logic [PIXEL_BITS-1:0] col;
 
   always_comb begin
     case (oct)
@@ -39,16 +44,18 @@ module draw_circle (
       st <= K_IDLE;
       cx <= '0; cy <= '0; rr <= '0; x <= '0; y <= '0; oct <= '0;
       dx <= '0; dy <= '0; err <= '0; r2 <= '0; dx2 <= '0; dy2 <= '0;
+      col <= '0;
     end else begin
       case (st)
         K_IDLE: if (start) begin
-          cx <= cx_i;  cy <= cy_i;  rr <= 16'(r_i);
+          cx <= cx_in;  cy <= cy_in;  rr <= 16'(r_in);
+          col <= color_in;
           st <= K_SETUP;
         end
 
         K_SETUP: begin
           if (fill) begin
-            r2  <= 22'(rr) * 22'(rr);      // unico producto del algoritmo
+            r2  <= 22'(rr) * 22'(rr);
             dx2 <= 22'(rr) * 22'(rr);
             dy2 <= 22'(rr) * 22'(rr);
             dx  <= -rr;  dy <= -rr;
@@ -102,7 +109,7 @@ module draw_circle (
   assign done = (st == K_DONE);
 
   always_comb begin
-    px_valid = 1'b0;  px_x = '0;  px_y = '0;
+    px_valid = 1'b0;  px_x = '0;  px_y = '0;  px_color = col;
     if (st == K_OUT) begin
       px_valid = 1'b1;       px_x = ox;       px_y = oy;
     end else if (st == K_FILL) begin

@@ -10,192 +10,271 @@
 # Copying C:/intelFPGA/18.1/modelsim_ase/win32aloem/../modelsim.ini to modelsim.ini
 # Modifying modelsim.ini
 # 
-# vlog -sv -work work +incdir+C:/Users/Jose\ Maria\ Vindas/Desktop/Pruebas/Quartus/Aplicacion {C:/Users/Jose Maria Vindas/Desktop/Pruebas/Quartus/Aplicacion/Acelerador_Grafico_Top.sv}
+# vlog -sv -work work +incdir+C:/Users/Jose\ Maria\ Vindas/Documents/GitHub/Acelerador-Grafico---CE1114 {C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/Acelerador_pkg.sv}
 # Model Technology ModelSim - Intel FPGA Edition vlog 10.5b Compiler 2016.10 Oct  5 2016
-# Start time: 15:04:14 on Sep 30,2026
-# vlog -reportprogress 300 -sv -work work "+incdir+C:/Users/Jose Maria Vindas/Desktop/Pruebas/Quartus/Aplicacion" C:/Users/Jose Maria Vindas/Desktop/Pruebas/Quartus/Aplicacion/Acelerador_Grafico_Top.sv 
-# -- Compiling module Acelerador_Grafico_Top
+# Start time: 15:31:35 on Oct 07,2026
+# vlog -reportprogress 300 -sv -work work "+incdir+C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114" C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/Acelerador_pkg.sv 
+# -- Compiling package Acelerador_pkg
 # 
 # Top level modules:
-# 	Acelerador_Grafico_Top
-# End time: 15:04:15 on Sep 30,2026, Elapsed time: 0:00:01
+# 	--none--
+# End time: 15:31:35 on Oct 07,2026, Elapsed time: 0:00:00
 # Errors: 0, Warnings: 0
-# vlog -sv -work work +incdir+C:/Users/Jose\ Maria\ Vindas/Desktop/Pruebas/Quartus/Aplicacion {C:/Users/Jose Maria Vindas/Desktop/Pruebas/Quartus/Aplicacion/draw_rect.sv}
+# vlog -sv -work work +incdir+C:/Users/Jose\ Maria\ Vindas/Documents/GitHub/Acelerador-Grafico---CE1114 {C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/draw_pixel.sv}
 # Model Technology ModelSim - Intel FPGA Edition vlog 10.5b Compiler 2016.10 Oct  5 2016
-# Start time: 15:04:15 on Sep 30,2026
-# vlog -reportprogress 300 -sv -work work "+incdir+C:/Users/Jose Maria Vindas/Desktop/Pruebas/Quartus/Aplicacion" C:/Users/Jose Maria Vindas/Desktop/Pruebas/Quartus/Aplicacion/draw_rect.sv 
+# Start time: 15:31:35 on Oct 07,2026
+# vlog -reportprogress 300 -sv -work work "+incdir+C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114" C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/draw_pixel.sv 
+# -- Compiling module draw_pixel
+# 
+# Top level modules:
+# 	draw_pixel
+# End time: 15:31:35 on Oct 07,2026, Elapsed time: 0:00:00
+# Errors: 0, Warnings: 0
+# vlog -sv -work work +incdir+C:/Users/Jose\ Maria\ Vindas/Documents/GitHub/Acelerador-Grafico---CE1114 {C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/draw_rect.sv}
+# Model Technology ModelSim - Intel FPGA Edition vlog 10.5b Compiler 2016.10 Oct  5 2016
+# Start time: 15:31:35 on Oct 07,2026
+# vlog -reportprogress 300 -sv -work work "+incdir+C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114" C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/draw_rect.sv 
 # -- Compiling module draw_rect
 # 
 # Top level modules:
 # 	draw_rect
-# End time: 15:04:15 on Sep 30,2026, Elapsed time: 0:00:00
+# End time: 15:31:35 on Oct 07,2026, Elapsed time: 0:00:00
 # Errors: 0, Warnings: 0
-# vlog -sv -work work +incdir+C:/Users/Jose\ Maria\ Vindas/Desktop/Pruebas/Quartus/Aplicacion {C:/Users/Jose Maria Vindas/Desktop/Pruebas/Quartus/Aplicacion/draw_circle.sv}
+# vlog -sv -work work +incdir+C:/Users/Jose\ Maria\ Vindas/Documents/GitHub/Acelerador-Grafico---CE1114 {C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/draw_circle.sv}
 # Model Technology ModelSim - Intel FPGA Edition vlog 10.5b Compiler 2016.10 Oct  5 2016
-# Start time: 15:04:15 on Sep 30,2026
-# vlog -reportprogress 300 -sv -work work "+incdir+C:/Users/Jose Maria Vindas/Desktop/Pruebas/Quartus/Aplicacion" C:/Users/Jose Maria Vindas/Desktop/Pruebas/Quartus/Aplicacion/draw_circle.sv 
+# Start time: 15:31:35 on Oct 07,2026
+# vlog -reportprogress 300 -sv -work work "+incdir+C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114" C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/draw_circle.sv 
 # -- Compiling module draw_circle
 # 
 # Top level modules:
 # 	draw_circle
-# End time: 15:04:15 on Sep 30,2026, Elapsed time: 0:00:00
+# End time: 15:31:35 on Oct 07,2026, Elapsed time: 0:00:00
 # Errors: 0, Warnings: 0
-# vlog -sv -work work +incdir+C:/Users/Jose\ Maria\ Vindas/Desktop/Pruebas/Quartus/Aplicacion {C:/Users/Jose Maria Vindas/Desktop/Pruebas/Quartus/Aplicacion/draw_trian.sv}
+# vlog -sv -work work +incdir+C:/Users/Jose\ Maria\ Vindas/Documents/GitHub/Acelerador-Grafico---CE1114 {C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/draw_trian.sv}
 # Model Technology ModelSim - Intel FPGA Edition vlog 10.5b Compiler 2016.10 Oct  5 2016
-# Start time: 15:04:15 on Sep 30,2026
-# vlog -reportprogress 300 -sv -work work "+incdir+C:/Users/Jose Maria Vindas/Desktop/Pruebas/Quartus/Aplicacion" C:/Users/Jose Maria Vindas/Desktop/Pruebas/Quartus/Aplicacion/draw_trian.sv 
+# Start time: 15:31:35 on Oct 07,2026
+# vlog -reportprogress 300 -sv -work work "+incdir+C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114" C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/draw_trian.sv 
 # -- Compiling module draw_trian
 # 
 # Top level modules:
 # 	draw_trian
-# End time: 15:04:15 on Sep 30,2026, Elapsed time: 0:00:00
+# End time: 15:31:35 on Oct 07,2026, Elapsed time: 0:00:00
 # Errors: 0, Warnings: 0
-# vlog -sv -work work +incdir+C:/Users/Jose\ Maria\ Vindas/Desktop/Pruebas/Quartus/Aplicacion {C:/Users/Jose Maria Vindas/Desktop/Pruebas/Quartus/Aplicacion/draw_line.sv}
+# vlog -sv -work work +incdir+C:/Users/Jose\ Maria\ Vindas/Documents/GitHub/Acelerador-Grafico---CE1114 {C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/draw_line.sv}
 # Model Technology ModelSim - Intel FPGA Edition vlog 10.5b Compiler 2016.10 Oct  5 2016
-# Start time: 15:04:15 on Sep 30,2026
-# vlog -reportprogress 300 -sv -work work "+incdir+C:/Users/Jose Maria Vindas/Desktop/Pruebas/Quartus/Aplicacion" C:/Users/Jose Maria Vindas/Desktop/Pruebas/Quartus/Aplicacion/draw_line.sv 
+# Start time: 15:31:35 on Oct 07,2026
+# vlog -reportprogress 300 -sv -work work "+incdir+C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114" C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/draw_line.sv 
 # -- Compiling module draw_line
 # 
 # Top level modules:
 # 	draw_line
-# End time: 15:04:15 on Sep 30,2026, Elapsed time: 0:00:00
+# End time: 15:31:35 on Oct 07,2026, Elapsed time: 0:00:00
+# Errors: 0, Warnings: 0
+# vlog -sv -work work +incdir+C:/Users/Jose\ Maria\ Vindas/Documents/GitHub/Acelerador-Grafico---CE1114 {C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/clip_scissor.sv}
+# Model Technology ModelSim - Intel FPGA Edition vlog 10.5b Compiler 2016.10 Oct  5 2016
+# Start time: 15:31:35 on Oct 07,2026
+# vlog -reportprogress 300 -sv -work work "+incdir+C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114" C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/clip_scissor.sv 
+# -- Compiling module clip_scissor
+# 
+# Top level modules:
+# 	clip_scissor
+# End time: 15:31:35 on Oct 07,2026, Elapsed time: 0:00:00
+# Errors: 0, Warnings: 0
+# vlog -sv -work work +incdir+C:/Users/Jose\ Maria\ Vindas/Documents/GitHub/Acelerador-Grafico---CE1114 {C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/addr_calc.sv}
+# Model Technology ModelSim - Intel FPGA Edition vlog 10.5b Compiler 2016.10 Oct  5 2016
+# Start time: 15:31:35 on Oct 07,2026
+# vlog -reportprogress 300 -sv -work work "+incdir+C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114" C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/addr_calc.sv 
+# -- Compiling module addr_calc
+# 
+# Top level modules:
+# 	addr_calc
+# End time: 15:31:35 on Oct 07,2026, Elapsed time: 0:00:00
+# Errors: 0, Warnings: 0
+# vlog -sv -work work +incdir+C:/Users/Jose\ Maria\ Vindas/Documents/GitHub/Acelerador-Grafico---CE1114 {C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/pixel_gen.sv}
+# Model Technology ModelSim - Intel FPGA Edition vlog 10.5b Compiler 2016.10 Oct  5 2016
+# Start time: 15:31:35 on Oct 07,2026
+# vlog -reportprogress 300 -sv -work work "+incdir+C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114" C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/pixel_gen.sv 
+# -- Compiling module pixel_gen
+# 
+# Top level modules:
+# 	pixel_gen
+# End time: 15:31:35 on Oct 07,2026, Elapsed time: 0:00:00
+# Errors: 0, Warnings: 0
+# vlog -sv -work work +incdir+C:/Users/Jose\ Maria\ Vindas/Documents/GitHub/Acelerador-Grafico---CE1114 {C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/Acelerador_Grafico_Top.sv}
+# Model Technology ModelSim - Intel FPGA Edition vlog 10.5b Compiler 2016.10 Oct  5 2016
+# Start time: 15:31:35 on Oct 07,2026
+# vlog -reportprogress 300 -sv -work work "+incdir+C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114" C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/Acelerador_Grafico_Top.sv 
+# -- Compiling module Acelerador_Grafico_Top
+# -- Importing package Acelerador_pkg
+# 
+# Top level modules:
+# 	Acelerador_Grafico_Top
+# End time: 15:31:35 on Oct 07,2026, Elapsed time: 0:00:00
 # Errors: 0, Warnings: 0
 # 
-vlog "C:/Users/Jose Maria Vindas/Desktop/Pruebas/Quartus/Aplicacion/tb_Acelerador_Grafico_Top.sv"
+vlog -sv "C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/tb_Acelerador_Grafico_Top.sv"
 # Model Technology ModelSim - Intel FPGA Edition vlog 10.5b Compiler 2016.10 Oct  5 2016
-# Start time: 15:06:07 on Sep 30,2026
-# vlog -reportprogress 300 C:/Users/Jose Maria Vindas/Desktop/Pruebas/Quartus/Aplicacion/tb_Acelerador_Grafico_Top.sv 
+# Start time: 15:31:43 on Oct 07,2026
+# vlog -reportprogress 300 -sv C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/tb_Acelerador_Grafico_Top.sv 
 # -- Compiling module tb_Acelerador_Grafico_Top
+# -- Importing package Acelerador_pkg
 # 
 # Top level modules:
 # 	tb_Acelerador_Grafico_Top
-# End time: 15:06:07 on Sep 30,2026, Elapsed time: 0:00:00
+# End time: 15:31:43 on Oct 07,2026, Elapsed time: 0:00:00
 # Errors: 0, Warnings: 0
 vsim work.tb_Acelerador_Grafico_Top
 # vsim work.tb_Acelerador_Grafico_Top 
-# Start time: 15:06:14 on Sep 30,2026
+# Start time: 15:31:47 on Oct 07,2026
 # Loading sv_std.std
+# Loading work.Acelerador_pkg
 # Loading work.tb_Acelerador_Grafico_Top
 # Loading work.Acelerador_Grafico_Top
+# Loading work.draw_pixel
 # Loading work.draw_rect
 # Loading work.draw_line
 # Loading work.draw_circle
 # Loading work.draw_trian
+# Loading work.pixel_gen
+# Loading work.clip_scissor
+# Loading work.addr_calc
 run -all
 # 
 # ==========================================================
-#  raster2d  -  banco de pruebas del rasterizador aislado
-#  Region visible: 64 x 48 pixeles
+#  Rasterizador con color y generador de pixeles
+#  Region visible: 64 x 48 pixeles, 16 bits por pixel
 # ==========================================================
+# 
+# --- 0. Conversion de color por desplazamiento y OR --------
+#   [OK  ] RGB888(0,0,0) a RGB565                         = 0x0000
+#   [OK  ] RGB888(255,255,255) a RGB565                   = 0xffff
+#   [OK  ] RGB888(255,0,0) a RGB565                       = 0xf800
+#   [OK  ] RGB888(0,255,0) a RGB565                       = 0x07e0
+#   [OK  ] RGB888(0,0,255) a RGB565                       = 0x001f
+#   [OK  ] RGB888(255,255,0) a RGB565                     = 0xffe0
+#   [OK  ] RGB888(0,255,255) a RGB565                     = 0x07ff
+#   [OK  ] RGB888(255,0,255) a RGB565                     = 0xf81f
+#   [OK  ] RGB888(7,3,7) a RGB565                         = 0x0000
+#   [OK  ] RGB888(8,4,8) a RGB565                         = 0x0821
+#   [OK  ] RGB888(18,52,86) a RGB565                      = 0x11aa
 # 
 # --- 1. Pixel suelto y recorte por pixel -------------------
 #   [OK  ] pixeles emitidos por DRAW_PIXEL                = 1
-#   [OK  ] pixel (10,10) encendido                        = 1
+#   [OK  ] pixel (10,10) escrito                          = 1
+#   [OK  ] pixel (10,10) en rojo                          = 0xf800
+#   [OK  ] sobrescritura: (10,10) ahora azul              = 0x001f
+#   [OK  ] pixel negro emitido                            = 1
+#   [OK  ] pixel (11,10) en negro                         = 0x0000
 #   [OK  ] pixel fuera de pantalla por la izquierda       = 0
 #   [OK  ] pixel fuera de pantalla por la derecha         = 0
 #   [OK  ] pixel fuera de pantalla por abajo              = 0
 # 
 # --- 2. Linea de Bresenham ---------------------------------
 #   [OK  ] linea horizontal (0,0)-(10,0)                  = 11
+#   [OK  ] extremo inicial (0,0) en verde                 = 0x07e0
+#   [OK  ] extremo final (10,0) en verde                  = 0x07e0
 #   [OK  ] linea vertical (0,0)-(0,10)                    = 11
 #   [OK  ] diagonal perfecta (0,0)-(10,10)                = 11
 #   [OK  ] pendiente suave (0,0)-(20,7)                   = 21
 #   [OK  ] linea degenerada (5,5)-(5,5)                   = 1
 #   [OK  ] linea recortada: solo la parte visible         = 21
+#   [OK  ] primer pixel visible (0,24) en verde           = 0x07e0
+#   -> fotograma 0 volcado: lineas_bresenham (71 pixeles)
 # 
 # --- 3. Rectangulo, contorno y relleno ---------------------
 #   [OK  ] relleno 10x6                                   = 60
 #   [OK  ] esquina (4,4)                                  = 1
 #   [OK  ] esquina (13,9)                                 = 1
 #   [OK  ] vecino exterior (14,9)                         = 0
+#   [OK  ] relleno uniforme: centro (8,6) azul            = 0x001f
+#   [OK  ] relleno uniforme: esquina (13,9) azul          = 0x001f
 #   [OK  ] contorno 10x6 (perimetro)                      = 28
 #   [OK  ] borde superior (25,4)                          = 1
 #   [OK  ] interior hueco (25,6)                          = 0
+#   [OK  ] borde superior (25,4) amarillo                 = 0xffe0
+#   [OK  ] borde inferior (25,9) amarillo                 = 0xffe0
+#   [OK  ] borde izquierdo (20,6) amarillo                = 0xffe0
+#   [OK  ] borde derecho (29,6) amarillo                  = 0xffe0
+#   -> fotograma 1 volcado: rectangulos (88 pixeles)
 # 
 # --- 4. Circulo, contorno y relleno ------------------------
 #   [OK  ] punto derecho del contorno (42,24)             = 1
 #   [OK  ] punto superior del contorno (32,14)            = 1
 #   [OK  ] centro vacio (32,24)                           = 0
-#   [OK  ] centro relleno (32,24)                         = 1
-#   [OK  ] borde del disco (37,24)                        = 1
-#   [OK  ] fuera del disco (38,24)                        = 0
+#   [OK  ] contorno (42,24) en cian                       = 0x07ff
+#   [OK  ] contorno (32,14) en cian                       = 0x07ff
+#   [OK  ] contorno (22,24) en cian                       = 0x07ff
+#   [OK  ] centro relleno (10,10)                         = 1
+#   [OK  ] borde del disco (15,10)                        = 1
+#   [OK  ] fuera del disco (16,10)                        = 0
+#   [OK  ] centro del disco en magenta                    = 0xf81f
+#   [OK  ] borde del disco en magenta                     = 0xf81f
 #   [OK  ] area del disco r=5 (esperado ~79)              = 81
+#   -> fotograma 2 volcado: circulos (133 pixeles)
 # 
 # --- 5. Triangulo, contorno y relleno ----------------------
 #   [OK  ] vertice superior (20,20)                       = 1
 #   [OK  ] vertice izquierdo (10,40)                      = 1
 #   [OK  ] interior hueco (20,35)                         = 0
-#   [OK  ] interior relleno (20,35)                       = 1
-#   [OK  ] exterior (12,22)                               = 0
+#   [OK  ] arista 1: vertice (20,20) en rojo              = 0xf800
+#   [OK  ] arista 2: vertice (30,40) en rojo              = 0xf800
+#   [OK  ] arista 3: base (20,40) en rojo                 = 0xf800
+#   [OK  ] interior relleno (44,35)                       = 1
+#   [OK  ] exterior (36,22)                               = 0
+#   [OK  ] interior relleno (44,35) en verde              = 0x07e0
 #   [OK  ] area del triangulo (esperado ~210)             = 221
-#   [OK  ] giro invertido: interior relleno (20,35)       = 1
+#   -> fotograma 3 volcado: triangulos (281 pixeles)
+#   [OK  ] giro invertido: interior relleno (44,35)       = 1
+#   [OK  ] giro invertido: color conservado               = 0x07e0
+#   -> fotograma 4 volcado: triangulo_giro_invertido (221 pixeles)
 # 
 # --- 6. Borrado de pantalla completa -----------------------
 #   [OK  ] pixeles de CLEAR                               = 3072
+#   [OK  ] esquina (0,0) en negro                         = 0x0000
+#   [OK  ] esquina (63,47) en negro                       = 0x0000
+#   [OK  ] pixeles de CLEAR con color de fondo            = 3072
+#   [OK  ] fondo (32,24) en azul                          = 0x001f
+#   -> fotograma 5 volcado: clear_con_color_de_fondo (3072 pixeles)
 # 
-# --- 7. Escena de demostracion -----------------------------
+# --- 7. Direccion lineal entregada por pixel_gen -----------
+#   [OK  ] discrepancias de px_addr acumuladas            = 0
+#   [OK  ] px_addr del pixel (0,0)                        = 0
+#   [OK  ] px_addr del pixel (1,0)                        = 1
+#   [OK  ] px_addr del pixel (0,1)                        = 64
+#   [OK  ] px_addr del ultimo pixel                       = 3071
 # 
-#   +----------------------------------------------------------------+
-#   |................................................................|
-#   |.##############################################################.|
-#   |.#............................................................#.|
-#   |.#...........................................#................#.|
-#   |.#..#############.......#.................###.###.............#.|
-#   |.#..#############........#...............#.......#............#.|
-#   |.#..#############.........#.............#.........#...........#.|
-#   |.#..#############.........#............#...........#..........#.|
-#   |.#..#############..........#..........#.............#.........#.|
-#   |.#..#############...........#.........#.............#.........#.|
-#   |.#..#############............#........#.............#.........#.|
-#   |.#..#############............#.......#...............#........#.|
-#   |.#..#############.............#.......#.............#.........#.|
-#   |.#..#############..............#......#.............#.........#.|
-#   |.#..#############...............#.....#.............#.........#.|
-#   |.#..............................#......#...........#..........#.|
-#   |.#...............................#......#.........#...........#.|
-#   |.#................................#......#.......#............#.|
-#   |.#........................................###.###.............#.|
-#   |.#...........................................#................#.|
-#   |.#..########################################################..#.|
-#   |.#............................................................#.|
-#   |.#............................................................#.|
-#   |.#............................................................#.|
-#   |.#............................................................#.|
-#   |.#............#......................#........................#.|
-#   |.#............##.....................#........................#.|
-#   |.#...........#.#....................###.......................#.|
-#   |.#...........#..#...................###.......................#.|
-#   |.#..........#...#..................#####...............#......#.|
-#   |.#..........#....#.................#####............#######...#.|
-#   |.#.........#.....#................#######..........#########..#.|
-#   |.#.........#......#...............#######.........###########.#.|
-#   |.#........#.......#..............#########........###########.#.|
-#   |.#........#........#.............#########........###########.#.|
-#   |.#.......#.........#............###########......##############.|
-#   |.#.......#..........#...........###########.......###########.#.|
-#   |.#......#...........#..........#############......###########.#.|
-#   |.#......#............#.........#############......###########.#.|
-#   |.#.....#.............#........###############......#########..#.|
-#   |.#.....#..............#.......###############.......#######...#.|
-#   |.#....#...............#......#################.........#......#.|
-#   |.#....#................#.....#################................#.|
-#   |.#...###################....###################...............#.|
-#   |.#............................................................#.|
-#   |.#............................................................#.|
-#   |.##############################################################.|
-#   |................................................................|
-#   +----------------------------------------------------------------+
-#   Escena de demostracion (# = pixel encendido)
+# --- 8. Contadores del generador de pixeles ----------------
+#   [OK  ] pix_count tras reiniciar la ventana            = 0
+#   [OK  ] clip_count tras reiniciar la ventana           = 0
+#   [OK  ] pix_count tras un relleno 10x10                = 100
+#   [OK  ] clip_count sin pixeles exteriores              = 0
+#   [OK  ] pix_count: solo los 5 visibles se escriben     = 105
+#   [OK  ] clip_count: 5 pixeles descartados              = 5
+#   -> fotograma 6 volcado: recorte_por_el_borde_derecho (105 pixeles)
 # 
-#   Pixeles emitidos en total desde el reinicio: 4703
+# --- 9. Escena de demostracion en color --------------------
+#   -> fotograma 7 volcado: escena_de_demostracion (3072 pixeles)
+#   Pixeles escritos en la ventana: 3896
+#   Pixeles descartados por recorte: 0
+#   [OK  ] discrepancias de px_addr en la escena          = 0
+# 
+# --- 10. Rampa de color RGB565 -----------------------------
+#   [OK  ] rampa: rojo maximo en (62,7)                   = 0xf800
+#   [OK  ] rampa: verde maximo en (62,23)                 = 0x07c0
+#   [OK  ] rampa: azul maximo en (62,39)                  = 0x001f
+#   [OK  ] rampa: nivel cero en (0,7)                     = 0x0000
+#   -> fotograma 8 volcado: rampa_de_color (2880 pixeles)
 # 
 # ==========================================================
 #  RESULTADO: todas las comprobaciones pasaron
+#  Fotogramas volcados: 9
+#  Archivos: raster_dump.csv, raster_pruebas.csv
+#  Para verlos:  python ver_raster.py
 # ==========================================================
 # 
-# ** Note: $finish    : C:/Users/Jose Maria Vindas/Desktop/Pruebas/Quartus/Aplicacion/tb_Acelerador_Grafico_Top.sv(256)
-#    Time: 55740 ps  Iteration: 1  Instance: /tb_Acelerador_Grafico_Top
+# ** Note: $finish    : C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/tb_Acelerador_Grafico_Top.sv(499)
+#    Time: 150360 ps  Iteration: 1  Instance: /tb_Acelerador_Grafico_Top
 # 1
-# Break in Module tb_Acelerador_Grafico_Top at C:/Users/Jose Maria Vindas/Desktop/Pruebas/Quartus/Aplicacion/tb_Acelerador_Grafico_Top.sv line 256
-# End time: 15:15:25 on Sep 30,2026, Elapsed time: 0:09:11
+# Break in Module tb_Acelerador_Grafico_Top at C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/tb_Acelerador_Grafico_Top.sv line 499
+# End time: 15:40:26 on Oct 07,2026, Elapsed time: 0:08:39
 # Errors: 0, Warnings: 0

@@ -1,12 +1,16 @@
-module draw_line (
-  input  logic               clk,
-  input  logic               rst_n,
-  input  logic               start,
-  input  logic signed [15:0] x0_i, y0_i, x1_i, y1_i,
-  output logic               busy,
-  output logic               done,      // pulso de un ciclo
-  output logic               px_valid,
-  output logic signed [15:0] px_x, px_y
+module draw_line #(
+  parameter int PIXEL_BITS = 16
+)(
+  input  logic                    clk,
+  input  logic                    rst_n,
+  input  logic                    start,
+  input  logic signed [15:0]      x0_in, y0_in, x1_in, y1_in,
+  input  logic [PIXEL_BITS-1:0]   color_in,
+  output logic                    busy,
+  output logic                    done,
+  output logic                    px_valid,
+  output logic signed [15:0]      px_x, px_y,
+  output logic [PIXEL_BITS-1:0]   px_color
 );
 
   typedef enum logic [1:0] {L_IDLE, L_SETUP, L_RUN, L_DONE} lst_e;
@@ -14,6 +18,7 @@ module draw_line (
 
   logic signed [15:0] x, y, xe, ye, sx, sy;
   logic signed [21:0] dx, dy, err;
+  logic [PIXEL_BITS-1:0] col;
 
   always_ff @(posedge clk or negedge rst_n) begin : p_line
     logic signed [22:0] e2;
@@ -23,16 +28,17 @@ module draw_line (
     if (!rst_n) begin
       st <= L_IDLE;
       x <= '0; y <= '0; xe <= '0; ye <= '0; sx <= '0; sy <= '0;
-      dx <= '0; dy <= '0; err <= '0;
+      dx <= '0; dy <= '0; err <= '0; col <= '0;
     end else begin
       case (st)
         L_IDLE: if (start) begin
-          x  <= x0_i;  y  <= y0_i;
-          xe <= x1_i;  ye <= y1_i;
-          dx <= (x1_i > x0_i) ?  (22'(x1_i) - 22'(x0_i)) : (22'(x0_i) - 22'(x1_i));
-          dy <= (y1_i > y0_i) ? -(22'(y1_i) - 22'(y0_i)) : -(22'(y0_i) - 22'(y1_i));
-          sx <= (x0_i < x1_i) ? 1 : -1;
-          sy <= (y0_i < y1_i) ? 1 : -1;
+          x  <= x0_in;  y  <= y0_in;
+          xe <= x1_in;  ye <= y1_in;
+          dx <= (x1_in > x0_in) ?  (22'(x1_in) - 22'(x0_in)) : (22'(x0_in) - 22'(x1_in));
+          dy <= (y1_in > y0_in) ? -(22'(y1_in) - 22'(y0_in)) : -(22'(y0_in) - 22'(y1_in));
+          sx <= (x0_in < x1_in) ? 1 : -1;
+          sy <= (y0_in < y1_in) ? 1 : -1;
+          col <= color_in;
           st <= L_SETUP;
         end
 
@@ -64,4 +70,5 @@ module draw_line (
   assign px_valid = (st == L_RUN);
   assign px_x     = x;
   assign px_y     = y;
+  assign px_color = col;
 endmodule

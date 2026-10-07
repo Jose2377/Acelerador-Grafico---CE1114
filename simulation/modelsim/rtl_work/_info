@@ -7,154 +7,282 @@ z2
 !i10e 25
 !i10f 100
 cModel Technology
-Z0 dC:/Users/Jose Maria Vindas/Desktop/Pruebas/Quartus/Aplicacion/simulation/modelsim
+Z0 dC:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/simulation/modelsim
 vAcelerador_Grafico_Top
 Z1 DXx6 sv_std 3 std 0 22 AD7iAPLo6nTIKk<N0eo=D3
-Z2 !s110 1790802255
+Z2 DXx4 work 14 Acelerador_pkg 0 22 @5lh9gXCM9DaiI7Z1G;Fk1
+Z3 !s110 1791408695
 !i10b 1
-!s100 [D7FdbT:gXI=T`YV3BSSD2
-I?lkT`UY3dC8hT?A8NnzT00
-Z3 VDg1SIo80bB@j0V0VzS_@n1
+!s100 _F=<9MjF096JJ=E5KGdUK1
+Io[3h:61`X?^TI:XR:=42F2
+Z4 VDg1SIo80bB@j0V0VzS_@n1
 !s105 Acelerador_Grafico_Top_sv_unit
 S1
 R0
-w1790782866
-8C:/Users/Jose Maria Vindas/Desktop/Pruebas/Quartus/Aplicacion/Acelerador_Grafico_Top.sv
-FC:/Users/Jose Maria Vindas/Desktop/Pruebas/Quartus/Aplicacion/Acelerador_Grafico_Top.sv
+w1791405741
+8C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/Acelerador_Grafico_Top.sv
+FC:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/Acelerador_Grafico_Top.sv
 L0 1
-Z4 OV;L;10.5b;63
+Z5 OV;L;10.5b;63
 r1
 !s85 0
 31
-!s108 1790802254.000000
-!s107 C:/Users/Jose Maria Vindas/Desktop/Pruebas/Quartus/Aplicacion/Acelerador_Grafico_Top.sv|
-!s90 -reportprogress|300|-sv|-work|work|+incdir+C:/Users/Jose Maria Vindas/Desktop/Pruebas/Quartus/Aplicacion|C:/Users/Jose Maria Vindas/Desktop/Pruebas/Quartus/Aplicacion/Acelerador_Grafico_Top.sv|
+Z6 !s108 1791408695.000000
+!s107 C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/Acelerador_Grafico_Top.sv|
+!s90 -reportprogress|300|-sv|-work|work|+incdir+C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114|C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/Acelerador_Grafico_Top.sv|
 !i113 1
-Z5 o-sv -work work
-Z6 !s92 -sv -work work {+incdir+C:/Users/Jose Maria Vindas/Desktop/Pruebas/Quartus/Aplicacion}
-Z7 tCvgOpt 0
+Z7 o-sv -work work
+Z8 !s92 -sv -work work {+incdir+C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114}
+Z9 tCvgOpt 0
 n@acelerador_@grafico_@top
+XAcelerador_pkg
+R1
+R3
+!i10b 1
+!s100 U0ZDHCcA8T9CK62PF8Emb2
+I@5lh9gXCM9DaiI7Z1G;Fk1
+V@5lh9gXCM9DaiI7Z1G;Fk1
+S1
+R0
+w1791404431
+8C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/Acelerador_pkg.sv
+FC:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/Acelerador_pkg.sv
+L0 13
+R5
+r1
+!s85 0
+31
+R6
+!s107 C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/Acelerador_pkg.sv|
+!s90 -reportprogress|300|-sv|-work|work|+incdir+C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114|C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/Acelerador_pkg.sv|
+!i113 1
+R7
+R8
+R9
+n@acelerador_pkg
+vaddr_calc
+R1
+R3
+!i10b 1
+!s100 mj=WBkOiU<HQ5gf8Y4Oo13
+IHlN[l6hJ?EVZ5ZH6V_j?S3
+R4
+!s105 addr_calc_sv_unit
+S1
+R0
+w1791404769
+8C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/addr_calc.sv
+FC:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/addr_calc.sv
+L0 1
+R5
+r1
+!s85 0
+31
+R6
+!s107 C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/addr_calc.sv|
+!s90 -reportprogress|300|-sv|-work|work|+incdir+C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114|C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/addr_calc.sv|
+!i113 1
+R7
+R8
+R9
+vclip_scissor
+R1
+R3
+!i10b 1
+!s100 TcY;:SJeGSaUfEk[mTS=53
+IL:U=k^7B_5QI0hM3LNlfo0
+R4
+!s105 clip_scissor_sv_unit
+S1
+R0
+Z10 w1791405824
+8C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/clip_scissor.sv
+FC:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/clip_scissor.sv
+L0 1
+R5
+r1
+!s85 0
+31
+R6
+!s107 C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/clip_scissor.sv|
+!s90 -reportprogress|300|-sv|-work|work|+incdir+C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114|C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/clip_scissor.sv|
+!i113 1
+R7
+R8
+R9
 vdraw_circle
 R1
-R2
-!i10b 1
-!s100 AdSW1DfSjfn8kc6I5CMml3
-Iz6[of5G:F8k>lRi0`Efc]0
 R3
+!i10b 1
+!s100 UE0K]Q[F5<<>PPk?B6Qmn3
+I0zH=e_8XcP6B>AboH6hFc1
+R4
 !s105 draw_circle_sv_unit
 S1
 R0
-w1790782269
-8C:/Users/Jose Maria Vindas/Desktop/Pruebas/Quartus/Aplicacion/draw_circle.sv
-FC:/Users/Jose Maria Vindas/Desktop/Pruebas/Quartus/Aplicacion/draw_circle.sv
+w1791405761
+8C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/draw_circle.sv
+FC:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/draw_circle.sv
 L0 1
-R4
+R5
 r1
 !s85 0
 31
-Z8 !s108 1790802255.000000
-!s107 C:/Users/Jose Maria Vindas/Desktop/Pruebas/Quartus/Aplicacion/draw_circle.sv|
-!s90 -reportprogress|300|-sv|-work|work|+incdir+C:/Users/Jose Maria Vindas/Desktop/Pruebas/Quartus/Aplicacion|C:/Users/Jose Maria Vindas/Desktop/Pruebas/Quartus/Aplicacion/draw_circle.sv|
-!i113 1
-R5
 R6
+!s107 C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/draw_circle.sv|
+!s90 -reportprogress|300|-sv|-work|work|+incdir+C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114|C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/draw_circle.sv|
+!i113 1
 R7
+R8
+R9
 vdraw_line
 R1
-R2
-!i10b 1
-!s100 jK6^O@;7KEDl21EgDg5EV1
-IkRSC[eQ5`Yf6mcfWB>8z`0
 R3
+!i10b 1
+!s100 KoEz`33Z=5N<`SROL]BA43
+IhHDNFKnDDH59HT>gCN?2o2
+R4
 !s105 draw_line_sv_unit
 S1
 R0
-w1790782779
-8C:/Users/Jose Maria Vindas/Desktop/Pruebas/Quartus/Aplicacion/draw_line.sv
-FC:/Users/Jose Maria Vindas/Desktop/Pruebas/Quartus/Aplicacion/draw_line.sv
+w1791405041
+8C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/draw_line.sv
+FC:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/draw_line.sv
 L0 1
-R4
+R5
 r1
 !s85 0
 31
-R8
-!s107 C:/Users/Jose Maria Vindas/Desktop/Pruebas/Quartus/Aplicacion/draw_line.sv|
-!s90 -reportprogress|300|-sv|-work|work|+incdir+C:/Users/Jose Maria Vindas/Desktop/Pruebas/Quartus/Aplicacion|C:/Users/Jose Maria Vindas/Desktop/Pruebas/Quartus/Aplicacion/draw_line.sv|
-!i113 1
-R5
 R6
+!s107 C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/draw_line.sv|
+!s90 -reportprogress|300|-sv|-work|work|+incdir+C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114|C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/draw_line.sv|
+!i113 1
 R7
+R8
+R9
+vdraw_pixel
+R1
+R3
+!i10b 1
+!s100 J`VILd>FTfNC20iVD33d_1
+IO1C;J7WEPkH^9=GdZI=nN3
+R4
+!s105 draw_pixel_sv_unit
+S1
+R0
+w1791405890
+8C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/draw_pixel.sv
+FC:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/draw_pixel.sv
+L0 1
+R5
+r1
+!s85 0
+31
+R6
+!s107 C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/draw_pixel.sv|
+!s90 -reportprogress|300|-sv|-work|work|+incdir+C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114|C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/draw_pixel.sv|
+!i113 1
+R7
+R8
+R9
 vdraw_rect
 R1
-R2
-!i10b 1
-!s100 YVR7oX1KN:9DOWDbJ_XSc2
-IclERQDkK77?DVgW:LL>dC1
 R3
+!i10b 1
+!s100 Ff;RhTZT;:mlMc<3_YceR3
+IR6<D`A_i2a>ZKmMMDYbVI3
+R4
 !s105 draw_rect_sv_unit
 S1
 R0
-w1790782209
-8C:/Users/Jose Maria Vindas/Desktop/Pruebas/Quartus/Aplicacion/draw_rect.sv
-FC:/Users/Jose Maria Vindas/Desktop/Pruebas/Quartus/Aplicacion/draw_rect.sv
+w1791405889
+8C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/draw_rect.sv
+FC:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/draw_rect.sv
 L0 1
-R4
+R5
 r1
 !s85 0
 31
-R8
-!s107 C:/Users/Jose Maria Vindas/Desktop/Pruebas/Quartus/Aplicacion/draw_rect.sv|
-!s90 -reportprogress|300|-sv|-work|work|+incdir+C:/Users/Jose Maria Vindas/Desktop/Pruebas/Quartus/Aplicacion|C:/Users/Jose Maria Vindas/Desktop/Pruebas/Quartus/Aplicacion/draw_rect.sv|
-!i113 1
-R5
 R6
+!s107 C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/draw_rect.sv|
+!s90 -reportprogress|300|-sv|-work|work|+incdir+C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114|C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/draw_rect.sv|
+!i113 1
 R7
+R8
+R9
 vdraw_trian
 R1
-R2
-!i10b 1
-!s100 <82HBCEn8U;of2z1ZPWNl1
-IW_;C5g5`OmYeLe^Jl1J;m2
 R3
+!i10b 1
+!s100 6;7azPmFjm[g6khB49QSL1
+IS[4_omN_<NMF=G^cF=aZm2
+R4
 !s105 draw_trian_sv_unit
 S1
 R0
-w1790782917
-8C:/Users/Jose Maria Vindas/Desktop/Pruebas/Quartus/Aplicacion/draw_trian.sv
-FC:/Users/Jose Maria Vindas/Desktop/Pruebas/Quartus/Aplicacion/draw_trian.sv
+R10
+8C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/draw_trian.sv
+FC:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/draw_trian.sv
 L0 1
-R4
+R5
 r1
 !s85 0
 31
-R8
-!s107 C:/Users/Jose Maria Vindas/Desktop/Pruebas/Quartus/Aplicacion/draw_trian.sv|
-!s90 -reportprogress|300|-sv|-work|work|+incdir+C:/Users/Jose Maria Vindas/Desktop/Pruebas/Quartus/Aplicacion|C:/Users/Jose Maria Vindas/Desktop/Pruebas/Quartus/Aplicacion/draw_trian.sv|
-!i113 1
-R5
 R6
+!s107 C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/draw_trian.sv|
+!s90 -reportprogress|300|-sv|-work|work|+incdir+C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114|C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/draw_trian.sv|
+!i113 1
 R7
+R8
+R9
+vpixel_gen
+R1
+R3
+!i10b 1
+!s100 hb>;<1hcm<CHX]9ToM?GS2
+I?NT;PYE31>mfXHDEGXSnT0
+R4
+!s105 pixel_gen_sv_unit
+S1
+R0
+w1791404929
+8C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/pixel_gen.sv
+FC:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/pixel_gen.sv
+L0 1
+R5
+r1
+!s85 0
+31
+R6
+!s107 C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/pixel_gen.sv|
+!s90 -reportprogress|300|-sv|-work|work|+incdir+C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114|C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/pixel_gen.sv|
+!i113 1
+R7
+R8
+R9
 vtb_Acelerador_Grafico_Top
 R1
-!s110 1790802367
+R2
+!s110 1791408703
 !i10b 1
-!s100 QjL^8D9Mk^]5<]W<kHg6:3
-I[Kl4jg]T<A9P_2TlXD:LQ1
-R3
+!s100 CW0?9AMMd7N4d:Ra7]KaZ2
+I1bX]0N7dY13YSnIUzENLU0
+R4
 !s105 tb_Acelerador_Grafico_Top_sv_unit
 S1
 R0
-w1790783906
-8C:/Users/Jose Maria Vindas/Desktop/Pruebas/Quartus/Aplicacion/tb_Acelerador_Grafico_Top.sv
-FC:/Users/Jose Maria Vindas/Desktop/Pruebas/Quartus/Aplicacion/tb_Acelerador_Grafico_Top.sv
-L0 1
-R4
+w1791406710
+8C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/tb_Acelerador_Grafico_Top.sv
+FC:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/tb_Acelerador_Grafico_Top.sv
+L0 21
+R5
 r1
 !s85 0
 31
-!s108 1790802367.000000
-!s107 C:/Users/Jose Maria Vindas/Desktop/Pruebas/Quartus/Aplicacion/tb_Acelerador_Grafico_Top.sv|
-!s90 -reportprogress|300|C:/Users/Jose Maria Vindas/Desktop/Pruebas/Quartus/Aplicacion/tb_Acelerador_Grafico_Top.sv|
+!s108 1791408703.000000
+!s107 C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/tb_Acelerador_Grafico_Top.sv|
+!s90 -reportprogress|300|-sv|C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/tb_Acelerador_Grafico_Top.sv|
 !i113 1
-R7
+o-sv
+R9
 ntb_@acelerador_@grafico_@top

@@ -67,3 +67,7 @@ incremental_db/
 db/
 _output_files/
 PLLJ_PLLSPE_INFO.txt
+# volcado del banco de pruebas y su visualizacion
+raster_dump.csv
+raster_pruebas.csv
+salida/
