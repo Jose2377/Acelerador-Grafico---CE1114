@@ -1,0 +1,201 @@
+# Reading C:/intelFPGA/18.1/modelsim_ase/tcl/vsim/pref.tcl
+# do Acelerador_Grafico_run_msim_rtl_verilog.do
+# if {[file exists rtl_work]} {
+# 	vdel -lib rtl_work -all
+# }
+# vlib rtl_work
+# vmap work rtl_work
+# Model Technology ModelSim - Intel FPGA Edition vmap 10.5b Lib Mapping Utility 2016.10 Oct  5 2016
+# vmap work rtl_work 
+# Copying C:/intelFPGA/18.1/modelsim_ase/win32aloem/../modelsim.ini to modelsim.ini
+# Modifying modelsim.ini
+# 
+# vlog -sv -work work +incdir+C:/Users/Jose\ Maria\ Vindas/Desktop/Pruebas/Quartus/Aplicacion {C:/Users/Jose Maria Vindas/Desktop/Pruebas/Quartus/Aplicacion/Acelerador_Grafico_Top.sv}
+# Model Technology ModelSim - Intel FPGA Edition vlog 10.5b Compiler 2016.10 Oct  5 2016
+# Start time: 15:04:14 on Sep 30,2026
+# vlog -reportprogress 300 -sv -work work "+incdir+C:/Users/Jose Maria Vindas/Desktop/Pruebas/Quartus/Aplicacion" C:/Users/Jose Maria Vindas/Desktop/Pruebas/Quartus/Aplicacion/Acelerador_Grafico_Top.sv 
+# -- Compiling module Acelerador_Grafico_Top
+# 
+# Top level modules:
+# 	Acelerador_Grafico_Top
+# End time: 15:04:15 on Sep 30,2026, Elapsed time: 0:00:01
+# Errors: 0, Warnings: 0
+# vlog -sv -work work +incdir+C:/Users/Jose\ Maria\ Vindas/Desktop/Pruebas/Quartus/Aplicacion {C:/Users/Jose Maria Vindas/Desktop/Pruebas/Quartus/Aplicacion/draw_rect.sv}
+# Model Technology ModelSim - Intel FPGA Edition vlog 10.5b Compiler 2016.10 Oct  5 2016
+# Start time: 15:04:15 on Sep 30,2026
+# vlog -reportprogress 300 -sv -work work "+incdir+C:/Users/Jose Maria Vindas/Desktop/Pruebas/Quartus/Aplicacion" C:/Users/Jose Maria Vindas/Desktop/Pruebas/Quartus/Aplicacion/draw_rect.sv 
+# -- Compiling module draw_rect
+# 
+# Top level modules:
+# 	draw_rect
+# End time: 15:04:15 on Sep 30,2026, Elapsed time: 0:00:00
+# Errors: 0, Warnings: 0
+# vlog -sv -work work +incdir+C:/Users/Jose\ Maria\ Vindas/Desktop/Pruebas/Quartus/Aplicacion {C:/Users/Jose Maria Vindas/Desktop/Pruebas/Quartus/Aplicacion/draw_circle.sv}
+# Model Technology ModelSim - Intel FPGA Edition vlog 10.5b Compiler 2016.10 Oct  5 2016
+# Start time: 15:04:15 on Sep 30,2026
+# vlog -reportprogress 300 -sv -work work "+incdir+C:/Users/Jose Maria Vindas/Desktop/Pruebas/Quartus/Aplicacion" C:/Users/Jose Maria Vindas/Desktop/Pruebas/Quartus/Aplicacion/draw_circle.sv 
+# -- Compiling module draw_circle
+# 
+# Top level modules:
+# 	draw_circle
+# End time: 15:04:15 on Sep 30,2026, Elapsed time: 0:00:00
+# Errors: 0, Warnings: 0
+# vlog -sv -work work +incdir+C:/Users/Jose\ Maria\ Vindas/Desktop/Pruebas/Quartus/Aplicacion {C:/Users/Jose Maria Vindas/Desktop/Pruebas/Quartus/Aplicacion/draw_trian.sv}
+# Model Technology ModelSim - Intel FPGA Edition vlog 10.5b Compiler 2016.10 Oct  5 2016
+# Start time: 15:04:15 on Sep 30,2026
+# vlog -reportprogress 300 -sv -work work "+incdir+C:/Users/Jose Maria Vindas/Desktop/Pruebas/Quartus/Aplicacion" C:/Users/Jose Maria Vindas/Desktop/Pruebas/Quartus/Aplicacion/draw_trian.sv 
+# -- Compiling module draw_trian
+# 
+# Top level modules:
+# 	draw_trian
+# End time: 15:04:15 on Sep 30,2026, Elapsed time: 0:00:00
+# Errors: 0, Warnings: 0
+# vlog -sv -work work +incdir+C:/Users/Jose\ Maria\ Vindas/Desktop/Pruebas/Quartus/Aplicacion {C:/Users/Jose Maria Vindas/Desktop/Pruebas/Quartus/Aplicacion/draw_line.sv}
+# Model Technology ModelSim - Intel FPGA Edition vlog 10.5b Compiler 2016.10 Oct  5 2016
+# Start time: 15:04:15 on Sep 30,2026
+# vlog -reportprogress 300 -sv -work work "+incdir+C:/Users/Jose Maria Vindas/Desktop/Pruebas/Quartus/Aplicacion" C:/Users/Jose Maria Vindas/Desktop/Pruebas/Quartus/Aplicacion/draw_line.sv 
+# -- Compiling module draw_line
+# 
+# Top level modules:
+# 	draw_line
+# End time: 15:04:15 on Sep 30,2026, Elapsed time: 0:00:00
+# Errors: 0, Warnings: 0
+# 
+vlog "C:/Users/Jose Maria Vindas/Desktop/Pruebas/Quartus/Aplicacion/tb_Acelerador_Grafico_Top.sv"
+# Model Technology ModelSim - Intel FPGA Edition vlog 10.5b Compiler 2016.10 Oct  5 2016
+# Start time: 15:06:07 on Sep 30,2026
+# vlog -reportprogress 300 C:/Users/Jose Maria Vindas/Desktop/Pruebas/Quartus/Aplicacion/tb_Acelerador_Grafico_Top.sv 
+# -- Compiling module tb_Acelerador_Grafico_Top
+# 
+# Top level modules:
+# 	tb_Acelerador_Grafico_Top
+# End time: 15:06:07 on Sep 30,2026, Elapsed time: 0:00:00
+# Errors: 0, Warnings: 0
+vsim work.tb_Acelerador_Grafico_Top
+# vsim work.tb_Acelerador_Grafico_Top 
+# Start time: 15:06:14 on Sep 30,2026
+# Loading sv_std.std
+# Loading work.tb_Acelerador_Grafico_Top
+# Loading work.Acelerador_Grafico_Top
+# Loading work.draw_rect
+# Loading work.draw_line
+# Loading work.draw_circle
+# Loading work.draw_trian
+run -all
+# 
+# ==========================================================
+#  raster2d  -  banco de pruebas del rasterizador aislado
+#  Region visible: 64 x 48 pixeles
+# ==========================================================
+# 
+# --- 1. Pixel suelto y recorte por pixel -------------------
+#   [OK  ] pixeles emitidos por DRAW_PIXEL                = 1
+#   [OK  ] pixel (10,10) encendido                        = 1
+#   [OK  ] pixel fuera de pantalla por la izquierda       = 0
+#   [OK  ] pixel fuera de pantalla por la derecha         = 0
+#   [OK  ] pixel fuera de pantalla por abajo              = 0
+# 
+# --- 2. Linea de Bresenham ---------------------------------
+#   [OK  ] linea horizontal (0,0)-(10,0)                  = 11
+#   [OK  ] linea vertical (0,0)-(0,10)                    = 11
+#   [OK  ] diagonal perfecta (0,0)-(10,10)                = 11
+#   [OK  ] pendiente suave (0,0)-(20,7)                   = 21
+#   [OK  ] linea degenerada (5,5)-(5,5)                   = 1
+#   [OK  ] linea recortada: solo la parte visible         = 21
+# 
+# --- 3. Rectangulo, contorno y relleno ---------------------
+#   [OK  ] relleno 10x6                                   = 60
+#   [OK  ] esquina (4,4)                                  = 1
+#   [OK  ] esquina (13,9)                                 = 1
+#   [OK  ] vecino exterior (14,9)                         = 0
+#   [OK  ] contorno 10x6 (perimetro)                      = 28
+#   [OK  ] borde superior (25,4)                          = 1
+#   [OK  ] interior hueco (25,6)                          = 0
+# 
+# --- 4. Circulo, contorno y relleno ------------------------
+#   [OK  ] punto derecho del contorno (42,24)             = 1
+#   [OK  ] punto superior del contorno (32,14)            = 1
+#   [OK  ] centro vacio (32,24)                           = 0
+#   [OK  ] centro relleno (32,24)                         = 1
+#   [OK  ] borde del disco (37,24)                        = 1
+#   [OK  ] fuera del disco (38,24)                        = 0
+#   [OK  ] area del disco r=5 (esperado ~79)              = 81
+# 
+# --- 5. Triangulo, contorno y relleno ----------------------
+#   [OK  ] vertice superior (20,20)                       = 1
+#   [OK  ] vertice izquierdo (10,40)                      = 1
+#   [OK  ] interior hueco (20,35)                         = 0
+#   [OK  ] interior relleno (20,35)                       = 1
+#   [OK  ] exterior (12,22)                               = 0
+#   [OK  ] area del triangulo (esperado ~210)             = 221
+#   [OK  ] giro invertido: interior relleno (20,35)       = 1
+# 
+# --- 6. Borrado de pantalla completa -----------------------
+#   [OK  ] pixeles de CLEAR                               = 3072
+# 
+# --- 7. Escena de demostracion -----------------------------
+# 
+#   +----------------------------------------------------------------+
+#   |................................................................|
+#   |.##############################################################.|
+#   |.#............................................................#.|
+#   |.#...........................................#................#.|
+#   |.#..#############.......#.................###.###.............#.|
+#   |.#..#############........#...............#.......#............#.|
+#   |.#..#############.........#.............#.........#...........#.|
+#   |.#..#############.........#............#...........#..........#.|
+#   |.#..#############..........#..........#.............#.........#.|
+#   |.#..#############...........#.........#.............#.........#.|
+#   |.#..#############............#........#.............#.........#.|
+#   |.#..#############............#.......#...............#........#.|
+#   |.#..#############.............#.......#.............#.........#.|
+#   |.#..#############..............#......#.............#.........#.|
+#   |.#..#############...............#.....#.............#.........#.|
+#   |.#..............................#......#...........#..........#.|
+#   |.#...............................#......#.........#...........#.|
+#   |.#................................#......#.......#............#.|
+#   |.#........................................###.###.............#.|
+#   |.#...........................................#................#.|
+#   |.#..########################################################..#.|
+#   |.#............................................................#.|
+#   |.#............................................................#.|
+#   |.#............................................................#.|
+#   |.#............................................................#.|
+#   |.#............#......................#........................#.|
+#   |.#............##.....................#........................#.|
+#   |.#...........#.#....................###.......................#.|
+#   |.#...........#..#...................###.......................#.|
+#   |.#..........#...#..................#####...............#......#.|
+#   |.#..........#....#.................#####............#######...#.|
+#   |.#.........#.....#................#######..........#########..#.|
+#   |.#.........#......#...............#######.........###########.#.|
+#   |.#........#.......#..............#########........###########.#.|
+#   |.#........#........#.............#########........###########.#.|
+#   |.#.......#.........#............###########......##############.|
+#   |.#.......#..........#...........###########.......###########.#.|
+#   |.#......#...........#..........#############......###########.#.|
+#   |.#......#............#.........#############......###########.#.|
+#   |.#.....#.............#........###############......#########..#.|
+#   |.#.....#..............#.......###############.......#######...#.|
+#   |.#....#...............#......#################.........#......#.|
+#   |.#....#................#.....#################................#.|
+#   |.#...###################....###################...............#.|
+#   |.#............................................................#.|
+#   |.#............................................................#.|
+#   |.##############################################################.|
+#   |................................................................|
+#   +----------------------------------------------------------------+
+#   Escena de demostracion (# = pixel encendido)
+# 
+#   Pixeles emitidos en total desde el reinicio: 4703
+# 
+# ==========================================================
+#  RESULTADO: todas las comprobaciones pasaron
+# ==========================================================
+# 
+# ** Note: $finish    : C:/Users/Jose Maria Vindas/Desktop/Pruebas/Quartus/Aplicacion/tb_Acelerador_Grafico_Top.sv(256)
+#    Time: 55740 ps  Iteration: 1  Instance: /tb_Acelerador_Grafico_Top
+# 1
+# Break in Module tb_Acelerador_Grafico_Top at C:/Users/Jose Maria Vindas/Desktop/Pruebas/Quartus/Aplicacion/tb_Acelerador_Grafico_Top.sv line 256
+# End time: 15:15:25 on Sep 30,2026, Elapsed time: 0:09:11
+# Errors: 0, Warnings: 0
