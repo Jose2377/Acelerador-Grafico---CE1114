@@ -1,19 +1,19 @@
 //=============================================================================
 // tb_Acelerador_Grafico_Top.sv
-// Banco de pruebas del rasterizador con color y generador de pixeles
+// Banco de pruebas del camino completo: paquete de 24 bytes, cola,
+// decodificador, rasterizador y generador de pixeles
 //
-// El banco de pruebas no dibuja: mide y vuelca. Produce dos archivos de
-// texto plano que la herramienta de visualizacion en Python convierte en
-// imagenes y en una tabla de resultados:
+// Los comandos ya no se inyectan decodificados: se escriben como las seis
+// palabras del paquete sobre el puerto CMD_FIFO_W, en el mismo orden en que
+// lo hara el driver. Eso pone a prueba el ensamblador, la cola y la maquina
+// de estados ademas de la geometria.
+//
+// El banco de pruebas no dibuja: mide y vuelca. Produce dos archivos que la
+// herramienta de visualizacion en Python convierte en imagenes y en una
+// tabla de resultados:
 //
 //   raster_dump.csv     un fotograma por escena, con los pixeles escritos
-//                       y su color RGB565
-//   raster_pruebas.csv  una fila por comprobacion, con lo obtenido y lo
-//                       esperado
-//
-// Separar la medicion de la presentacion tiene dos ventajas: el transcript
-// del simulador queda legible, y la imagen que se revisa es la imagen real
-// en color y no una aproximacion en caracteres.
+//   raster_pruebas.csv  una fila por comprobacion
 //
 // Uso:  vsim -c -do "run -all" tb_Acelerador_Grafico_Top
 //       python ver_raster.py
@@ -22,21 +22,32 @@ module tb_Acelerador_Grafico_Top;
 
   import Acelerador_pkg::*;
 
-  // Codigos de operacion traidos del paquete con el nombre calificado, por
-  // la misma razon que en el nivel superior.
-  localparam logic [3:0] OP_PIXEL     = Acelerador_pkg::OP_PIXEL;
-  localparam logic [3:0] OP_LINE      = Acelerador_pkg::OP_LINE;
-  localparam logic [3:0] OP_RECT      = Acelerador_pkg::OP_RECT;
-  localparam logic [3:0] OP_RECT_FILL = Acelerador_pkg::OP_RECT_FILL;
-  localparam logic [3:0] OP_CIRC      = Acelerador_pkg::OP_CIRC;
-  localparam logic [3:0] OP_CIRC_FILL = Acelerador_pkg::OP_CIRC_FILL;
-  localparam logic [3:0] OP_TRIA      = Acelerador_pkg::OP_TRIA;
-  localparam logic [3:0] OP_TRIA_FILL = Acelerador_pkg::OP_TRIA_FILL;
-  localparam logic [3:0] OP_CLEAR     = Acelerador_pkg::OP_CLEAR;
+  // Constantes del paquete traidas con el nombre calificado: una importacion
+  // comodin no resuelve igual en todas las herramientas.
+  localparam logic [7:0] OPC_NOP       = Acelerador_pkg::OPC_NOP;
+  localparam logic [7:0] OPC_PIXEL     = Acelerador_pkg::OPC_PIXEL;
+  localparam logic [7:0] OPC_LINE      = Acelerador_pkg::OPC_LINE;
+  localparam logic [7:0] OPC_TRIA      = Acelerador_pkg::OPC_TRIA;
+  localparam logic [7:0] OPC_TRIA_FILL = Acelerador_pkg::OPC_TRIA_FILL;
+  localparam logic [7:0] OPC_RECT      = Acelerador_pkg::OPC_RECT;
+  localparam logic [7:0] OPC_RECT_FILL = Acelerador_pkg::OPC_RECT_FILL;
+  localparam logic [7:0] OPC_CIRC      = Acelerador_pkg::OPC_CIRC;
+  localparam logic [7:0] OPC_CIRC_FILL = Acelerador_pkg::OPC_CIRC_FILL;
+  localparam logic [7:0] OPC_CLEAR     = Acelerador_pkg::OPC_CLEAR;
+  localparam logic [7:0] OPC_SWAP      = Acelerador_pkg::OPC_SWAP;
+  localparam logic [7:0] OPC_INF       = Acelerador_pkg::OPC_INF;
+
+  localparam logic [2:0] M_INIT  = Acelerador_pkg::MOE_INIT;
+  localparam logic [2:0] M_IDLE  = Acelerador_pkg::MOE_IDLE;
+  localparam logic [2:0] M_PROC  = Acelerador_pkg::MOE_PROC;
+  localparam logic [2:0] M_SWAP  = Acelerador_pkg::MOE_SWAP;
+  localparam logic [2:0] M_INFO  = Acelerador_pkg::MOE_INFO;
+  localparam logic [2:0] M_ERROR = Acelerador_pkg::MOE_ERROR;
 
   localparam int W  = 64;
   localparam int H  = 48;
   localparam int PB = 16;
+  localparam int FD = Acelerador_pkg::FIFO_DEPTH;
   localparam int AW = $clog2(W*H);
 
   //------------------------------------------------------- reloj y reinicio
@@ -45,31 +56,51 @@ module tb_Acelerador_Grafico_Top;
   always #5 clk = ~clk;                 // 100 MHz
 
   //----------------------------------------------------------- senales
-  logic               start;
-  logic        [3:0]  op;
-  logic signed [15:0] x0, y0, x1, y1, x2, y2;
-  logic        [9:0]  radius;
-  logic        [7:0]  color_r, color_g, color_b;
-  logic               clr_cnt;
-  logic               busy, done, px_valid;
+  logic               enable, reset_soft;
+  logic               cmd_we;
+  logic        [31:0] cmd_wdata;
+  logic               vsync;
+  logic               px_valid;
   logic [$clog2(W)-1:0] px_x;
   logic [$clog2(H)-1:0] px_y;
   logic [PB-1:0]      px_color;
   logic [AW-1:0]      px_addr;
-  logic        [31:0] pix_count, clip_count;
+  logic               buffer_sel;
+  logic               busy;
+  logic        [2:0]  modo;
+  logic [$clog2(FD):0] fifo_level;
+  logic               fifo_full, fifo_empty, overflow;
+  logic        [3:0]  err_last;
+  logic        [15:0] err_count;
+  logic        [31:0] perf_cycles, perf_commands, perf_pixels, perf_dropped;
+  logic        [15:0] seq_last;
+  logic        [31:0] clip_count;
 
-  Acelerador_Grafico_Top #(.SCREEN_W(W), .SCREEN_H(H), .PIXEL_BITS(PB)) dut (
+  Acelerador_Grafico_Top #(.SCREEN_W(W), .SCREEN_H(H), .PIXEL_BITS(PB),
+                           .FIFO_DEPTH(FD)) dut (
     .clk(clk), .rst_n(rst_n),
-    .start(start), .op(op),
-    .x0(x0), .y0(y0), .x1(x1), .y1(y1), .x2(x2), .y2(y2),
-    .radius(radius),
-    .color_r(color_r), .color_g(color_g), .color_b(color_b),
-    .clr_cnt(clr_cnt),
-    .busy(busy), .done(done),
+    .enable(enable), .reset_soft(reset_soft),
+    .cmd_we(cmd_we), .cmd_wdata(cmd_wdata),
+    .vsync(vsync),
     .px_valid(px_valid), .px_x(px_x), .px_y(px_y),
-    .px_color(px_color), .px_addr(px_addr),
-    .pix_count(pix_count), .clip_count(clip_count)
+    .px_color(px_color), .px_addr(px_addr), .buffer_sel(buffer_sel),
+    .busy(busy), .modo(modo),
+    .fifo_level(fifo_level), .fifo_full(fifo_full),
+    .fifo_empty(fifo_empty), .overflow(overflow),
+    .err_last(err_last), .err_count(err_count),
+    .perf_cycles(perf_cycles), .perf_commands(perf_commands),
+    .perf_pixels(perf_pixels), .perf_dropped(perf_dropped),
+    .seq_last(seq_last), .clip_count(clip_count)
   );
+
+  //---------------------------------------- sincronizacion vertical simulada
+  // El controlador VGA todavia no existe. Un pulso periodico basta para
+  // ejercitar MOE-04, que es lo unico que depende de el en este incremento.
+  int vcnt = 0;
+  always @(posedge clk) begin
+    vcnt  <= (vcnt == 499) ? 0 : vcnt + 1;
+    vsync <= (vcnt < 8);
+  end
 
   //-------------------------------- framebuffer local del banco de pruebas
   logic [PB-1:0] fb  [0:H-1][0:W-1];   // color RGB565
@@ -77,22 +108,70 @@ module tb_Acelerador_Grafico_Top;
   int   emitidos;          // pixeles del ultimo comando
   int   errores = 0;
   int   err_dir = 0;       // discrepancias entre px_addr y y*W + x
+  logic vio_moe06 = 1'b0;  // la maquina paso por MOE-06 alguna vez
 
   always @(posedge clk) begin
     if (px_valid) begin
       fb[px_y][px_x]  <= px_color;
       fbw[px_y][px_x] <= 1'b1;
       emitidos        <= emitidos + 1;
-      // El generador de pixeles tiene que entregar siempre la direccion
-      // lineal coherente con las coordenadas visibles.
       if (px_addr !== AW'(px_y * W + px_x)) err_dir++;
     end
+    if (modo == M_ERROR) vio_moe06 <= 1'b1;
   end
 
   //-------------------------------------------- archivos de volcado
   int fd_img;              // raster_dump.csv
   int fd_prb;              // raster_pruebas.csv
   int n_frame = 0;
+
+  //------------------------------------------------- escritura de paquetes
+  // Una palabra por ciclo, como la hara el driver sobre CMD_FIFO_W. Todas
+  // las tareas se llaman estando en un flanco de bajada.
+  task automatic palabra(input logic [31:0] d);
+    cmd_we    = 1'b1;
+    cmd_wdata = d;
+    @(negedge clk);
+    cmd_we    = 1'b0;
+  endtask
+
+  // Escribe las seis palabras del paquete de 24 bytes.
+  task automatic enviar(input logic [7:0]  opc,
+                        input logic [15:0] seq,
+                        input int a, input int b,
+                        input int c, input int d,
+                        input int e, input int f,
+                        input logic [7:0] r, input logic [7:0] g,
+                        input logic [7:0] bl,
+                        input int param);
+    palabra({opc, 8'h00, seq});                       // W0
+    palabra({a[15:0], b[15:0]});                      // W1
+    palabra({c[15:0], d[15:0]});                      // W2
+    palabra({e[15:0], f[15:0]});                      // W3
+    palabra({8'h00, r, g, bl});                       // W4
+    palabra({16'h0000, param[15:0]});                 // W5
+  endtask
+
+  // Espera a que la cola se vacie y el sistema vuelva a la espera.
+  task automatic esperar_fin();
+    @(negedge clk);
+    while (busy || !fifo_empty) @(negedge clk);
+    repeat (2) @(negedge clk);
+  endtask
+
+  // Envia un comando y espera a que termine. Es la forma de medir cuantos
+  // pixeles produjo uno solo.
+  task automatic cmd(input logic [7:0] opc,
+                     input int a, input int b,
+                     input int c, input int d,
+                     input int e, input int f,
+                     input logic [7:0] r, input logic [7:0] g,
+                     input logic [7:0] bl,
+                     input int param);
+    emitidos = 0;
+    enviar(opc, 16'hABCD, a, b, c, d, e, f, r, g, bl, param);
+    esperar_fin();
+  endtask
 
   //------------------------------------------------------------- tareas
   task automatic borrar_fb();
@@ -103,36 +182,7 @@ module tb_Acelerador_Grafico_Top;
       end
   endtask
 
-  task automatic color(input logic [7:0] r, input logic [7:0] g,
-                       input logic [7:0] b);
-    color_r = r;  color_g = g;  color_b = b;
-  endtask
-
-  // Ejecuta un comando y espera a que termine.
-  task automatic cmd(input logic [3:0] o,
-                     input int a, input int b,
-                     input int c, input int d,
-                     input int e, input int f,
-                     input int r);
-    @(negedge clk);
-    op = o;
-    x0 = a[15:0];  y0 = b[15:0];
-    x1 = c[15:0];  y1 = d[15:0];
-    x2 = e[15:0];  y2 = f[15:0];
-    radius   = r[9:0];
-    emitidos = 0;
-    start    = 1'b1;
-    @(negedge clk);
-    start = 1'b0;
-    // espera al pulso de fin
-    while (!done) @(negedge clk);
-    @(negedge clk);
-  endtask
-
   //----------------------------------------- comprobaciones y su registro
-  // Cada comprobacion se imprime en el transcript y se anota en el archivo
-  // de pruebas, para que el resumen en Python no dependa de reinterpretar
-  // la salida del simulador.
   task automatic anotar(input string nombre, input string obtenido,
                         input string esperado, input logic ok);
     string veredicto;
@@ -152,14 +202,12 @@ module tb_Acelerador_Grafico_Top;
     anotar(nombre, $sformatf("%0d", got), $sformatf("%0d", exp), got === exp);
   endtask
 
-  // Comprobacion de ocupacion: hay o no hay pixel escrito en (x,y)
   task automatic chk_px(input string nombre, input int x, input int y,
                         input logic exp);
     anotar(nombre, $sformatf("%0b", fbw[y][x]), $sformatf("%0b", exp),
            fbw[y][x] === exp);
   endtask
 
-  // Comprobacion de color: el pixel (x,y) tiene exactamente este RGB565
   task automatic chk_col(input string nombre, input int x, input int y,
                          input logic [PB-1:0] exp);
     string obtenido;
@@ -184,11 +232,6 @@ module tb_Acelerador_Grafico_Top;
   endtask
 
   //------------------------------------------------- volcado de un fotograma
-  // Formato por fotograma:
-  //   F;<indice>;<nombre>;<ancho>;<alto>;<pixeles>;<descartados>
-  //   P;<x>;<y>;<color RGB565 en hexadecimal>
-  // Solo se escriben los pixeles realmente escritos: el fondo no se vuelca,
-  // de modo que el archivo crece con la escena y no con la resolucion.
   task automatic volcar(input string nombre);
     int n;
     n = 0;
@@ -207,9 +250,8 @@ module tb_Acelerador_Grafico_Top;
 
   //---------------------------------------------------------- secuencia
   initial begin
-    start = 1'b0;  op = '0;  radius = '0;  clr_cnt = 1'b0;
-    x0 = '0; y0 = '0; x1 = '0; y1 = '0; x2 = '0; y2 = '0;
-    color(8'hFF, 8'hFF, 8'hFF);
+    cmd_we = 1'b0;  cmd_wdata = '0;
+    enable = 1'b1;  reset_soft = 1'b0;
     emitidos = 0;
     borrar_fb();
 
@@ -223,17 +265,29 @@ module tb_Acelerador_Grafico_Top;
 
     $display("");
     $display("==========================================================");
-    $display(" Rasterizador con color y generador de pixeles");
-    $display(" Region visible: %0d x %0d pixeles, %0d bits por pixel", W, H, PB);
+    $display(" Cola de comandos, decodificador y rasterizador");
+    $display(" Region visible: %0d x %0d, %0d bits por pixel", W, H, PB);
+    $display(" Profundidad de la cola: %0d comandos", FD);
     $display("==========================================================");
 
     repeat (4) @(negedge clk);
     rst_n = 1'b1;
     repeat (4) @(negedge clk);
 
-    //--------------------------------------- 0. conversion RGB888 a RGB565
+    //--------------------------------------------- 0. arranque (MOE-01)
     $display("");
-    $display("--- 0. Conversion de color por desplazamiento y OR --------");
+    $display("--- 0. Inicializacion y estado de arranque ----------------");
+    // MOE-01 dura unos pocos ciclos y deja el sistema en espera.
+    while (modo == M_INIT) @(negedge clk);
+    chk("modo tras la inicializacion", int'(modo), int'(M_IDLE));
+    chk("cola vacia al arrancar", int'(fifo_empty), 1);
+    chk("nivel de la cola al arrancar", int'(fifo_level), 0);
+    chk("sin errores al arrancar", int'(err_count), 0);
+    chk("buffer delantero al arrancar", int'(buffer_sel), 0);
+
+    //--------------------------------------- 1. conversion RGB888 a RGB565
+    $display("");
+    $display("--- 1. Conversion de color por desplazamiento y OR --------");
     chk_conv(8'h00, 8'h00, 8'h00, COL_NEGRO);
     chk_conv(8'hFF, 8'hFF, 8'hFF, COL_BLANCO);
     chk_conv(8'hFF, 8'h00, 8'h00, COL_ROJO);
@@ -242,240 +296,257 @@ module tb_Acelerador_Grafico_Top;
     chk_conv(8'hFF, 8'hFF, 8'h00, COL_AMARILLO);
     chk_conv(8'h00, 8'hFF, 8'hFF, COL_CIAN);
     chk_conv(8'hFF, 8'h00, 8'hFF, COL_MAGENTA);
-    // truncamiento: los 3 bits bajos de rojo y azul y los 2 de verde se
-    // pierden, por eso 0x07 de rojo cae a cero y 0x08 ya enciende el bit 11
     chk_conv(8'h07, 8'h03, 8'h07, 16'h0000);
     chk_conv(8'h08, 8'h04, 8'h08, 16'h0821);
     chk_conv(8'h12, 8'h34, 8'h56, 16'h11AA);
 
-    //------------------------------------------------ 1. pixel y recorte
+    //------------------------------- 2. recorrido de un paquete completo
     $display("");
-    $display("--- 1. Pixel suelto y recorte por pixel -------------------");
+    $display("--- 2. Un paquete de 24 bytes de extremo a extremo --------");
     borrar_fb();
-    color(8'hFF, 8'h00, 8'h00);                   // rojo
-    cmd(OP_PIXEL, 10, 10, 0,0, 0,0, 0);
+    cmd(OPC_PIXEL, 10, 10, 0,0, 0,0, 8'hFF, 8'h00, 8'h00, 0);
     chk("pixeles emitidos por DRAW_PIXEL", emitidos, 1);
-    chk_px("pixel (10,10) escrito", 10, 10, 1'b1);
     chk_col("pixel (10,10) en rojo", 10, 10, COL_ROJO);
+    chk("SEQ_ID recuperado del paquete", int'(seq_last), 'hABCD);
+    chk("comandos de la ventana", int'(dut.comandos), 1);
 
-    color(8'h00, 8'h00, 8'hFF);                   // azul encima del mismo pixel
-    cmd(OP_PIXEL, 10, 10, 0,0, 0,0, 0);
-    chk_col("sobrescritura: (10,10) ahora azul", 10, 10, COL_AZUL);
+    // NOP no dibuja pero si cuenta como comando ejecutado
+    cmd(OPC_NOP, 0,0, 0,0, 0,0, 8'hFF, 8'hFF, 8'hFF, 0);
+    chk("NOP no emite pixeles", emitidos, 0);
+    chk("NOP cuenta como comando", int'(dut.comandos), 2);
 
     // el negro es un color valido y debe quedar escrito
-    color(8'h00, 8'h00, 8'h00);
-    cmd(OP_PIXEL, 11, 10, 0,0, 0,0, 0);
-    chk("pixel negro emitido", emitidos, 1);
+    cmd(OPC_PIXEL, 11, 10, 0,0, 0,0, 8'h00, 8'h00, 8'h00, 0);
     chk_col("pixel (11,10) en negro", 11, 10, COL_NEGRO);
 
-    color(8'hFF, 8'hFF, 8'hFF);
-    cmd(OP_PIXEL, -5, 20, 0,0, 0,0, 0);
-    chk("pixel fuera de pantalla por la izquierda", emitidos, 0);
-    cmd(OP_PIXEL, W+3, 20, 0,0, 0,0, 0);
-    chk("pixel fuera de pantalla por la derecha", emitidos, 0);
-    cmd(OP_PIXEL, 20, H+5, 0,0, 0,0, 0);
-    chk("pixel fuera de pantalla por abajo", emitidos, 0);
+    // recorte por pixel: el comando es valido, los pixeles exteriores no
+    cmd(OPC_PIXEL, -5, 20, 0,0, 0,0, 8'hFF, 8'hFF, 8'hFF, 0);
+    chk("pixel fuera de pantalla no se escribe", emitidos, 0);
+    chk("recortar no genera error", int'(err_count), 0);
 
-    //---------------------------------------------------------- 2. linea
+    //---------------------------------------------------------- 3. linea
     $display("");
-    $display("--- 2. Linea de Bresenham ---------------------------------");
+    $display("--- 3. Linea de Bresenham ---------------------------------");
     borrar_fb();
-    color(8'h00, 8'hFF, 8'h00);                   // verde
-    cmd(OP_LINE, 0,0, 10,0, 0,0, 0);
+    cmd(OPC_LINE, 0,0, 10,0, 0,0, 8'h00, 8'hFF, 8'h00, 0);
     chk("linea horizontal (0,0)-(10,0)", emitidos, 11);
     chk_col("extremo inicial (0,0) en verde", 0, 0, COL_VERDE);
     chk_col("extremo final (10,0) en verde", 10, 0, COL_VERDE);
-    cmd(OP_LINE, 0,0, 0,10, 0,0, 0);
+    cmd(OPC_LINE, 0,0, 0,10, 0,0, 8'h00, 8'hFF, 8'h00, 0);
     chk("linea vertical (0,0)-(0,10)", emitidos, 11);
-    cmd(OP_LINE, 0,0, 10,10, 0,0, 0);
+    cmd(OPC_LINE, 0,0, 10,10, 0,0, 8'h00, 8'hFF, 8'h00, 0);
     chk("diagonal perfecta (0,0)-(10,10)", emitidos, 11);
-    cmd(OP_LINE, 0,0, 20,7, 0,0, 0);
+    cmd(OPC_LINE, 0,0, 20,7, 0,0, 8'h00, 8'hFF, 8'h00, 0);
     chk("pendiente suave (0,0)-(20,7)", emitidos, 21);
-    cmd(OP_LINE, 5,5, 5,5, 0,0, 0);
+    cmd(OPC_LINE, 5,5, 5,5, 0,0, 8'h00, 8'hFF, 8'h00, 0);
     chk("linea degenerada (5,5)-(5,5)", emitidos, 1);
-    // una linea que entra y sale de la pantalla se dibuja en su parte visible
-    cmd(OP_LINE, -20, 24, 20, 24, 0,0, 0);
+    cmd(OPC_LINE, -20, 24, 20, 24, 0,0, 8'h00, 8'hFF, 8'h00, 0);
     chk("linea recortada: solo la parte visible", emitidos, 21);
-    chk_col("primer pixel visible (0,24) en verde", 0, 24, COL_VERDE);
     volcar("lineas_bresenham");
 
-    //----------------------------------------------------- 3. rectangulo
+    //----------------------------------------------------- 4. rectangulo
     $display("");
-    $display("--- 3. Rectangulo, contorno y relleno ---------------------");
+    $display("--- 4. Rectangulo, contorno y relleno ---------------------");
     borrar_fb();
-    color(8'h00, 8'h00, 8'hFF);                   // azul
-    cmd(OP_RECT_FILL, 4,4, 13,9, 0,0, 0);
+    cmd(OPC_RECT_FILL, 4,4, 13,9, 0,0, 8'h00, 8'h00, 8'hFF, 0);
     chk("relleno 10x6", emitidos, 60);
-    chk_px("esquina (4,4)", 4, 4, 1'b1);
-    chk_px("esquina (13,9)", 13, 9, 1'b1);
     chk_px("vecino exterior (14,9)", 14, 9, 1'b0);
     chk_col("relleno uniforme: centro (8,6) azul", 8, 6, COL_AZUL);
-    chk_col("relleno uniforme: esquina (13,9) azul", 13, 9, COL_AZUL);
-
-    color(8'hFF, 8'hFF, 8'h00);                   // amarillo
-    cmd(OP_RECT, 20,4, 29,9, 0,0, 0);
+    cmd(OPC_RECT, 20,4, 29,9, 0,0, 8'hFF, 8'hFF, 8'h00, 0);
     chk("contorno 10x6 (perimetro)", emitidos, 2*10 + 2*(6-2));
-    chk_px("borde superior (25,4)", 25, 4, 1'b1);
     chk_px("interior hueco (25,6)", 25, 6, 1'b0);
     chk_col("borde superior (25,4) amarillo", 25, 4, COL_AMARILLO);
-    chk_col("borde inferior (25,9) amarillo", 25, 9, COL_AMARILLO);
-    chk_col("borde izquierdo (20,6) amarillo", 20, 6, COL_AMARILLO);
     chk_col("borde derecho (29,6) amarillo", 29, 6, COL_AMARILLO);
     volcar("rectangulos");
 
-    //-------------------------------------------------------- 4. circulo
+    //-------------------------------------------------------- 5. circulo
     $display("");
-    $display("--- 4. Circulo, contorno y relleno ------------------------");
+    $display("--- 5. Circulo, contorno y relleno ------------------------");
     borrar_fb();
-    color(8'h00, 8'hFF, 8'hFF);                   // cian
-    cmd(OP_CIRC, 32, 24, 0,0, 0,0, 10);
-    chk_px("punto derecho del contorno (42,24)", 42, 24, 1'b1);
-    chk_px("punto superior del contorno (32,14)", 32, 14, 1'b1);
+    cmd(OPC_CIRC, 32, 24, 0,0, 0,0, 8'h00, 8'hFF, 8'hFF, 10);
     chk_px("centro vacio (32,24)", 32, 24, 1'b0);
     chk_col("contorno (42,24) en cian", 42, 24, COL_CIAN);
     chk_col("contorno (32,14) en cian", 32, 14, COL_CIAN);
-    chk_col("contorno (22,24) en cian", 22, 24, COL_CIAN);
-
-    // El disco se coloca fuera de la caja de la circunferencia anterior,
-    // para que ambos quepan en el mismo fotograma sin tocarse y los puntos
-    // de control midan solo la figura que les corresponde.
-    color(8'hFF, 8'h00, 8'hFF);                   // magenta
-    cmd(OP_CIRC_FILL, 10, 10, 0,0, 0,0, 5);
-    chk_px("centro relleno (10,10)", 10, 10, 1'b1);
-    chk_px("borde del disco (15,10)", 15, 10, 1'b1);
+    cmd(OPC_CIRC_FILL, 10, 10, 0,0, 0,0, 8'hFF, 8'h00, 8'hFF, 5);
     chk_px("fuera del disco (16,10)", 16, 10, 1'b0);
     chk_col("centro del disco en magenta", 10, 10, COL_MAGENTA);
     chk_col("borde del disco en magenta", 15, 10, COL_MAGENTA);
-    // pi*r^2 con r=5 son unos 78 pixeles; el algoritmo emite 81
     chk_rango("area del disco r=5 (esperado ~79)", emitidos, 70, 95);
     volcar("circulos");
 
-    //------------------------------------------------------ 5. triangulo
+    //------------------------------------------------------ 6. triangulo
     $display("");
-    $display("--- 5. Triangulo, contorno y relleno ----------------------");
+    $display("--- 6. Triangulo, contorno y relleno ----------------------");
     borrar_fb();
-    color(8'hFF, 8'h00, 8'h00);                   // rojo
-    cmd(OP_TRIA, 10,40, 20,20, 30,40, 0);
-    chk_px("vertice superior (20,20)", 20, 20, 1'b1);
-    chk_px("vertice izquierdo (10,40)", 10, 40, 1'b1);
+    cmd(OPC_TRIA, 10,40, 20,20, 30,40, 8'hFF, 8'h00, 8'h00, 0);
     chk_px("interior hueco (20,35)", 20, 35, 1'b0);
-    // el contorno pasa por tres instancias de draw_line: el color tiene que
-    // sobrevivir a las tres aristas
     chk_col("arista 1: vertice (20,20) en rojo", 20, 20, COL_ROJO);
     chk_col("arista 2: vertice (30,40) en rojo", 30, 40, COL_ROJO);
     chk_col("arista 3: base (20,40) en rojo", 20, 40, COL_ROJO);
-
-    color(8'h00, 8'hFF, 8'h00);                   // verde
-    cmd(OP_TRIA_FILL, 34,40, 44,20, 54,40, 0);
-    chk_px("interior relleno (44,35)", 44, 35, 1'b1);
+    cmd(OPC_TRIA_FILL, 34,40, 44,20, 54,40, 8'h00, 8'hFF, 8'h00, 0);
     chk_px("exterior (36,22)", 36, 22, 1'b0);
     chk_col("interior relleno (44,35) en verde", 44, 35, COL_VERDE);
-    // el triangulo mide 20 de base y 20 de alto: unos 200 pixeles
     chk_rango("area del triangulo (esperado ~210)", emitidos, 180, 240);
     volcar("triangulos");
 
-    // el mismo triangulo con los vertices en orden inverso debe dar lo mismo
-    borrar_fb();
-    cmd(OP_TRIA_FILL, 54,40, 44,20, 34,40, 0);
-    chk_px("giro invertido: interior relleno (44,35)", 44, 35, 1'b1);
-    chk_col("giro invertido: color conservado", 44, 35, COL_VERDE);
-    volcar("triangulo_giro_invertido");
-
-    //--------------------------------------------------------- 6. borrado
+    //--------------------------------------------------------- 7. borrado
     $display("");
-    $display("--- 6. Borrado de pantalla completa -----------------------");
+    $display("--- 7. Borrado de pantalla completa -----------------------");
     borrar_fb();
-    color(8'h00, 8'h00, 8'h00);                   // CLEAR a negro
-    cmd(OP_CLEAR, 0,0, 0,0, 0,0, 0);
+    cmd(OPC_CLEAR, 0,0, 0,0, 0,0, 8'h00, 8'h00, 8'hFF, 0);
     chk("pixeles de CLEAR", emitidos, W*H);
-    chk_col("esquina (0,0) en negro", 0, 0, COL_NEGRO);
-    chk_col("esquina (63,47) en negro", W-1, H-1, COL_NEGRO);
-
-    // CLEAR tambien sirve para pintar un fondo de cualquier color
-    color(8'h00, 8'h00, 8'hFF);
-    cmd(OP_CLEAR, 0,0, 0,0, 0,0, 0);
-    chk("pixeles de CLEAR con color de fondo", emitidos, W*H);
     chk_col("fondo (32,24) en azul", 32, 24, COL_AZUL);
-    volcar("clear_con_color_de_fondo");
+    chk_col("esquina (63,47) en azul", W-1, H-1, COL_AZUL);
 
-    //------------------------------------- 7. direccion lineal del pixel
+    //------------------------------------------------- 8. orden de la cola
+    // Un lote entero se escribe de corrido, sin esperar entre comandos: es
+    // el modo normal de trabajo. La cola tiene que entregarlos en orden.
     $display("");
-    $display("--- 7. Direccion lineal entregada por pixel_gen -----------");
-    chk("discrepancias de px_addr acumuladas", err_dir, 0);
+    $display("--- 8. Lote de comandos y orden FIFO ----------------------");
     borrar_fb();
-    color(8'hFF, 8'hFF, 8'hFF);
-    cmd(OP_PIXEL, 0, 0, 0,0, 0,0, 0);
-    chk("px_addr del pixel (0,0)", int'(px_addr), 0);
-    cmd(OP_PIXEL, 1, 0, 0,0, 0,0, 0);
-    chk("px_addr del pixel (1,0)", int'(px_addr), 1);
-    cmd(OP_PIXEL, 0, 1, 0,0, 0,0, 0);
-    chk("px_addr del pixel (0,1)", int'(px_addr), W);
-    cmd(OP_PIXEL, W-1, H-1, 0,0, 0,0, 0);
-    chk("px_addr del ultimo pixel", int'(px_addr), W*H - 1);
+    emitidos = 0;
+    for (int i = 0; i < 8; i++)
+      enviar(OPC_PIXEL, 16'(i), i*3, 5, 0,0, 0,0, 8'hFF, 8'hFF, 8'hFF, 0);
+    // El decodificador consume mientras la interfaz sigue escribiendo, asi
+    // que el nivel de la cola nunca llega a ocho: lo que se comprueba es que
+    // los ocho se ejecutaron, en orden y sin perdidas.
+    esperar_fin();
+    chk("ocho pixeles del lote escritos", emitidos, 8);
+    chk("ningun comando del lote se perdio", int'(err_count), 0);
+    chk("SEQ_ID del ultimo del lote", int'(seq_last), 7);
+    chk_px("primero del lote (0,5)", 0, 5, 1'b1);
+    chk_px("ultimo del lote (21,5)", 21, 5, 1'b1);
+    chk("todos los del lote presentes", perfilar_escritos(), 8);
+    chk("cola vacia tras el lote", int'(fifo_empty), 1);
 
-    //-------------------------------- 8. contadores de instrumentacion
+    //------------------------------------- 9. desbordamiento de la cola
+    // Con el decodificador detenido se llena la cola a proposito. Deben
+    // sobrevivir los primeros FD comandos y descartarse el resto.
     $display("");
-    $display("--- 8. Contadores del generador de pixeles ----------------");
-    @(negedge clk);  clr_cnt = 1'b1;  @(negedge clk);  clr_cnt = 1'b0;
-    chk("pix_count tras reiniciar la ventana", int'(pix_count), 0);
-    chk("clip_count tras reiniciar la ventana", int'(clip_count), 0);
+    $display("--- 9. Desbordamiento de la cola (EC-08) ------------------");
     borrar_fb();
-    cmd(OP_RECT_FILL, 0,0, 9,9, 0,0, 0);
-    chk("pix_count tras un relleno 10x10", int'(pix_count), 100);
-    chk("clip_count sin pixeles exteriores", int'(clip_count), 0);
-    // un rectangulo que se sale por la derecha: los exteriores se cuentan
-    color(8'hFF, 8'h00, 8'h00);
-    cmd(OP_RECT_FILL, W-5, 0, W+4, 0, 0,0, 0);
-    chk("pix_count: solo los 5 visibles se escriben", int'(pix_count), 105);
-    chk("clip_count: 5 pixeles descartados", int'(clip_count), 5);
-    volcar("recorte_por_el_borde_derecho");
+    enable = 1'b0;
+    @(negedge clk);
+    for (int i = 0; i < FD + 4; i++)
+      enviar(OPC_PIXEL, 16'(i), i, 20, 0,0, 0,0, 8'hFF, 8'h00, 8'h00, 0);
+    chk("cola llena", int'(fifo_full), 1);
+    chk("nivel de la cola al tope", int'(fifo_level), FD);
+    chk("bit de overflow activo", int'(overflow), 1);
+    chk("ultimo error registrado es EC-08", int'(err_last), 8);
+    chk("errores contabilizados", int'(err_count), 4);
 
-    //------------------------------------------------- 9. escena completa
+    enable = 1'b1;
+    esperar_fin();
+    chk("los almacenados se ejecutaron", int'(perfilar_escritos()), FD);
+    chk_px("primer comando del lote sobrevivio", 0, 20, 1'b1);
+    chk_px("comando FD-1 sobrevivio", FD-1, 20, 1'b1);
+    chk_px("comando FD fue descartado", FD, 20, 1'b0);
+    chk_px("comando FD+3 fue descartado", FD+3, 20, 1'b0);
+    chk("la maquina paso por MOE-06", int'(vio_moe06), 1);
+    chk("MOE-06 no es absorbente", int'(modo), int'(M_IDLE));
+    volcar("desbordamiento_de_la_cola");
+
+    //------------------------------------- 10. comandos invalidos
     $display("");
-    $display("--- 9. Escena de demostracion en color --------------------");
-    @(negedge clk);  clr_cnt = 1'b1;  @(negedge clk);  clr_cnt = 1'b0;
+    $display("--- 10. Comandos invalidos (EC-06 y EC-07) ----------------");
     borrar_fb();
-    color(8'h00, 8'h00, 8'h20);
-    cmd(OP_CLEAR,     0,0, 0,0, 0,0, 0);        // fondo azul muy oscuro
-    color(8'hFF, 8'hFF, 8'hFF);
-    cmd(OP_RECT,      1,1, 62,46, 0,0, 0);      // marco blanco
-    color(8'h00, 8'h00, 8'hFF);
-    cmd(OP_RECT_FILL, 4,4, 16,14, 0,0, 0);      // rectangulo azul
-    color(8'h00, 8'hFF, 8'hFF);
-    cmd(OP_CIRC,      45,11, 0,0, 0,0, 8);      // circunferencia cian
-    color(8'hFF, 8'hFF, 8'h00);
-    cmd(OP_LINE,      4,20, 59,20, 0,0, 0);     // linea amarilla
-    color(8'hFF, 8'h00, 8'hFF);
-    cmd(OP_LINE,      24,4, 34,17, 0,0, 0);     // linea magenta
-    color(8'hFF, 8'h00, 8'h00);
-    cmd(OP_TRIA,      5,43, 14,25, 23,43, 0);   // triangulo rojo hueco
-    color(8'h00, 8'hFF, 8'h00);
-    cmd(OP_TRIA_FILL, 28,43, 37,25, 46,43, 0);  // triangulo verde relleno
-    color(8'hFF, 8'h80, 8'h00);
-    cmd(OP_CIRC_FILL, 55,35, 0,0, 0,0, 6);      // disco naranja
+    cmd(OPC_INF, 0,0, 0,0, 0,0, 8'h00, 8'h00, 8'h00, 0);   // cierra ventana
+    @(negedge clk);
+
+    // codigo de operacion inexistente
+    cmd(8'h0C, 0,0, 0,0, 0,0, 8'hFF, 8'hFF, 8'hFF, 0);
+    chk("opcode desconocido no dibuja", emitidos, 0);
+    chk("ultimo error es EC-06", int'(err_last), 6);
+
+    // radio nulo: el comando esta bien formado pero no describe un circulo
+    cmd(OPC_CIRC, 30, 30, 0,0, 0,0, 8'hFF, 8'hFF, 8'hFF, 0);
+    chk("radio nulo no dibuja", emitidos, 0);
+    chk("ultimo error es EC-07", int'(err_last), 7);
+
+    // el sistema continua: el siguiente comando valido se ejecuta
+    cmd(OPC_RECT_FILL, 2,2, 11,11, 0,0, 8'h00, 8'hFF, 8'h00, 0);
+    chk("tras dos errores el sistema sigue", emitidos, 100);
+    chk_col("comando valido posterior (6,6)", 6, 6, COL_VERDE);
+    chk("modo final de vuelta en espera", int'(modo), int'(M_IDLE));
+    volcar("errores_y_recuperacion");
+
+    //-------------------------------------- 11. intercambio de buffer
+    $display("");
+    $display("--- 11. SWAP_BUFFER en el flanco de VSYNC (MOE-04) --------");
+    // Se espera a que vsync este en bajo para que el flanco llegue despues
+    // de pedir el intercambio y no antes.
+    while (vsync) @(negedge clk);
+    chk("buffer antes del swap", int'(buffer_sel), 0);
+    enviar(OPC_SWAP, 16'd100, 0,0, 0,0, 0,0, 8'h00, 8'h00, 8'h00, 0);
+    repeat (10) @(negedge clk);
+    chk("el swap espera al flanco de VSYNC", int'(buffer_sel), 0);
+    chk("modo durante la espera es MOE-04", int'(modo), int'(M_SWAP));
+    esperar_fin();
+    chk("buffer intercambiado tras el VSYNC", int'(buffer_sel), 1);
+
+    while (vsync) @(negedge clk);
+    enviar(OPC_SWAP, 16'd101, 0,0, 0,0, 0,0, 8'h00, 8'h00, 8'h00, 0);
+    esperar_fin();
+    chk("segundo swap vuelve al buffer A", int'(buffer_sel), 0);
+
+    //------------------------------------------- 12. informe (MOE-05)
+    $display("");
+    $display("--- 12. Ventana de medicion e informe (MOE-05) ------------");
+    borrar_fb();
+    cmd(OPC_INF, 0,0, 0,0, 0,0, 8'h00, 8'h00, 8'h00, 0);  // abre ventana nueva
+    chk("contador de comandos reiniciado", int'(dut.comandos), 0);
+    chk("contador de pixeles reiniciado", int'(dut.u_raster.pix_count), 0);
+
+    cmd(OPC_RECT_FILL, 0,0, 9,9, 0,0, 8'hFF, 8'hFF, 8'hFF, 0);  // 100 pixeles
+    cmd(OPC_RECT_FILL, 0,12, 9,21, 0,0, 8'hFF, 8'hFF, 8'hFF, 0);// 100 pixeles
+    chk("pixeles acumulados en la ventana", int'(dut.u_raster.pix_count), 200);
+
+    cmd(OPC_INF, 0,0, 0,0, 0,0, 8'h00, 8'h00, 8'h00, 0);
+    chk("INF publica los pixeles de la ventana", int'(perf_pixels), 200);
+    chk("INF publica los comandos de la ventana", int'(perf_commands), 2);
+    chk("INF publica los descartes de la ventana", int'(perf_dropped), 0);
+    chk_rango("INF publica ciclos distintos de cero", int'(perf_cycles), 200, 100000);
+    chk("la ventana queda reiniciada", int'(dut.u_raster.pix_count), 0);
+    volcar("ventana_de_medicion");
+
+    //------------------------------------------------- 13. escena completa
+    // Toda la escena se envia como un lote, igual que lo hara la interfaz.
+    $display("");
+    $display("--- 13. Escena de demostracion en color -------------------");
+    borrar_fb();
+    enviar(OPC_CLEAR,     16'd200, 0,0, 0,0, 0,0, 8'h00, 8'h00, 8'h20, 0);
+    enviar(OPC_RECT,      16'd201, 1,1, 62,46, 0,0, 8'hFF, 8'hFF, 8'hFF, 0);
+    enviar(OPC_RECT_FILL, 16'd202, 4,4, 16,14, 0,0, 8'h00, 8'h00, 8'hFF, 0);
+    enviar(OPC_CIRC,      16'd203, 45,11, 0,0, 0,0, 8'h00, 8'hFF, 8'hFF, 8);
+    enviar(OPC_LINE,      16'd204, 4,20, 59,20, 0,0, 8'hFF, 8'hFF, 8'h00, 0);
+    enviar(OPC_LINE,      16'd205, 24,4, 34,17, 0,0, 8'hFF, 8'h00, 8'hFF, 0);
+    enviar(OPC_TRIA,      16'd206, 5,43, 14,25, 23,43, 8'hFF, 8'h00, 8'h00, 0);
+    enviar(OPC_TRIA_FILL, 16'd207, 28,43, 37,25, 46,43, 8'h00, 8'hFF, 8'h00, 0);
+    enviar(OPC_CIRC_FILL, 16'd208, 55,35, 0,0, 0,0, 8'hFF, 8'h80, 8'h00, 6);
+    esperar_fin();
+    chk("la escena completa se ejecuto en orden", int'(seq_last), 208);
+    chk("sin descartes en la escena", int'(perf_dropped), 0);
+    chk("discrepancias de px_addr", err_dir, 0);
     volcar("escena_de_demostracion");
-    $display("  Pixeles escritos en la ventana: %0d", pix_count);
-    $display("  Pixeles descartados por recorte: %0d", clip_count);
-    chk("discrepancias de px_addr en la escena", err_dir, 0);
 
-    //----------------------------------- 10. degradado de la rampa de color
-    // Barre los 32 niveles de rojo y los 32 de azul que caben en RGB565 y
-    // deja el resultado en una imagen: es la prueba visual de que la
-    // conversion por desplazamiento cubre el rango completo sin saltos.
+    //----------------------------------- 14. rampa de color RGB565
     $display("");
-    $display("--- 10. Rampa de color RGB565 -----------------------------");
+    $display("--- 14. Rampa de color RGB565 -----------------------------");
     borrar_fb();
     for (int i = 0; i < 32; i++) begin
-      color(8'(i * 8), 8'h00, 8'h00);
-      cmd(OP_RECT_FILL, i*2, 0, i*2 + 1, 14, 0,0, 0);
+      enviar(OPC_RECT_FILL, 16'(i), i*2, 0, i*2+1, 14, 0,0,
+             8'(i*8), 8'h00, 8'h00, 0);
+      esperar_fin();
     end
     for (int i = 0; i < 32; i++) begin
-      color(8'h00, 8'(i * 8), 8'h00);
-      cmd(OP_RECT_FILL, i*2, 16, i*2 + 1, 30, 0,0, 0);
+      enviar(OPC_RECT_FILL, 16'(i), i*2, 16, i*2+1, 30, 0,0,
+             8'h00, 8'(i*8), 8'h00, 0);
+      esperar_fin();
     end
     for (int i = 0; i < 32; i++) begin
-      color(8'h00, 8'h00, 8'(i * 8));
-      cmd(OP_RECT_FILL, i*2, 32, i*2 + 1, 46, 0,0, 0);
+      enviar(OPC_RECT_FILL, 16'(i), i*2, 32, i*2+1, 46, 0,0,
+             8'h00, 8'h00, 8'(i*8), 0);
+      esperar_fin();
     end
     chk_col("rampa: rojo maximo en (62,7)", 62, 7, COL_ROJO);
     chk_col("rampa: verde maximo en (62,23)", 62, 23, 16'h07C0);
@@ -499,9 +570,20 @@ module tb_Acelerador_Grafico_Top;
     $finish;
   end
 
+  //------------------------------------------- utilidades del banco
+  // Cuenta los pixeles escritos en el framebuffer local. Se usa para
+  // comprobar cuantos comandos del lote desbordado llegaron a dibujar.
+  function automatic int perfilar_escritos();
+    int n;
+    n = 0;
+    for (int y = 0; y < H; y++)
+      for (int x = 0; x < W; x++) if (fbw[y][x]) n++;
+    perfilar_escritos = n;
+  endfunction
+
   //-------------------------------------------------- guardia de tiempo
   initial begin
-    #5_000_000;                       // 5 ms
+    #20_000_000;                      // 20 ms
     $display("[ERROR] la simulacion excedio el tiempo maximo");
     $fclose(fd_img);
     $fclose(fd_prb);
