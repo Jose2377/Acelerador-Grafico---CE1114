@@ -4,8 +4,14 @@ module Acelerador_Grafico_Top #(
   parameter int PIXEL_BITS = Acelerador_pkg::PIXEL_BITS,
   parameter int FIFO_DEPTH = Acelerador_pkg::FIFO_DEPTH
 )(
+  // Dominio de rasterizado y SDRAM, 100 MHz
   input  logic               clk,
   input  logic               rst_n,
+
+  // Dominio de pixel, lo fija la temporizacion VGA. En la placa los dos
+  // relojes salen de un ALTPLL alimentado por el oscilador de 50 MHz.
+  input  logic               clk_pix,
+  input  logic               rst_pix_n,
 
   // Registro CONTROL (0x04)
   input  logic               enable,
@@ -16,8 +22,23 @@ module Acelerador_Grafico_Top #(
   input  logic               comand_w_ena,
   input  logic        [31:0] comand_w_data,
 
-  // Video
-  input  logic               vsync,
+  // Lectura del framebuffer por el barrido de video. 
+  // Va en el dominio de pixel y sale al exterior mientras no exista el gestor de framebuffer.
+  output logic                                   frame_buffer_req,
+  output logic [$clog2(SCREEN_W*SCREEN_H)-1:0]   frame_buffer_addr,
+  output logic                                   frame_buffer_front,
+  input  logic                                   frame_buffer_ready,
+  input  logic [PIXEL_BITS-1:0]                  frame_buffer_data_in,
+  input  logic                                   frame_buffer_valid_in,
+
+  // Salida de video hacia el conversor de la placa
+  output logic        [7:0]  vga_r, vga_g, vga_b,
+  output logic               vga_hs,
+  output logic               vga_vs,
+  output logic               vga_blank_n,
+  output logic               vga_sync_n,
+  output logic               vga_underrun,
+  output logic        [31:0] vga_frames,
 
   // Solicitud de pixel
   output logic               px_valid,
@@ -109,6 +130,7 @@ module Acelerador_Grafico_Top #(
   logic [7:0]  ras_r, ras_g, ras_b;
   logic        perf_latch, perf_clear, comand_tick;
   logic [31:0] comand_count;
+  logic        vsync_sys;             // VSYNC ya sincronizado
 
   decoder_fsm #(.SCREEN_W(SCREEN_W), .SCREEN_H(SCREEN_H)) u_decoder (
     .clk(clk), .rst_n(rst_n),
@@ -121,7 +143,7 @@ module Acelerador_Grafico_Top #(
     .ras_x2(ras_x2), .ras_y2(ras_y2), .ras_radius(ras_radius),
     .ras_r(ras_r), .ras_g(ras_g), .ras_b(ras_b),
     .ras_busy(ras_busy), .ras_done(ras_done),
-    .vsync(vsync), .buffer_sel(buffer_sel),
+    .vsync(vsync_sys), .buffer_sel(buffer_sel),
     .perf_latch(perf_latch), .perf_clear(perf_clear),
     .modo(modo), .busy(busy),
     .err_last(err_last), .err_count(err_count),
@@ -181,5 +203,38 @@ module Acelerador_Grafico_Top #(
       else if (fifo_drop)  descartes <= descartes + 32'd1;
     end
   end
+
+  // Sincronizador de relojes
+  logic front_buffer_pix;             // buffer_sel visto desde el dominio pixel
+  logic vsync_pix;                    // VSYNC activo en alto, dominio de pixel
+
+
+  sync2 #(.VALOR_RESET(1'b0)) u_sync_buffer (
+    .clk_dst(clk_pix), .rst_n(rst_pix_n),
+    .data_in(buffer_sel), .data_out(front_buffer_pix));
+
+  sync2 #(.VALOR_RESET(1'b0)) u_sync_vsync (
+    .clk_dst(clk), .rst_n(rst_n),
+    .data_in(vsync_pix), .data_out(vsync_sys));
+
+  // VGA controller
+  vga_controller #(
+    .H_VISIBLE(Acelerador_pkg::H_VISIBLE), .H_FRONT(Acelerador_pkg::H_FRONT),
+    .H_SYNC(Acelerador_pkg::H_SYNC),       .H_BACK(Acelerador_pkg::H_BACK),
+    .V_VISIBLE(Acelerador_pkg::V_VISIBLE), .V_FRONT(Acelerador_pkg::V_FRONT),
+    .V_SYNC(Acelerador_pkg::V_SYNC),       .V_BACK(Acelerador_pkg::V_BACK),
+    .H_POL(Acelerador_pkg::VGA_HS_POL),    .V_POL(Acelerador_pkg::VGA_VS_POL),
+    .PIXEL_BITS(PIXEL_BITS),
+    .LINES(Acelerador_pkg::LINE_BUF_LINES)
+  ) u_vga (
+    .clk_pix(clk_pix), .rst_n(rst_pix_n),
+    .front_buffer(front_buffer_pix),
+    .frame_buffer_req(frame_buffer_req), .frame_buffer_addr(frame_buffer_addr), .frame_buffer_front(fb_front),
+    .frame_buffer_ready(frame_buffer_ready), .frame_buffer_data_in(frame_buffer_data_in), .frame_buffer_valid_in(frame_buffer_valid_in),
+    .vga_r(vga_r), .vga_g(vga_g), .vga_b(vga_b),
+    .vga_hs(vga_hs), .vga_vs(vga_vs),
+    .vga_blank_n(vga_blank_n), .vga_sync_n(vga_sync_n),
+    .vsync_act(vsync_pix),
+    .underrun(vga_underrun), .frame_count(vga_frames));
 
 endmodule

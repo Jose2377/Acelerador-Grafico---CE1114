@@ -60,6 +60,10 @@ set_global_assignment -name SYSTEMVERILOG_FILE draw_line.sv
 set_global_assignment -name SYSTEMVERILOG_FILE clip_scissor.sv
 set_global_assignment -name SYSTEMVERILOG_FILE addr_calc.sv
 set_global_assignment -name SYSTEMVERILOG_FILE pixel_gen.sv
+set_global_assignment -name SYSTEMVERILOG_FILE sync2.sv
+set_global_assignment -name SYSTEMVERILOG_FILE vga_timing.sv
+set_global_assignment -name SYSTEMVERILOG_FILE line_buffer.sv
+set_global_assignment -name SYSTEMVERILOG_FILE vga_controller.sv
 set_global_assignment -name SYSTEMVERILOG_FILE tb_Acelerador_Grafico_Top.sv
 set_global_assignment -name PARTITION_NETLIST_TYPE SOURCE -section_id Top
 set_global_assignment -name PARTITION_FITTER_PRESERVATION_LEVEL PLACEMENT_AND_ROUTING -section_id Top

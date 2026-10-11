@@ -1,3 +1,4 @@
+`timescale 1ns / 1ps
 //=============================================================================
 // Acelerador_pkg.sv
 // Proyecto : Unidad de aceleracion grafica 2D  -  ITCR CE-1114
@@ -64,6 +65,65 @@ package Acelerador_pkg;
   // que el banco de pruebas pueda llenarla y provocar el desbordamiento en
   // un tiempo de simulacion razonable. Debe ser potencia de dos.
   parameter int FIFO_DEPTH = 16;
+
+  //------------------------------------------------------------ Relojes
+  // Dos dominios. El de rasterizado y SDRAM va a 100 MHz; el de pixel lo
+  // fija la temporizacion VGA. En la placa los produce un ALTPLL a partir
+  // del oscilador de 50 MHz.
+  parameter int SYS_CLK_HZ = 100_000_000;
+  parameter int PIX_CLK_HZ =  25_175_000;
+
+  //------------------------------------------------------- Framebuffer
+  // Bases de los dos buffers dentro de la SDRAM, en palabras de 16 bits.
+  // Un buffer de 640 x 480 ocupa 307 200 palabras, de modo que la
+  // separacion deja margen y mantiene las bases alineadas a potencia de
+  // dos, lo que reduce la suma de direccion a una concatenacion.
+  parameter int FB_BASE_A = 25'h000000;
+  parameter int FB_BASE_B = 25'h100000;
+
+  parameter int BURST_LEN      = 8;   // palabras por rafaga hacia la SDRAM
+  parameter int LINE_BUF_LINES = 4;   // lineas que el VGA lleva prellenadas
+
+  //------------------------------------- Temporizacion VESA 640 x 480 a 60 Hz
+  // 800 x 525 relojes de pixel por cuadro a 25,175 MHz dan 59,94 Hz. Los dos
+  // sincronismos son de polaridad negativa en este modo. Son los valores del
+  // sistema completo: cambiar SCREEN_W o SCREEN_H obliga a recalcular la
+  // temporizacion entera, por eso las dos tablas viven juntas.
+  parameter int VGA_H_VISIBLE = 640;
+  parameter int VGA_H_FRONT   =  16;
+  parameter int VGA_H_SYNC    =  96;
+  parameter int VGA_H_BACK    =  48;
+  parameter int VGA_V_VISIBLE = 480;
+  parameter int VGA_V_FRONT   =  10;
+  parameter int VGA_V_SYNC    =   2;
+  parameter int VGA_V_BACK    =  33;
+  parameter bit VGA_HS_POL    = 1'b0;   // nivel activo del pulso
+  parameter bit VGA_VS_POL    = 1'b0;
+
+  //------------------------- Temporizacion reducida del incremento actual
+  // Proporcional a la anterior para la region de 64 x 48. Conserva la
+  // estructura de porches, de modo que el banco de pruebas recorre el mismo
+  // camino logico en una fraccion del tiempo de simulacion.
+  //   total horizontal 80, total vertical 53
+  parameter int H_VISIBLE = SCREEN_W;   // 64
+  parameter int H_FRONT   = 2;
+  parameter int H_SYNC    = 10;
+  parameter int H_BACK    = 4;
+  parameter int V_VISIBLE = SCREEN_H;   // 48
+  parameter int V_FRONT   = 1;
+  parameter int V_SYNC    = 2;
+  parameter int V_BACK    = 2;
+
+  parameter int H_TOTAL = H_VISIBLE + H_FRONT + H_SYNC + H_BACK;
+  parameter int V_TOTAL = V_VISIBLE + V_FRONT + V_SYNC + V_BACK;
+
+  //------------------------------------- SDRAM IS42S16320D de la placa
+  // 32M x 16 en cuatro bancos: 13 bits de fila, 10 de columna, 2 de banco.
+  parameter int SD_ROW_BITS  = 13;
+  parameter int SD_COL_BITS  = 10;
+  parameter int SD_BANK_BITS =  2;
+  parameter int SD_DATA_BITS = 16;
+  parameter int SD_ADDR_BITS = SD_ROW_BITS + SD_COL_BITS + SD_BANK_BITS;  // 25
 
   //------------------------------------------------------- Codigos de error
   // EC-01 a EC-04 los emite la interfaz de comandos en el nivel 1 y nunca

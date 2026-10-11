@@ -68,7 +68,7 @@ module decoder_fsm #(
   assign comand_ready  = (st == Acelerador_pkg::MOE_PROC) && fifo_data_out_valid;
   assign err_opcode = comand_ready && !Acelerador_pkg::opcode_valido(comand_in.opcode);
   assign err_param  = comand_ready && !err_opcode && !parametros_validos(comand_in);
-  assign err_cmd    = err_opcode || err_param;
+  assign err_comand = err_opcode || err_param;
   assign err_inc    = {1'b0, err_comand} + {1'b0, fifo_drop};
 
   // err_last manda el error del comando, porque es el que lleva al sistema a MOE-06 en este instante. 

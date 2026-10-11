@@ -50,16 +50,35 @@ module tb_Acelerador_Grafico_Top;
   localparam int FD = Acelerador_pkg::FIFO_DEPTH;
   localparam int AW = $clog2(W*H);
 
-  //------------------------------------------------------- reloj y reinicio
+  //------------------------------------------------------- relojes y reinicio
+  // Dos dominios sin relacion de fase, como en la placa. El de pixel se
+  // elige deliberadamente con un periodo que no es multiplo entero del otro,
+  // para que los flancos caigan en todas las posiciones relativas posibles y
+  // los sincronizadores trabajen de verdad.
   logic clk = 1'b0;
   logic rst_n = 1'b0;
   always #5 clk = ~clk;                 // 100 MHz
 
+  logic clk_pix = 1'b0;
+  logic rst_pix_n = 1'b0;
+  always #19.7 clk_pix = ~clk_pix;      // 25,38 MHz, primo con el anterior
+
   //----------------------------------------------------------- senales
   logic               enable, reset_soft;
-  logic               cmd_we;
-  logic        [31:0] cmd_wdata;
-  logic               vsync;
+  logic               comand_w_ena;
+  logic        [31:0] comand_w_data;
+
+  // Puerto de lectura del framebuffer, atendido por el modelo del banco
+  logic               fb_req, fb_front, fb_ready, fb_valid_in;
+  logic [AW-1:0]      fb_addr;
+  logic [PB-1:0]      fb_data_in;
+
+  // Salida de video
+  logic        [7:0]  vga_r, vga_g, vga_b;
+  logic               vga_hs, vga_vs, vga_blank_n, vga_sync_n;
+  logic               vga_underrun;
+  logic        [31:0] vga_frames;
+
   logic               px_valid;
   logic [$clog2(W)-1:0] px_x;
   logic [$clog2(H)-1:0] px_y;
@@ -79,9 +98,15 @@ module tb_Acelerador_Grafico_Top;
   Acelerador_Grafico_Top #(.SCREEN_W(W), .SCREEN_H(H), .PIXEL_BITS(PB),
                            .FIFO_DEPTH(FD)) dut (
     .clk(clk), .rst_n(rst_n),
+    .clk_pix(clk_pix), .rst_pix_n(rst_pix_n),
     .enable(enable), .reset_soft(reset_soft),
-    .cmd_we(cmd_we), .cmd_wdata(cmd_wdata),
-    .vsync(vsync),
+    .comand_w_ena(comand_w_ena), .comand_w_data(comand_w_data),
+    .fb_req(fb_req), .fb_addr(fb_addr), .fb_front(fb_front),
+    .fb_ready(fb_ready), .fb_data_in(fb_data_in), .fb_valid_in(fb_valid_in),
+    .vga_r(vga_r), .vga_g(vga_g), .vga_b(vga_b),
+    .vga_hs(vga_hs), .vga_vs(vga_vs),
+    .vga_blank_n(vga_blank_n), .vga_sync_n(vga_sync_n),
+    .vga_underrun(vga_underrun), .vga_frames(vga_frames),
     .px_valid(px_valid), .px_x(px_x), .px_y(px_y),
     .px_color(px_color), .px_addr(px_addr), .buffer_sel(buffer_sel),
     .busy(busy), .modo(modo),
@@ -93,14 +118,180 @@ module tb_Acelerador_Grafico_Top;
     .seq_last(seq_last), .clip_count(clip_count)
   );
 
-  //---------------------------------------- sincronizacion vertical simulada
-  // El controlador VGA todavia no existe. Un pulso periodico basta para
-  // ejercitar MOE-04, que es lo unico que depende de el en este incremento.
-  int vcnt = 0;
+  //================================================ modelo del framebuffer
+  // Ocupa el lugar del gestor de framebuffer y del controlador de SDRAM,
+  // que todavia no existen. Dos buffers: el rasterizador escribe en el
+  // trasero, en el dominio de 100 MHz, y el barrido lee del delantero, en el
+  // dominio de pixel.
+  localparam int FB_LAT = 3;          // ciclos de latencia de lectura
+
+  logic [PB-1:0] mem_fb [0:1][0:W*H-1];
+
+  // Escritura: siempre al buffer trasero, que es el contrario del delantero.
   always @(posedge clk) begin
-    vcnt  <= (vcnt == 499) ? 0 : vcnt + 1;
-    vsync <= (vcnt < 8);
+    if (px_valid) mem_fb[~buffer_sel][px_addr] <= px_color;
   end
+
+  // Contencion simulada del arbitro: cada cierto tiempo la memoria deja de
+  // aceptar peticiones unos ciclos, como cuando atiende al rasterizador.
+  // Es lo que pone a prueba el margen del buffer de lineas.
+  int  arb_cnt = 0;
+  logic estancado;
+  always @(posedge clk_pix) arb_cnt <= (arb_cnt == 49) ? 0 : arb_cnt + 1;
+  assign estancado = (arb_cnt < 2);
+  assign fb_ready  = !estancado;
+
+  // Lectura con latencia: la peticion entra en una tuberia y el dato sale
+  // FB_LAT ciclos despues, en orden.
+  logic [PB-1:0] lat_data [0:FB_LAT-1];
+  logic          lat_val  [0:FB_LAT-1];
+
+  always @(posedge clk_pix) begin
+    for (int i = FB_LAT-1; i > 0; i--) begin
+      lat_data[i] <= lat_data[i-1];
+      lat_val[i]  <= lat_val[i-1];
+    end
+    lat_val[0]  <= fb_req && fb_ready;
+    lat_data[0] <= mem_fb[fb_front][fb_addr];
+  end
+
+  assign fb_data_in  = lat_data[FB_LAT-1];
+  assign fb_valid_in = lat_val[FB_LAT-1];
+
+  //================================================ captura de la salida VGA
+  // Reconstruye el cuadro a partir de lo que sale por el puerto de video, no
+  // de lo que escribio el rasterizador. Es la comprobacion de extremo a
+  // extremo: si el buffer de lineas o la temporizacion fallan, la imagen
+  // capturada no coincide con la rasterizada.
+  logic [PB-1:0] cap_fb [0:H-1][0:W-1];
+  int cap_x = 0, cap_y = 0;
+  int cap_pixeles = 0;
+  logic de_q, vs_q;
+
+  // De RGB888 de vuelta a RGB565 tomando los bits altos: es exacto, porque
+  // la expansion solo replico bits que ya estaban.
+  function automatic logic [PB-1:0] a565(input logic [7:0] r, g, b);
+    a565 = {r[7:3], g[7:2], b[7:3]};
+  endfunction
+
+  always @(posedge clk_pix) begin
+    de_q <= vga_blank_n;
+    vs_q <= vga_vs;
+
+    if (vga_blank_n) begin
+      if ((cap_y < H) && (cap_x < W)) begin
+        cap_fb[cap_y][cap_x] <= a565(vga_r, vga_g, vga_b);
+        cap_pixeles          <= cap_pixeles + 1;
+      end
+      cap_x <= cap_x + 1;
+    end
+
+    // Fin de linea visible
+    if (de_q && !vga_blank_n) begin
+      cap_x <= 0;
+      cap_y <= cap_y + 1;
+    end
+
+    // Flanco activo de VSYNC: empieza un cuadro nuevo
+    if ((vga_vs == Acelerador_pkg::VGA_VS_POL) &&
+        (vs_q  != Acelerador_pkg::VGA_VS_POL)) begin
+      cap_x <= 0;
+      cap_y <= 0;
+    end
+  end
+
+  //================================ medicion de la temporizacion VESA
+  // Instancia independiente del generador de temporizacion, con los valores
+  // del sistema completo. Su reloj no pretende ser 25,175 MHz: se elige
+  // rapido para que un cuadro entero quepa en poco tiempo de simulacion.
+  // Lo que se verifica es la estructura de los contadores contra la tabla.
+  logic vesa_clk = 1'b0;
+  always #0.25 vesa_clk = ~vesa_clk;   // 2 GHz: un cuadro entero cabe en 210 us
+
+  logic vesa_hs, vesa_vs, vesa_de, vesa_lfin, vesa_cini, vesa_vact;
+
+  vga_timing #(
+    .H_VISIBLE(Acelerador_pkg::VGA_H_VISIBLE),
+    .H_FRONT(Acelerador_pkg::VGA_H_FRONT),
+    .H_SYNC(Acelerador_pkg::VGA_H_SYNC),
+    .H_BACK(Acelerador_pkg::VGA_H_BACK),
+    .V_VISIBLE(Acelerador_pkg::VGA_V_VISIBLE),
+    .V_FRONT(Acelerador_pkg::VGA_V_FRONT),
+    .V_SYNC(Acelerador_pkg::VGA_V_SYNC),
+    .V_BACK(Acelerador_pkg::VGA_V_BACK),
+    .H_POL(Acelerador_pkg::VGA_HS_POL),
+    .V_POL(Acelerador_pkg::VGA_VS_POL)
+  ) u_vesa (
+    .clk_pix(vesa_clk), .rst_n(rst_n),
+    .hsync(vesa_hs), .vsync(vesa_vs), .de(vesa_de),
+    .pix_x(), .pix_y(),
+    .linea_fin(vesa_lfin), .cuadro_inicio(vesa_cini),
+    .vsync_act(vesa_vact));
+
+  int vesa_h_periodo = 0, vesa_hs_ancho = 0;
+  int vesa_v_periodo = 0, vesa_vs_ancho = 0;
+  int vesa_visibles  = 0;
+  logic vesa_hs_reposo = 1'b0, vesa_vs_reposo = 1'b0;
+
+  int vh = 0, vhs = 0, vl = 0, vls = 0, vvis = 0;
+  logic vesa_hs_q, vesa_vs_q, vesa_lfin_q;
+
+  always @(posedge vesa_clk) begin
+    vesa_hs_q   <= vesa_hs;
+    vesa_vs_q   <= vesa_vs;
+    vesa_lfin_q <= vesa_lfin;
+
+    // Periodo horizontal: entre dos flancos activos de HSYNC
+    vh <= vh + 1;
+    if (vesa_hs_q && !vesa_hs) begin        // flanco de bajada: pulso activo
+      vesa_h_periodo <= vh;
+      vh  <= 1;
+      vhs <= 1;
+    end else if (!vesa_hs) begin
+      vhs <= vhs + 1;
+    end else if (!vesa_hs_q && vesa_hs) begin
+      vesa_hs_ancho <= vhs;
+    end
+
+    // Periodo vertical, contado en lineas completas
+    if (vesa_hs_q && !vesa_hs) begin
+      vl <= vl + 1;
+      if (!vesa_vs) vls <= vls + 1;
+    end
+    if (vesa_vs_q && !vesa_vs) begin        // empieza el pulso vertical
+      vls <= 0;
+    end
+    if (!vesa_vs_q && vesa_vs) begin        // termina el pulso vertical
+      vesa_vs_ancho  <= vls;
+      vesa_v_periodo <= vl;
+      vesa_visibles  <= vvis;
+      vl   <= 0;
+      vvis <= 0;
+    end
+
+    if (vesa_de) vvis <= vvis + 1;
+
+    // Nivel en reposo: fuera del pulso la senal debe estar en alto
+    if (vesa_de) begin
+      vesa_hs_reposo <= vesa_hs;
+      vesa_vs_reposo <= vesa_vs;
+    end
+  end
+
+  task automatic borrar_captura();
+    for (int y = 0; y < H; y++)
+      for (int x = 0; x < W; x++) cap_fb[y][x] = '0;
+    cap_pixeles = 0;
+  endtask
+
+  // Espera a que termine el cuadro que se esta barriendo y se capture uno
+  // entero desde el principio.
+  task automatic capturar_cuadro();
+    @(negedge vga_vs);                  // sincroniza con el inicio de cuadro
+    @(posedge vga_vs);
+    borrar_captura();
+    @(negedge vga_vs);                  // cuadro completo capturado
+  endtask
 
   //-------------------------------- framebuffer local del banco de pruebas
   logic [PB-1:0] fb  [0:H-1][0:W-1];   // color RGB565
@@ -108,6 +299,8 @@ module tb_Acelerador_Grafico_Top;
   int   emitidos;          // pixeles del ultimo comando
   int   errores = 0;
   int   err_dir = 0;       // discrepancias entre px_addr y y*W + x
+  int   difs = 0;          // diferencias entre lo barrido y lo rasterizado
+  logic buffer_antes;      // buffer delantero antes de un intercambio
   logic vio_moe06 = 1'b0;  // la maquina paso por MOE-06 alguna vez
 
   always @(posedge clk) begin
@@ -129,10 +322,10 @@ module tb_Acelerador_Grafico_Top;
   // Una palabra por ciclo, como la hara el driver sobre CMD_FIFO_W. Todas
   // las tareas se llaman estando en un flanco de bajada.
   task automatic palabra(input logic [31:0] d);
-    cmd_we    = 1'b1;
-    cmd_wdata = d;
+    comand_w_ena  = 1'b1;
+    comand_w_data = d;
     @(negedge clk);
-    cmd_we    = 1'b0;
+    comand_w_ena  = 1'b0;
   endtask
 
   // Escribe las seis palabras del paquete de 24 bytes.
@@ -248,9 +441,24 @@ module tb_Acelerador_Grafico_Top;
     n_frame++;
   endtask
 
+  // Igual que el anterior pero con lo capturado del puerto de video, no con
+  // lo que emitio el rasterizador. Aqui si se vuelca el cuadro completo,
+  // porque el barrido entrega todos los pixeles, negros incluidos.
+  task automatic volcar_captura(input string nombre);
+    $fdisplay(fd_img, "F;%0d;%0s;%0d;%0d;%0d;%0d",
+              n_frame, nombre, W, H, W*H, 0);
+    for (int y = 0; y < H; y++)
+      for (int x = 0; x < W; x++)
+        $fdisplay(fd_img, "P;%0d;%0d;%04h", x, y, cap_fb[y][x]);
+
+    $display("  -> fotograma %0d volcado: %0s (barrido de video)",
+             n_frame, nombre);
+    n_frame++;
+  endtask
+
   //---------------------------------------------------------- secuencia
   initial begin
-    cmd_we = 1'b0;  cmd_wdata = '0;
+    comand_w_ena = 1'b0;  comand_w_data = '0;
     enable = 1'b1;  reset_soft = 1'b0;
     emitidos = 0;
     borrar_fb();
@@ -271,7 +479,8 @@ module tb_Acelerador_Grafico_Top;
     $display("==========================================================");
 
     repeat (4) @(negedge clk);
-    rst_n = 1'b1;
+    rst_n     = 1'b1;
+    rst_pix_n = 1'b1;
     repeat (4) @(negedge clk);
 
     //--------------------------------------------- 0. arranque (MOE-01)
@@ -475,7 +684,7 @@ module tb_Acelerador_Grafico_Top;
     $display("--- 11. SWAP_BUFFER en el flanco de VSYNC (MOE-04) --------");
     // Se espera a que vsync este en bajo para que el flanco llegue despues
     // de pedir el intercambio y no antes.
-    while (vsync) @(negedge clk);
+    while (dut.vsync_sys) @(negedge clk);
     chk("buffer antes del swap", int'(buffer_sel), 0);
     enviar(OPC_SWAP, 16'd100, 0,0, 0,0, 0,0, 8'h00, 8'h00, 8'h00, 0);
     repeat (10) @(negedge clk);
@@ -484,7 +693,7 @@ module tb_Acelerador_Grafico_Top;
     esperar_fin();
     chk("buffer intercambiado tras el VSYNC", int'(buffer_sel), 1);
 
-    while (vsync) @(negedge clk);
+    while (dut.vsync_sys) @(negedge clk);
     enviar(OPC_SWAP, 16'd101, 0,0, 0,0, 0,0, 8'h00, 8'h00, 8'h00, 0);
     esperar_fin();
     chk("segundo swap vuelve al buffer A", int'(buffer_sel), 0);
@@ -553,6 +762,68 @@ module tb_Acelerador_Grafico_Top;
     chk_col("rampa: azul maximo en (62,39)", 62, 39, COL_AZUL);
     chk_col("rampa: nivel cero en (0,7)", 0, 7, COL_NEGRO);
     volcar("rampa_de_color");
+
+    //--------------------------------- 15. temporizacion VESA 640x480 a 60 Hz
+    // El modulo de temporizacion se verifica contra la tabla del estandar con
+    // una instancia aparte, parametrizada con los valores del sistema
+    // completo. Su reloj en simulacion no guarda relacion con los 25,175 MHz
+    // de la placa: lo que se comprueba es la estructura de los contadores, y
+    // la frecuencia solo importa sobre el hardware.
+    $display("");
+    $display("--- 15. Temporizacion VESA 640 x 480 a 60 Hz --------------");
+    chk("periodo horizontal en relojes de pixel", vesa_h_periodo,
+        Acelerador_pkg::VGA_H_VISIBLE + Acelerador_pkg::VGA_H_FRONT +
+        Acelerador_pkg::VGA_H_SYNC    + Acelerador_pkg::VGA_H_BACK);
+    chk("ancho del pulso HSYNC", vesa_hs_ancho, Acelerador_pkg::VGA_H_SYNC);
+    chk("lineas por cuadro", vesa_v_periodo,
+        Acelerador_pkg::VGA_V_VISIBLE + Acelerador_pkg::VGA_V_FRONT +
+        Acelerador_pkg::VGA_V_SYNC    + Acelerador_pkg::VGA_V_BACK);
+    chk("ancho del pulso VSYNC en lineas", vesa_vs_ancho,
+        Acelerador_pkg::VGA_V_SYNC);
+    chk("pixeles visibles por cuadro", vesa_visibles,
+        Acelerador_pkg::VGA_H_VISIBLE * Acelerador_pkg::VGA_V_VISIBLE);
+    chk("HSYNC en reposo es alto (polaridad negativa)", int'(vesa_hs_reposo), 1);
+    chk("VSYNC en reposo es alto (polaridad negativa)", int'(vesa_vs_reposo), 1);
+
+    //------------------------------- 16. salida de video de extremo a extremo
+    // Se dibuja una escena en el buffer trasero, se intercambia y se captura
+    // lo que realmente sale por el puerto de video. La comparacion no es
+    // contra lo que escribio el rasterizador en la memoria, sino contra lo
+    // que el monitor recibiria: si el buffer de lineas, la prebusqueda o la
+    // temporizacion fallan, la imagen capturada no coincide.
+    $display("");
+    $display("--- 16. Barrido de video de extremo a extremo -------------");
+    borrar_fb();
+    enviar(OPC_CLEAR,     16'd300, 0,0, 0,0, 0,0, 8'h00, 8'h00, 8'h20, 0);
+    enviar(OPC_RECT,      16'd301, 1,1, 62,46, 0,0, 8'hFF, 8'hFF, 8'hFF, 0);
+    enviar(OPC_RECT_FILL, 16'd302, 4,4, 16,14, 0,0, 8'h00, 8'h00, 8'hFF, 0);
+    enviar(OPC_CIRC,      16'd303, 45,11, 0,0, 0,0, 8'h00, 8'hFF, 8'hFF, 8);
+    enviar(OPC_LINE,      16'd304, 4,20, 59,20, 0,0, 8'hFF, 8'hFF, 8'h00, 0);
+    enviar(OPC_TRIA_FILL, 16'd305, 28,43, 37,25, 46,43, 8'h00, 8'hFF, 8'h00, 0);
+    enviar(OPC_CIRC_FILL, 16'd306, 55,35, 0,0, 0,0, 8'hFF, 8'h80, 8'h00, 6);
+    esperar_fin();
+    chk("la escena se rasterizo entera", perfilar_escritos(), W*H);
+
+    // Hasta aqui la escena esta en el buffer trasero y el monitor sigue
+    // viendo el delantero. El intercambio es lo que la hace visible.
+    buffer_antes = buffer_sel;
+    enviar(OPC_SWAP, 16'd307, 0,0, 0,0, 0,0, 8'h00, 8'h00, 8'h00, 0);
+    esperar_fin();
+    chk("el intercambio cambio de buffer",
+        int'(buffer_sel != buffer_antes), 1);
+
+    capturar_cuadro();
+    chk("pixeles capturados en un cuadro", cap_pixeles, W*H);
+
+    difs = 0;
+    for (int y = 0; y < H; y++)
+      for (int x = 0; x < W; x++)
+        if (cap_fb[y][x] !== fb[y][x]) difs++;
+    chk("la imagen barrida coincide con la rasterizada", difs, 0);
+
+    chk("sin vaciado del buffer de lineas", int'(vga_underrun), 0);
+    chk_rango("cuadros barridos", int'(vga_frames), 0, 1000000);
+    volcar_captura("salida_vga");
 
     //------------------------------------------------------------ resumen
     $display("");
