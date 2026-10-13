@@ -66,9 +66,83 @@ set_global_assignment -name SYSTEMVERILOG_FILE line_buffer.sv
 set_global_assignment -name SYSTEMVERILOG_FILE vga_controller.sv
 set_global_assignment -name SYSTEMVERILOG_FILE async_fifo.sv
 set_global_assignment -name SYSTEMVERILOG_FILE framebuffer_controller.sv
+set_global_assignment -name SYSTEMVERILOG_FILE framebuffer_onchip.sv
 set_global_assignment -name SYSTEMVERILOG_FILE rend_counter.sv
 set_global_assignment -name SYSTEMVERILOG_FILE led_status.sv
-set_global_assignment -name SYSTEMVERILOG_FILE tb_Acelerador_Grafico_Top.sv
+# El banco de pruebas NO es un archivo de sintesis: contiene initial, delays y
+# $display. Se declara solo para la simulacion.
+set_global_assignment -name EDA_TEST_BENCH_FILE tb_Acelerador_Grafico_Top.sv -section_id tb_top
+
+# -------------------------------------------------------------------------- #
+# Pines virtuales
+#
+# El top expone el mapa de registros Avalon-MM completo (STATUS, ERR_INFO,
+# rendimiento, instrumentacion) y dos interfaces internas. Nada de eso
+# corresponde a un pin fisico: en el sistema completo lo lee el HPS por el bus.
+# Marcarlos como virtuales los deja en el fabric y reduce la demanda de 553
+# bits a los ~42 que de verdad salen del dispositivo.
+#
+# Pines fisicos reales: vga_r/g/b, vga_hs, vga_vs, vga_blank_n, vga_sync_n,
+# leds, y los cuatro relojes y reinicios.
+# -------------------------------------------------------------------------- #
+
+# --- Mapa de registros: CONTROL (0x04) y COMAND_FIFO_W (0x0C)
+set_instance_assignment -name VIRTUAL_PIN ON -to enable
+set_instance_assignment -name VIRTUAL_PIN ON -to reset_soft
+set_instance_assignment -name VIRTUAL_PIN ON -to comand_w_ena
+set_instance_assignment -name VIRTUAL_PIN ON -to comand_w_data[*]
+
+# --- STATUS (0x08)
+set_instance_assignment -name VIRTUAL_PIN ON -to busy
+set_instance_assignment -name VIRTUAL_PIN ON -to modo[*]
+set_instance_assignment -name VIRTUAL_PIN ON -to fifo_level[*]
+set_instance_assignment -name VIRTUAL_PIN ON -to fifo_full
+set_instance_assignment -name VIRTUAL_PIN ON -to fifo_empty
+set_instance_assignment -name VIRTUAL_PIN ON -to overflow
+
+# --- ERR_INFO (0x10)
+set_instance_assignment -name VIRTUAL_PIN ON -to err_last[*]
+set_instance_assignment -name VIRTUAL_PIN ON -to err_count[*]
+
+# --- Rendimiento (0x14 a 0x20)
+set_instance_assignment -name VIRTUAL_PIN ON -to perf_cycles[*]
+set_instance_assignment -name VIRTUAL_PIN ON -to perf_commands[*]
+set_instance_assignment -name VIRTUAL_PIN ON -to perf_pixels[*]
+set_instance_assignment -name VIRTUAL_PIN ON -to perf_dropped[*]
+
+# --- Auxiliares y estado del video
+set_instance_assignment -name VIRTUAL_PIN ON -to seq_last[*]
+set_instance_assignment -name VIRTUAL_PIN ON -to clip_count[*]
+set_instance_assignment -name VIRTUAL_PIN ON -to vga_frames[*]
+set_instance_assignment -name VIRTUAL_PIN ON -to vga_underrun
+
+# --- Instrumentacion del gestor de framebuffer
+set_instance_assignment -name VIRTUAL_PIN ON -to burst_writes[*]
+set_instance_assignment -name VIRTUAL_PIN ON -to burst_reads[*]
+set_instance_assignment -name VIRTUAL_PIN ON -to pixels_written[*]
+set_instance_assignment -name VIRTUAL_PIN ON -to out_of_range[*]
+
+# --- Solicitud de pixel (IF-07). Ya cerrada dentro del top; sigue expuesta
+#     solo como observacion para el banco de pruebas.
+set_instance_assignment -name VIRTUAL_PIN ON -to px_valid
+set_instance_assignment -name VIRTUAL_PIN ON -to px_x[*]
+set_instance_assignment -name VIRTUAL_PIN ON -to px_y[*]
+set_instance_assignment -name VIRTUAL_PIN ON -to px_color[*]
+set_instance_assignment -name VIRTUAL_PIN ON -to px_addr[*]
+set_instance_assignment -name VIRTUAL_PIN ON -to buffer_sel
+
+# --- Maestro de rafaga. Con FB_ONCHIP en uno lo atiende la memoria interna,
+#     de modo que estos puertos son observacion y no pines. Cuando exista
+#     sdram_controller desaparecen del top y salen los DRAM_* de la placa.
+set_instance_assignment -name VIRTUAL_PIN ON -to sd_read
+set_instance_assignment -name VIRTUAL_PIN ON -to sd_write
+set_instance_assignment -name VIRTUAL_PIN ON -to sd_address[*]
+set_instance_assignment -name VIRTUAL_PIN ON -to sd_burstcount[*]
+set_instance_assignment -name VIRTUAL_PIN ON -to sd_writedata[*]
+set_instance_assignment -name VIRTUAL_PIN ON -to sd_waitrequest
+set_instance_assignment -name VIRTUAL_PIN ON -to sd_readdata[*]
+set_instance_assignment -name VIRTUAL_PIN ON -to sd_readdatavalid
+
 set_global_assignment -name PARTITION_NETLIST_TYPE SOURCE -section_id Top
 set_global_assignment -name PARTITION_FITTER_PRESERVATION_LEVEL PLACEMENT_AND_ROUTING -section_id Top
 set_global_assignment -name PARTITION_COLOR 16764057 -section_id Top

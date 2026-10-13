@@ -1,3 +1,32 @@
+//=============================================================================
+// draw_line.sv
+// Modulo : Dibujo de linea recta por el algoritmo de Bresenham  (OP_LINE)
+//
+// Traza la linea de (x0, y0) a (x1, y1) a razon de un pixel por ciclo. Es la
+// variante del algoritmo que sirve para cualquier pendiente y cualquier
+// sentido, sin tener que partir el problema en octantes.
+//
+// La idea es llevar un termino de error entero que mide cuanto se ha
+// desviado la linea ideal del pixel elegido. En cada paso se comparan err
+// duplicado contra dx y dy y se avanza en x, en y, o en las dos a la vez; el
+// error se corrige con la pendiente correspondiente. Todo son sumas, restas
+// y comparaciones de enteros: ni una division ni un multiplicador, que es
+// justamente la razon de usar Bresenham en hardware.
+//
+// Convenio de signos: dx se guarda positivo y dy negativo, de modo que el
+// error combinado es dx + dy y las dos comparaciones del lazo quedan
+// simetricas. sx y sy llevan la direccion de avance de cada eje.
+//
+// Estados:
+//   L_IDLE   espera start y captura extremos, pendientes y direcciones
+//   L_SETUP  inicializa el error; un ciclo aparte porque dx y dy acaban de
+//            quedar registrados y todavia no se pueden leer
+//   L_RUN    un pixel por ciclo hasta alcanzar el extremo final
+//   L_DONE   pulso de fin
+//
+// draw_trian reutiliza este mismo modulo para las tres aristas del
+// triangulo sin relleno.
+//=============================================================================
 module draw_line #(
   parameter int PIXEL_BITS = 16
 )(

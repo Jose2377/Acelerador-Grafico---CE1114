@@ -1,3 +1,19 @@
+//=============================================================================
+// draw_pixel.sv
+// Modulo : Dibujo de un pixel suelto  (OP_PIXEL)
+//
+// El mas simple de los cinco modulos de dibujo y el que fija el contrato que
+// todos comparten:
+//
+//   start   pulso que carga los argumentos y arranca la figura
+//   busy    alto mientras la figura no ha terminado
+//   done    pulso de un ciclo al terminar; lo espera el decodificador
+//   stall   el gestor de framebuffer no acepta: congelar la maquina entera
+//
+// Tres estados: carga los argumentos, presenta el pixel un ciclo y avisa.
+// El estado P_DONE existe por separado para que done sea un pulso limpio de
+// un ciclo y no coincida con el ultimo pixel.
+//=============================================================================
 module draw_pixel #(
   parameter int PIXEL_BITS = 16
 )(

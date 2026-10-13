@@ -1,3 +1,36 @@
+//=============================================================================
+// vga_timing.sv
+// Modulo : Generador de temporizacion VGA
+//
+// Dos contadores, uno horizontal y uno vertical, que recorren el cuadro
+// completo a un pixel por ciclo de clk_pix y producen las senales de
+// sincronizacion y la coordenada del pixel en curso.
+//
+// Un cuadro VGA es mas grande que la region visible. Despues de los pixeles
+// que se ven vienen tres intervalos ciegos por cada eje: el front porch, el
+// pulso de sincronizacion y el back porch. Vienen de los tiempos que
+// necesitaba un monitor de tubo para devolver el haz al borde, y se
+// conservan porque son el estandar que el conversor de video espera.
+//
+//   H_TOTAL = H_VISIBLE + H_FRONT + H_SYNC + H_BACK
+//   V_TOTAL = V_VISIBLE + V_FRONT + V_SYNC + V_BACK
+//
+// Con los valores VESA de 640 x 480 esto da 800 x 525 relojes por cuadro,
+// que a 25,175 MHz son los 59,94 Hz del modo. El modulo no depende de esos
+// numeros concretos: todos llegan por parametro, y el banco de pruebas
+// instancia una copia con la tabla completa y otra con la reducida.
+//
+// H_POL y V_POL dan el nivel activo del pulso, porque la polaridad cambia de
+// un modo a otro (en 640 x 480 las dos son negativas).
+//
+// Salidas auxiliares para el controlador:
+//   data_active    estamos dentro de la region visible; gobierna el blanking
+//   pix_x, pix_y   coordenada del pixel, solo validas con data_active alto
+//   linea_fin      ultimo pixel visible de una linea: su ranura queda libre
+//   cuadro_inicio  primer ciclo del intervalo vertical: empieza cuadro nuevo
+//   vsync_act      VSYNC con polaridad fija activa en alto, para cruzar al
+//                  otro dominio sin que el receptor tenga que conocer V_POL
+//=============================================================================
 module vga_timing #(
   parameter int H_VISIBLE = 640,
   parameter int H_FRONT   = 16,

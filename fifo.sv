@@ -1,3 +1,40 @@
+//=============================================================================
+// fifo.sv
+// Modulo : Cola de comandos sincrona  (registro COMAND_FIFO_W)
+//
+// Guarda los comandos de 168 bits que el nivel superior ensambla a partir de
+// los paquetes de 24 bytes, y los entrega al decodificador en el mismo orden
+// en que llegaron. Desacopla la velocidad a la que el HPS escribe comandos
+// de la velocidad a la que el rasterizador los consume: sin ella el software
+// tendria que esperar a que cada figura terminara antes de mandar la
+// siguiente.
+//
+// Un solo dominio de reloj (el de rasterizado)
+//
+// Puntos a tener en cuenta al usarla:
+//
+//   - La lectura esta registrada: data_out aparece un ciclo despues de
+//     rd_ena, acompanado de data_out_valid. La maquina de estados del
+//     decodificador cuenta con ese ciclo de retardo.
+//
+//   - Una escritura con la cola llena no se encola ni sobreescribe nada: se
+//     pierde, drop sube un ciclo y drop_count lo registra. Es el origen del
+//     error EC-08. Descartar el comando nuevo y no el mas antiguo es
+//     deliberado, porque el mas antiguo puede estar ya a punto de salir.
+//
+//   - drop_count satura en lugar de dar la vuelta, para que una racha larga
+//     de descartes no acabe mostrando una cuenta pequena.
+//
+//   - flush la vacia por completo; lo activa el nivel superior durante
+//     MOE-01.
+//
+//   - level necesita un bit mas que los punteros para poder valer DEPTH, que
+//     es la condicion de lleno.
+//
+// DEPTH debe ser potencia de dos: asi los punteros dan la vuelta solos al
+// desbordar y no hace falta comparar contra DEPTH en el camino critico. La
+// comprobacion del final del archivo lo verifica en simulacion.
+//=============================================================================
 module fifo #(
   parameter int DATA_W = 168,
   parameter int DEPTH  = 16
@@ -31,8 +68,7 @@ module fifo #(
   logic [DATA_W-1:0] mem [0:DEPTH-1];
   logic [PW-1:0]     wr_ptr, rd_ptr;
 
-  // Aceptar y extraer son las dos condiciones de las que depende todo lo
-  // demas; nombrarlas evita repetir la misma conjuncion en cada bloque.
+  // Escritura y lectura
   logic escritura, lectura;
   assign escritura = wr_ena && !full;
   assign lectura = rd_ena && !empty;
@@ -90,8 +126,8 @@ module fifo #(
   end
 
 `ifndef SYNTHESIS
-  // La profundidad tiene que ser potencia de dos: los punteros dan la vuelta
-  // solos y no hay comparacion contra DEPTH en el camino critico.
+  // La profundidad tiene que ser potencia de dos.
+  // Los punteros dan la vuelta solos y no hay comparacion contra DEPTH en el camino critico.
   initial begin
     if ((DEPTH < 2) || ((DEPTH & (DEPTH - 1)) != 0)) begin
       $error("fifo: DEPTH (%0d) debe ser una potencia de dos mayor o igual a 2",

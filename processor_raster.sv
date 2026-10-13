@@ -1,3 +1,37 @@
+//=============================================================================
+// processor_raster.sv
+// Modulo : Rasterizador 2D, reparto de comandos entre los modulos de dibujo
+//
+// Recibe un comando ya decodificado y lo encamina al modulo que sabe
+// dibujarlo. Tiene las cinco primitivas instanciadas en paralelo y
+// permanentemente, porque en hardware no se crean a demanda: lo que se
+// multiplexa es cual de ellas arranca y cual de las cinco salidas se
+// escucha. Solo una esta activa en cada momento, de modo que el area es el
+// precio y a cambio no hay recurso que compartir ni que arbitrar.
+//
+//   start   pulso del decodificador con los argumentos ya presentados
+//   op      operacion en codificacion reducida de 4 bits
+//   stall   el gestor de framebuffer no acepta: congela todo el camino
+//   busy    hay un comando en vuelo (incluido el que esta pendiente)
+//   done    pulso de un ciclo al completarse; lo espera MOE_WAIT
+//
+// Tres decisiones de diseno concentradas aqui:
+//
+//   - El color llega en RGB888 y se convierte a RGB565 con la funcion del
+//     paquete, que es desplazamiento y OR: no cuesta ningun ciclo.
+//   - CLEAR no tiene modulo propio. Se reescribe como un rectangulo relleno
+//     del tamano de la pantalla antes de arrancar draw_rect.
+//   - La operacion se registra en op_q al arrancar, de modo que el
+//     multiplexor de salida sigue apuntando al modulo correcto aunque la
+//     entrada op ya haya cambiado.
+//
+// start_pend retiene la peticion cuando llega durante un stall o con una
+// figura todavia en curso, y la suelta en cuanto se puede atender; sin ello
+// un pulso de start coincidente con una espera se perderia.
+//
+// done se filtra por flanco porque las maquinas de dibujo levantan su done
+// durante un ciclo entero y el decodificador espera un pulso unico.
+//=============================================================================
 module processor_raster #(
   parameter int SCREEN_W   = Acelerador_pkg::SCREEN_W,
   parameter int SCREEN_H   = Acelerador_pkg::SCREEN_H,

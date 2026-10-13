@@ -1,3 +1,30 @@
+//=============================================================================
+// draw_circle.sv
+// Modulo : Circulo, contorno o relleno  (OP_CIRC, OP_CIRC_FILL)
+//
+// Centro en (cx_in, cy_in) y radio r_in. Dos algoritmos distintos segun la
+// entrada fill, porque el que sirve para el contorno no sirve para el area.
+//
+// Contorno (fill = 0): punto medio de Bresenham para circunferencias.
+// Recorre solo un octante y aprovecha la simetria de ocho para obtener el
+// resto: cada pareja (x, y) calculada produce ocho pixeles intercambiando y
+// negando las dos coordenadas. El multiplexor combinacional de oct hace esa
+// reflexion, un octante por ciclo en K_OUT; K_UPD avanza al punto siguiente
+// y termina cuando x cruza por debajo de y, que es el final del octante.
+// El termino de error se corrige con err += 2*y + 1 y err -= 2*x + 1: solo
+// sumas y desplazamientos, sin raices ni trigonometria.
+//
+// Relleno (fill = 1): recorrido del cuadrado circunscrito, de -r a +r en
+// los dos ejes, dejando pasar el pixel cuando dx^2 + dy^2 <= r^2. Los
+// cuadrados no se multiplican en cada paso sino que se llevan de forma
+// incremental (dx2 += 2*dx + 1), de modo que el lazo tampoco necesita
+// multiplicador. Cuesta mas ciclos que el area real del circulo, pero
+// garantiza un relleno sin huecos, que es lo que el reflejo del contorno no
+// puede asegurar.
+//
+// La validacion del radio distinto de cero la hace decoder_fsm antes de
+// arrancar, y emite EC-07 si no se cumple.
+//=============================================================================
 module draw_circle #(
   parameter int PIXEL_BITS = 16
 )(
@@ -24,6 +51,9 @@ module draw_circle #(
   logic signed [15:0] ox, oy;
   logic [PIXEL_BITS-1:0] col;
 
+  // Simetria de ocho. El punto (x, y) calculado en el primer octante se
+  // refleja en los otros siete intercambiando las coordenadas y cambiando
+  // los signos; son cables y sumas, ningun calculo nuevo.
   always_comb begin
     case (oct)
       3'd0:    begin ox = cx + x; oy = cy + y; end
@@ -54,6 +84,8 @@ module draw_circle #(
           st <= K_SETUP;
         end
 
+        // Un ciclo de preparacion comun: rr ya quedo registrado y aqui se
+        // calculan los terminos iniciales de uno u otro algoritmo.
         K_SETUP: begin
           if (fill) begin
             r2  <= 22'(rr) * 22'(rr);
@@ -86,6 +118,8 @@ module draw_circle #(
           st  <= (x_n < y_n) ? K_DONE : K_OUT;
         end
 
+        // Recorrido del cuadrado circunscrito. El criterio de pertenencia lo
+        // evalua el bloque combinacional de salida, no este.
         K_FILL: begin
           if (dx == rr) begin
             dx <= -rr;  dx2 <= r2;
@@ -109,6 +143,9 @@ module draw_circle #(
   assign busy = (st != K_IDLE);
   assign done = (st == K_DONE);
 
+  // Salida. En el contorno todos los pixeles son validos; en el relleno solo
+  // los que caen dentro de la circunferencia, de modo que px_valid baja en
+  // las esquinas del cuadrado recorrido.
   always_comb begin
     px_valid = 1'b0;  px_x = '0;  px_y = '0;  px_color = col;
     if (st == K_OUT) begin

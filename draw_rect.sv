@@ -1,3 +1,27 @@
+//=============================================================================
+// draw_rect.sv
+// Modulo : Rectangulo, contorno o relleno  (OP_RECT, OP_RECT_FILL, OP_CLEAR)
+//
+// Dibuja el rectangulo definido por las dos esquinas opuestas (x0, y0) y
+// (x1, y1). La entrada fill elige entre las dos formas:
+//
+//   fill = 1  recorrido completo en R_FILL, fila por fila de izquierda a
+//             derecha, un pixel por ciclo. Es tambien el camino de CLEAR:
+//             processor_raster reescribe el borrado como un rectangulo
+//             relleno del tamano de la pantalla, de modo que no hace falta
+//             un modulo aparte.
+//   fill = 0  cuatro recorridos consecutivos, uno por arista, en los
+//             estados R_TOP, R_BOT, R_LEFT y R_RIGHT.
+//
+// Las esquinas se ordenan al cargar, asi que da igual en que orden las pase
+// el usuario. Las aristas verticales recorren solo el interior (de ya+1 a
+// yb-1), porque las cuatro esquinas ya las pintaron las horizontales; sin
+// eso cada esquina se escribiria dos veces y el contador de pixeles mentiria.
+//
+// Los casos degenerados se resuelven en las propias transiciones: un
+// rectangulo de una sola fila (yb == ya) o de una sola columna (xb == xa)
+// salta directo a R_DONE en lugar de recorrer aristas que no existen.
+//=============================================================================
 module draw_rect #(
   parameter int PIXEL_BITS = 16
 )(

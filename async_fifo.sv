@@ -1,3 +1,37 @@
+//=============================================================================
+// async_fifo.sv
+// Modulo : Cola asincrona entre dos dominios de reloj
+//
+// Pasa datos del dominio de rasterizado (100 MHz) al de pixel y al contrario,
+// sin ninguna relacion de fase entre los dos relojes. El gestor de
+// framebuffer la instancia dos veces: una para las direcciones que el
+// barrido de video pide y otra para los pixeles que vuelven.
+//
+// El problema de una cola asincrona no son los datos, que viven en una
+// memoria y se leen cuando ya estan estables, sino los punteros: cada lado
+// necesita conocer el puntero del otro para decidir si esta lleno o vacio, y
+// un contador binario cambia varios bits a la vez. Si esos bits se capturan
+// en flancos distintos, el valor leido puede ser uno que nunca existio y la
+// cola se creeria vacia estando llena.
+//
+// La solucion es el codigo Gray: entre dos valores consecutivos cambia un
+// solo bit, de modo que una captura a medias devuelve o el valor anterior o
+// el nuevo, los dos seguros. Cada puntero se convierte a Gray, cruza por una
+// cadena de dos biestables y se compara ya en el dominio destino.
+//
+// Los punteros llevan un bit mas de los que necesita la memoria. Ese bit
+// extra es lo que distingue la cola llena de la vacia cuando los dos
+// punteros apuntan a la misma posicion: si coinciden del todo esta vacia; si
+// coinciden salvo en los dos bits altos del Gray, el de escritura ha dado una
+// vuelta mas y esta llena.
+//
+// La salida es show-ahead: data_out ya muestra el primer elemento sin pedir
+// nada, y rd_ena solo avanza el puntero.
+//
+// Conservadora por construccion: full puede quedarse alto un poco mas de lo
+// necesario y empty tambien, porque los punteros cruzados llegan con dos
+// ciclos de retraso. Nunca al contrario, que es lo que importa.
+//=============================================================================
 module async_fifo #(
   parameter int DATA_W = 16,
   parameter int DEPTH  = 16          // Potencia de 2

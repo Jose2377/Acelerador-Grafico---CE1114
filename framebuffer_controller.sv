@@ -1,3 +1,52 @@
+//=============================================================================
+// framebuffer_controller.sv
+// Modulo : Gestor de framebuffer, unico dueno del acceso a la memoria
+//
+// Media entre los dos clientes del framebuffer, que trabajan en dominios de
+// reloj distintos y con necesidades opuestas:
+//
+//   - El rasterizador escribe pixeles sueltos y desordenados, a su ritmo,
+//     en el dominio de 100 MHz.
+//   - El barrido de video lee pixeles consecutivos y no puede esperar, en el
+//     dominio de pixel.
+//
+// La memoria, en cambio, solo es eficiente en rafagas. De ahi las dos piezas
+// centrales del modulo:
+//
+//   Combinador de escritura: acumula hasta BURST_LEN pixeles consecutivos en
+//   un buffer local y los manda de una vez. Mientras el pixel que llega
+//   extienda la rafaga en curso se acepta; cuando rompe la secuencia o se
+//   llega al limite, px_ready baja, la rafaga sale y el rasterizador vuelve
+//   a presentar el pixel rechazado. Las rafagas se alinean a frontera de
+//   BURST_LEN para que no cruce nunca el limite que la memoria espera.
+//
+//   Agrupador de lectura: el barrido pide direcciones de una en una, asi que
+//   aqui se juntan las contiguas en una sola rafaga. Esperar indefinidamente
+//   a que llegue la siguiente direccion colgaria una peticion suelta, de modo
+//   que PACIENCIA acota la espera y la rafaga sale igual aunque este a medias.
+//
+// Arbitro de prioridad fija: la lectura del barrido gana siempre, porque el
+// video no se puede detener sin que la imagen se rompa; el rasterizador si
+// puede esperar, y para eso esta px_ready. Una rafaga ya arrancada se
+// completa, no se interrumpe.
+//
+// Doble buffer: el rasterizador escribe siempre en el contrario al que se
+// esta mostrando (~buffer_sel) y el barrido lee del delantero. El bit de
+// buffer viaja dentro de cada peticion de lectura por la cola asincrona, de
+// modo que una peticion en vuelo conserva el buffer que le correspondia
+// aunque el intercambio ocurra mientras cruza.
+//
+// Cruce de dominios: dos async_fifo, una para las direcciones que bajan del
+// dominio de pixel y otra para los datos que suben.
+//
+// vaciar lo activa el nivel superior cuando el rasterizador queda inactivo:
+// sin ello la ultima rafaga incompleta se quedaria esperando un pixel que ya
+// no va a llegar y los ultimos puntos de la figura no alcanzarian la memoria.
+//
+// Hacia abajo presenta un maestro Avalon-MM de rafaga, que atiende el
+// framebuffer interno o, en la placa, el controlador de SDRAM. Las dos
+// opciones son intercambiables sin tocar este modulo.
+//=============================================================================
 module framebuffer_controller #(
   parameter int SCREEN_W      = 64,
   parameter int SCREEN_H      = 48,
@@ -51,7 +100,7 @@ module framebuffer_controller #(
   input  logic [PIXEL_BITS-1:0]                  sd_readdata,
   input  logic                                   sd_readdatavalid,
 
-  // Estado
+  // Contadores
   output logic [31:0] burst_writes,    // Transacciones de escritura emitidas
   output logic [31:0] burst_reads,     // Transacciones de lectura emitidas
   output logic [31:0] pixels_written,  // Pixeles aceptados del rasterizador

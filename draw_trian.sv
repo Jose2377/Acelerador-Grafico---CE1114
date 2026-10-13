@@ -1,3 +1,38 @@
+//=============================================================================
+// draw_trian.sv
+// Modulo : Triangulo, contorno o relleno  (OP_TRIA, OP_TRIA_FILL)
+//
+// Tres vertices (x0,y0), (x1,y1), (x2,y2). Como en el circulo, las dos
+// formas usan caminos distintos.
+//
+// Contorno (fill = 0): tres llamadas consecutivas al mismo draw_line
+// instanciado aqui dentro, una por arista, en los estados T_E0, T_E1 y T_E2.
+// Reutilizar el generador de lineas ahorra logica y garantiza que las
+// aristas del triangulo salgan identicas a una linea suelta.
+//
+// Relleno (fill = 1): funciones de arista. Para cada arista del triangulo se
+// define el producto cruzado que, evaluado en un punto, da el signo del lado
+// en que ese punto cae. Si las tres funciones salen no negativas el punto
+// esta dentro. El recorrido va por el rectangulo que encierra al triangulo
+// (la caja), y en cada paso las tres funciones se actualizan sumando su
+// incremento constante: sx* al avanzar en x, sy* al bajar de fila. Asi el
+// lazo no multiplica nada, solo suma; las unicas multiplicaciones son las
+// del arranque, al evaluar las tres funciones en la esquina de la caja.
+//
+// Orientacion: el area con signo del triangulo se calcula al cargar y, si
+// sale negativa, se intercambian dos vertices. Eso deja siempre el mismo
+// sentido de giro y permite que el criterio de pertenencia sea un simple
+// "las tres no negativas" en vez de distinguir casos por orientacion. Un
+// area nula significa que los tres vertices son colineales: no hay area que
+// rellenar y se salta a T_DONE.
+//
+// La caja se recorta contra la pantalla al calcularla, de modo que un
+// triangulo que se sale no cuesta ciclos recorriendo filas invisibles.
+// clip_scissor sigue vigilando pixel a pixel mas adelante.
+//
+// Los 36 bits de los acumuladores dan margen de sobra para los productos de
+// dos diferencias de coordenadas de 16 bits con signo sin que desborden.
+//=============================================================================
 module draw_trian #(
   parameter int SCREEN_W   = 64,
   parameter int SCREEN_H   = 48,
@@ -38,6 +73,8 @@ module draw_trian #(
     .busy(lg_busy), .done(lg_done),
     .px_valid(lg_valid), .px_x(lg_px), .px_y(lg_py), .px_color(lg_color));
 
+  // Extremos que se presentan al generador de lineas segun la arista que
+  // toque: A-B, B-C y C-A.
   always_comb begin
     case (st)
       T_E0:    begin lg_x0 = ax; lg_y0 = ay; lg_x1 = bx; lg_y1 = by; end
@@ -72,6 +109,8 @@ module draw_trian #(
           col <= color_in;
 
           if (fill) begin
+            // Caja que encierra al triangulo, ya recortada contra la
+            // pantalla: minimos contra 0 y maximos contra el ultimo pixel.
             mnx = (((x0 < v1x) ? ((x0 < v2x) ? x0 : v2x)
                                : ((v1x < v2x) ? v1x : v2x)) > 0)
                   ? ((x0 < v1x) ? ((x0 < v2x) ? x0 : v2x)
@@ -92,10 +131,15 @@ module draw_trian #(
             bx0 <= mnx;  bx1 <= mxx;  by0 <= mny;  by1 <= mxy;
             cx  <= mnx;  cy  <= mny;
 
+            // Incrementos constantes de cada funcion de arista: sx por cada
+            // paso en x, sy por cada fila. Sustituyen a la multiplicacion
+            // dentro del lazo.
             sx0 <= -(36'(v1y) - 36'(y0));    sy0 <= (36'(v1x) - 36'(x0));
             sx1 <= -(36'(v2y) - 36'(v1y));   sy1 <= (36'(v2x) - 36'(v1x));
             sx2 <= -(36'(y0)  - 36'(v2y));   sy2 <= (36'(x0)  - 36'(v2x));
 
+            // Las tres funciones evaluadas en la esquina superior izquierda
+            // de la caja. Son las unicas multiplicaciones del algoritmo.
             ev0 = (36'(v1x) - 36'(x0))  * (36'(mny) - 36'(y0))
                 - (36'(v1y) - 36'(y0))  * (36'(mnx) - 36'(x0));
             ev1 = (36'(v2x) - 36'(v1x)) * (36'(mny) - 36'(v1y))
@@ -119,6 +163,9 @@ module draw_trian #(
 
         T_SETUP: st <= T_FILL;
 
+        // Recorrido de la caja. Al final de cada fila los acumuladores
+        // vuelven al borde izquierdo con el valor que guardo er, de modo que
+        // no hay que reevaluar las funciones desde cero.
         T_FILL: begin
           if (cx == bx1) begin
             if (cy == by1) st <= T_DONE;
@@ -143,6 +190,9 @@ module draw_trian #(
   assign busy = (st != T_IDLE);
   assign done = (st == T_DONE);
 
+  // Salida. En el contorno se deja pasar lo que produce draw_line; en el
+  // relleno, el punto esta dentro cuando las tres funciones de arista son no
+  // negativas.
   always_comb begin
     px_valid = 1'b0;  px_x = '0;  px_y = '0;  px_color = col;
     if ((st == T_E0) || (st == T_E1) || (st == T_E2)) begin

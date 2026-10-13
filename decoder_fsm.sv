@@ -1,3 +1,43 @@
+//=============================================================================
+// decoder_fsm.sv
+// Modulo : Decodificador de comandos y maquina de estados del sistema
+//
+// Es el cerebro del acelerador: saca comandos de la cola de uno en uno, los
+// valida, los traduce y gobierna los seis modos de operacion (MOE) que el
+// registro STATUS publica al HPS.
+//
+// Ciclo de trabajo de un comando de dibujo:
+//   MOE_IDLE  hay algo en la cola y enable esta alto: se pide un comando
+//   MOE_PROC  llega el dato (un ciclo despues de pedirlo), se valida y se
+//             presentan los argumentos al rasterizador
+//   MOE_WAIT  subestado interno: espera el done del rasterizador
+//   MOE_IDLE  se contabiliza el comando y se vuelve a empezar
+//
+// Los tres codigos que no dibujan se resuelven sin tocar el rasterizador:
+//   NOP   se descarta y se cuenta
+//   SWAP  pasa por MOE_SWAP, que espera el flanco de VSYNC antes de cambiar
+//         buffer_sel. Intercambiar fuera del intervalo vertical partiria la
+//         imagen por la mitad (tearing), asi que la peticion se retiene
+//         hasta que el barrido este entre cuadros.
+//   INF   pasa por MOE_INFO, que congela la ventana de medicion con
+//         perf_latch y la reabre con perf_clear
+//
+// Errores que el hardware puede detectar por si mismo:
+//   EC-06  codigo de operacion desconocido
+//   EC-07  parametro geometrico invalido (radio nulo en los circulos)
+//   EC-08  desbordamiento de la cola
+// Los tres llevan a MOE_ERROR, que dura un solo ciclo y solo sirve para que
+// el modo sea observable. EC-01 a EC-04 los emite la capa de software y
+// nunca llegan hasta aqui.
+//
+// El desbordamiento es asincrono respecto al flujo de comandos: lo senala la
+// cola en cualquier momento, incluso con una figura en curso. Por eso se
+// anota en err_pend y el paso por MOE_ERROR se hace al volver a MOE_IDLE, en
+// lugar de interrumpir lo que se este dibujando.
+//
+// modo publica MOE_PROC tambien durante MOE_WAIT: la espera al rasterizador
+// es un detalle interno y el HPS solo debe ver los seis modos del documento.
+//=============================================================================
 module decoder_fsm #(
   parameter int SCREEN_W = 64,
   parameter int SCREEN_H = 48

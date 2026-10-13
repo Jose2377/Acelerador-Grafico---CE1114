@@ -1,3 +1,24 @@
+//=============================================================================
+// pixel_gen.sv
+// Modulo : Salida comun del rasterizador  (interfaz IF-07)
+//
+// Ultima etapa del camino de pixeles. Recibe el flujo que sale del
+// multiplexor de los cinco modulos de dibujo y lo convierte en la solicitud
+// de pixel que consume el gestor de framebuffer. Son tres cosas encadenadas:
+//
+//   1. clip_scissor descarta lo que cae fuera de la region visible
+//   2. addr_calc traduce la coordenada superviviente a direccion lineal
+//   3. los dos contadores de instrumentacion
+//
+// Tenerlo en un solo sitio es lo que permite que los modulos de dibujo
+// trabajen con coordenadas con signo sin preocuparse por los bordes ni por
+// la direccion: ninguno de ellos conoce el tamano de la pantalla.
+//
+// Los contadores incrementan solo cuando px_ready esta alto, no cuando el
+// pixel se presenta. Con contrapresion el mismo pixel se queda presentado
+// varios ciclos seguidos, y contar ciclos en vez de pixeles aceptados
+// inflaria la medida.
+//=============================================================================
 module pixel_gen #(
   parameter int SCREEN_W   = 64,
   parameter int SCREEN_H   = 48,

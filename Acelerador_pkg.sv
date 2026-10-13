@@ -5,11 +5,20 @@
 // Modulo   : Paquete de parametros, tipos y conversion de color compartidos
 // Autor    : Jose Maria Vindas Ortiz (2022209471)
 //
-// Incremento actual (rasterizador aislado con color):
+// Incremento actual (camino completo hasta la salida de video):
 //   - region visible reducida de 64 x 48 pixeles
 //   - pixel de 16 bits en formato RGB565 (PIXEL_BITS del Documento de Diseno)
-//   - sin SDRAM, sin controlador VGA, sin HPS: la salida del rasterizador es
-//     la solicitud de pixel de la interfaz IF-07
+//   - cola de comandos, decodificador, rasterizador, gestor de framebuffer
+//     con doble buffer y controlador VGA, todos presentes
+//   - el framebuffer vive en memoria interna de la FPGA (framebuffer_onchip);
+//     el controlador de SDRAM todavia no existe, pero el gestor ya habla el
+//     Avalon-MM de rafaga que ese modulo implementara, de modo que el cambio
+//     es el parametro FB_ONCHIP del nivel superior
+//   - sin HPS: los registros del mapa estan cableados a los puertos del
+//     nivel superior y es el banco de pruebas quien los acciona
+//
+// Dos tablas de temporizacion y dos codificaciones de operacion conviven aqui
+// a proposito; cada una dice en su seccion a quien sirve.
 //=============================================================================
 package Acelerador_pkg;
 
@@ -24,7 +33,10 @@ package Acelerador_pkg;
   parameter int YW         = $clog2(SCREEN_H);              // bits de y visible
   parameter int AW         = $clog2(SCREEN_W * SCREEN_H);   // direccion lineal
 
-  parameter int CW         = 16;   // coordenada con signo del paquete W1..W3
+  // Ancho de la coordenada con signo del paquete (W1 a W3). Documenta el
+  // formato; los modulos escriben 16 directamente en sus puertos, asi que
+  // ningun cuerpo lo lee todavia.
+  parameter int CW         = 16;
   parameter int PIXEL_BITS = 16;   // RGB565
 
   //------------------------------------------------------- Codigos de operacion
@@ -70,14 +82,26 @@ package Acelerador_pkg;
   // Dos dominios. El de rasterizado y SDRAM va a 100 MHz; el de pixel lo
   // fija la temporizacion VGA. En la placa los produce un ALTPLL a partir
   // del oscilador de 50 MHz.
+  //
+  // SYS_CLK_HZ lo usa led_status para dimensionar sus cuentas atras (el
+  // banco de pruebas le pasa un valor reducido para no simular doce
+  // millones de ciclos por destello). PIX_CLK_HZ es solo documentacion:
+  // ningun modulo lo lee, porque la temporizacion se expresa en ciclos de
+  // clk_pix y no en hercios.
   parameter int SYS_CLK_HZ = 100_000_000;
   parameter int PIX_CLK_HZ =  25_175_000;
 
   //------------------------------------------------------- Framebuffer
   // Bases de los dos buffers dentro de la SDRAM, en palabras de 16 bits.
-  // Un buffer de 640 x 480 ocupa 307 200 palabras, de modo que la
-  // separacion deja margen y mantiene las bases alineadas a potencia de
-  // dos, lo que reduce la suma de direccion a una concatenacion.
+  // Un buffer de 640 x 480 ocupa 307 200 palabras y la separacion es de
+  // 1 048 576, de modo que queda margen de sobra y las dos bases estan
+  // alineadas a potencia de dos.
+  //
+  // Esa alineacion permitiria resolver la direccion con una concatenacion,
+  // pero ni framebuffer_controller ni framebuffer_onchip la aprovechan: el
+  // primero suma la base al indice y el segundo compara contra los dos
+  // rangos. Es deliberado, para que los dos modulos sigan siendo correctos
+  // si estas bases cambian y dejan de ser potencias de dos.
   parameter int FB_BASE_A = 25'h000000;
   parameter int FB_BASE_B = 25'h100000;
 
@@ -118,7 +142,14 @@ package Acelerador_pkg;
   parameter int V_TOTAL = V_VISIBLE + V_FRONT + V_SYNC + V_BACK;
 
   //------------------------------------- SDRAM IS42S16320D de la placa
-  // 32M x 16 en cuatro bancos: 13 bits de fila, 10 de columna, 2 de banco.
+  // 32M x 16 en cuatro bancos: 13 bits de fila, 10 de columna, 2 de banco,
+  // que suman los 25 de SD_ADDR_BITS y cubren las 33 554 432 palabras.
+  //
+  // De los cinco, el unico que sale del paquete es SD_ADDR_BITS, que fija el
+  // ancho del bus de direccion del maestro de rafaga. Los otros describen el
+  // dispositivo para cuando exista sdram_controller; SD_DATA_BITS coincide
+  // con PIXEL_BITS por casualidad del formato de color, y los modulos usan
+  // PIXEL_BITS, que es lo que de verdad quieren decir.
   parameter int SD_ROW_BITS  = 13;
   parameter int SD_COL_BITS  = 10;
   parameter int SD_BANK_BITS =  2;
@@ -126,10 +157,12 @@ package Acelerador_pkg;
   parameter int SD_ADDR_BITS = SD_ROW_BITS + SD_COL_BITS + SD_BANK_BITS;  // 25
 
   //------------------------------------------------------- Codigos de error
-  // EC-01 a EC-04 los emite la interfaz de comandos en el nivel 1 y nunca
-  // llegan al hardware. Los tres siguientes son los que el hardware puede
-  // detectar por si mismo.
-  localparam logic [3:0] EC_NONE     = 4'd0;   // sin error
+  // EC-01 a EC-05 los emite la interfaz de comandos en el nivel 1 y nunca
+  // llegan al hardware, de modo que no se definen aqui: el salto de 0 a 6 en
+  // los valores es intencionado y conserva la numeracion del documento.
+  // Los tres definidos son los que el hardware detecta por si mismo; los
+  // emite decoder_fsm y quedan visibles en el registro ERR_INFO.
+  localparam logic [3:0] EC_NONE        = 4'd0;   // sin error
   localparam logic [3:0] EC_06_OPCODE   = 4'd6;   // codigo de operacion desconocido
   localparam logic [3:0] EC_07_PARAM    = 4'd7;   // parametro geometrico invalido
   localparam logic [3:0] EC_08_OVERFLOW = 4'd8;   // desbordamiento de la cola
@@ -169,9 +202,17 @@ package Acelerador_pkg;
     rgb888_to_rgb565 = cr | cg | cb;
   endfunction
 
-  // Vuelta a RGB888 replicando los bits altos en los bajos. No forma parte
-  // de la ruta de datos: la usan los bancos de prueba y, en el sistema
-  // completo, el controlador VGA para expandir a los conversores de la placa.
+  // Vuelta a RGB888 replicando los bits altos en los bajos. La usa
+  // vga_controller en cada pixel visible para expandir el color hacia el
+  // conversor de video de la placa, de modo que si forma parte de la ruta de
+  // datos; el banco de pruebas hace el camino inverso para comprobar que lo
+  // barrido coincide con lo rasterizado.
+  //
+  // Replicar los bits altos y no rellenar con ceros es lo que hace que el
+  // blanco siga siendo blanco: 5 bits a uno dan 0xFF y no 0xF8. La ida y la
+  // vuelta no son exactamente inversas (se perdieron bits al reducir), pero
+  // volver a RGB565 desde aqui recupera el valor original, porque la
+  // expansion solo repitio bits que ya estaban.
   function automatic logic [23:0] rgb565_to_rgb888(
       input logic [PIXEL_BITS-1:0] c);
     logic [7:0] r, g, b;
@@ -193,9 +234,14 @@ package Acelerador_pkg;
 
   //-------------------------------------------- Solicitud de pixel (IF-07)
   // Interfaz uniforme entre los modulos de dibujo y el gestor de framebuffer.
-  // Los modulos la exponen en puertos sueltos para no obligar a importar el
-  // paquete en cada hoja de la jerarquia; este tipo documenta su contenido y
-  // sirve para empaquetarla cuando el gestor de framebuffer se incorpore.
+  // Los modulos la exponen en puertos sueltos (px_valid, px_x, px_y,
+  // px_color) para no obligar a importar el paquete en cada hoja de la
+  // jerarquia, y el gestor de framebuffer, ya incorporado, los recibe igual
+  // de sueltos.
+  //
+  // Es decir que este tipo no esta en uso: queda como documentacion del
+  // contenido de la interfaz IF-07 y como base si alguna vez conviene
+  // empaquetarla en un solo bus. Lo mismo vale para PIXREQ_BITS.
   typedef struct packed {
     logic                  valid;
     logic [XW-1:0]         x;
@@ -243,11 +289,17 @@ package Acelerador_pkg;
       OPC_RECT_FILL: opcode_a_op = OP_RECT_FILL;
       OPC_CIRC:      opcode_a_op = OP_CIRC;
       OPC_CIRC_FILL: opcode_a_op = OP_CIRC_FILL;
+      // Atrapa OPC_CLEAR y, de paso, cualquier codigo no listado. Es seguro
+      // porque decoder_fsm ya rechazo los invalidos con opcode_valido y
+      // desvio NOP, SWAP e INF antes de llegar aqui; si alguna vez se llama
+      // sin esos filtros, un codigo desconocido borraria la pantalla.
       default:       opcode_a_op = OP_CLEAR;      // OPC_CLEAR
     endcase
   endfunction
 
-  // Cierto para los codigos que producen pixeles.
+  // Cierto para los codigos que producen pixeles (OPC_PIXEL a OPC_CLEAR).
+  // Sin consumidor por ahora: decoder_fsm distingue los tres que no dibujan
+  // con un case explicito en lugar de llamar aqui.
   function automatic logic opcode_dibuja(input logic [7:0] opc);
     opcode_dibuja = (opc >= OPC_PIXEL) && (opc <= OPC_CLEAR);
   endfunction

@@ -1,9 +1,60 @@
+//=============================================================================
+// Acelerador_Grafico_Top.sv
+// Proyecto : Unidad de aceleracion grafica 2D  -  ITCR CE-1114
+// Modulo   : Nivel superior, integracion de todos los bloques
+//
+// Camino que recorre un comando desde que el HPS lo escribe hasta que se ve
+// en la pantalla:
+//
+//   CMD_FIFO_W -> ensamblador de paquete -> fifo -> decoder_fsm
+//              -> processor_raster -> framebuffer_controller -> memoria
+//              -> vga_controller -> conversor de video
+//
+// Papel de cada bloque instanciado:
+//
+//   fifo                    cola de comandos; desacopla al software del
+//                           ritmo del rasterizador
+//   decoder_fsm             valida, traduce y gobierna los modos MOE
+//   processor_raster        reparte el comando entre las cinco primitivas
+//   framebuffer_controller  agrupa pixeles en rafagas y arbitra la memoria
+//   framebuffer_onchip      el framebuffer, cuando FB_ONCHIP esta activo
+//   vga_controller          prebusca lineas y produce la senal de video
+//   rend_counter            medidor de rendimiento de la ventana
+//   led_status              estado del sistema sobre los LED de la placa
+//   sync2                   los dos cruces de dominio de un bit
+//
+// Dos dominios de reloj. El de rasterizado y memoria va a 100 MHz; el de
+// pixel lo fija la temporizacion VGA. En la placa los produce un ALTPLL a
+// partir del oscilador de 50 MHz, y no guardan relacion de fase: todo lo que
+// cruza entre ellos pasa por sync2 (senales de un bit) o por las async_fifo
+// que vivien dentro del gestor de framebuffer (direcciones y datos).
+//
+// Ensamblador de paquete. El puerto CMD_FIFO_W recibe las seis palabras de
+// 32 bits del paquete de 24 bytes en orden W0 a W5, una por escritura. El
+// contador palabra las va colocando y el comando entra en la cola al llegar
+// la sexta. PARAM se toma directamente del puerto y no del registro, porque
+// en ese ciclo w[5] todavia no esta escrito.
+//
+// FB_ONCHIP elige donde vive el framebuffer. Las dos ramas presentan el
+// mismo Avalon-MM de rafaga, asi que sustituir la memoria interna por el
+// controlador de SDRAM de la placa es cambiar el parametro, nada mas; el
+// maestro queda expuesto en los puertos en los dos casos para poder
+// observar la transaccion sin sondear la jerarquia.
+//
+// Lo que el HPS ve de todo esto son los registros del mapa: CONTROL (0x04),
+// STATUS (0x08), CMD_FIFO_W (0x0C), ERR_INFO (0x10) y los de rendimiento
+// (0x14 a 0x20), cableados a los puertos de este modulo.
+//=============================================================================
 module Acelerador_Grafico_Top #(
   parameter int SCREEN_W   = Acelerador_pkg::SCREEN_W,
   parameter int SCREEN_H   = Acelerador_pkg::SCREEN_H,
   parameter int PIXEL_BITS = Acelerador_pkg::PIXEL_BITS,
   parameter int FIFO_DEPTH = Acelerador_pkg::FIFO_DEPTH,
-  parameter int SYS_CLK_HZ = Acelerador_pkg::SYS_CLK_HZ
+  parameter int SYS_CLK_HZ = Acelerador_pkg::SYS_CLK_HZ,
+
+  // Seleccion del medio que guarda el framebuffer.
+  // 1 = framebuffer_onchip, 0 = el maestro de rafaga sale por los puertos
+  parameter bit FB_ONCHIP  = 1'b1
 )(
   // Dominio de rasterizado y SDRAM, 100 MHz
   input  logic               clk,
@@ -23,9 +74,7 @@ module Acelerador_Grafico_Top #(
   input  logic               comand_w_ena,
   input  logic        [31:0] comand_w_data,
 
-  // Maestro de rafaga Avalon-MM hacia el controlador de SDRAM. Es lo unico
-  // que queda abierto de la ruta de datos grafica: el puerto de lectura del
-  // barrido ya lo cierra el gestor de framebuffer dentro de este modulo.
+  // Maestro de rafaga Avalon-MM hacia el medio que guarda el framebuffer.
   output logic                                   sd_read,
   output logic                                   sd_write,
   output logic [Acelerador_pkg::SD_ADDR_BITS-1:0] sd_address,
@@ -85,6 +134,9 @@ module Acelerador_Grafico_Top #(
 );
 
   // Ensamblador de las seis palabras del paquete
+  // Una escritura por palabra, en orden W0 a W5. El contador da la vuelta
+  // sola tras la sexta, de modo que el paquete siguiente empieza sin que
+  // nadie tenga que reiniciarlo.
   logic [2:0]  palabra;                 // 0 a 5
   logic [31:0] w [0:5];
   logic        comand_push;
@@ -103,7 +155,11 @@ module Acelerador_Grafico_Top #(
     end
   end
 
+  // El comando entra en la cola en el mismo ciclo en que llega W5.
   assign comand_push = comand_w_ena && (palabra == 3'd5);
+
+  // PARAM se toma del puerto y no de w[5]: en este ciclo el registro
+  // todavia no tiene el valor, que se escribe en el flanco.
 
   assign comand_data_in = {
     w[0][31:24],            // OPCODE
@@ -226,8 +282,11 @@ module Acelerador_Grafico_Top #(
     .buffer_sel(buffer_sel), .underrun(vga_underrun),
     .leds(leds));
 
-  // Sincronizador de relojes
-  logic front_buffer_pix;             // buffer_sel visto desde el dominio pixel
+  // Cruces entre los dos dominios de reloj
+  // Son los dos unicos de un bit: la seleccion de buffer baja al dominio de
+  // pixel y VSYNC sube al de rasterizado, donde MOE-04 lo espera para hacer
+  // efectivo el intercambio. Los buses cruzan por las async_fifo del gestor.
+  logic front_buffer_pix;            // buffer_sel visto desde el dominio pixel
   logic vsync_pix;                    // VSYNC activo en alto, dominio de pixel
 
   // Puerto de lectura del barrido,lo cierra el gestor de framebuffer. 
@@ -271,6 +330,16 @@ module Acelerador_Grafico_Top #(
   logic vaciar_combinador;
   assign vaciar_combinador = !ras_busy;
 
+  // Maestro de rafaga del gestor. Se mantiene como cable interno para que el
+  // medio que lo atiende sea intercambiable sin tocar la instancia.
+  logic                                           m_read, m_write;
+  logic [Acelerador_pkg::SD_ADDR_BITS-1:0]        m_address;
+  logic [$clog2(Acelerador_pkg::BURST_LEN+1)-1:0] m_burstcount;
+  logic [PIXEL_BITS-1:0]                          m_writedata;
+  logic                                           m_waitrequest;
+  logic [PIXEL_BITS-1:0]                          m_readdata;
+  logic                                           m_readdatavalid;
+
   framebuffer_controller #(
     .SCREEN_W(SCREEN_W), .SCREEN_H(SCREEN_H), .PIXEL_BITS(PIXEL_BITS),
     .BURST_LEN(Acelerador_pkg::BURST_LEN),
@@ -286,11 +355,46 @@ module Acelerador_Grafico_Top #(
     .frame_buffer_req(fb_req), .frame_buffer_addr(fb_addr),
     .frame_buffer_front(fb_front), .frame_buffer_ready(fb_ready),
     .frame_buffer_data_in(fb_data), .frame_buffer_valid_in(fb_valid),
-    .sd_read(sd_read), .sd_write(sd_write), .sd_address(sd_address),
-    .sd_burstcount(sd_burstcount), .sd_writedata(sd_writedata),
-    .sd_waitrequest(sd_waitrequest), .sd_readdata(sd_readdata),
-    .sd_readdatavalid(sd_readdatavalid),
+    .sd_read(m_read), .sd_write(m_write), .sd_address(m_address),
+    .sd_burstcount(m_burstcount), .sd_writedata(m_writedata),
+    .sd_waitrequest(m_waitrequest), .sd_readdata(m_readdata),
+    .sd_readdatavalid(m_readdatavalid),
     .burst_writes(burst_writes), .burst_reads(burst_reads),
     .pixels_written(pixels_written), .out_of_range(out_of_range));
+
+  // Medio que guarda el framebuffer
+  //
+  // Las dos ramas presentan el mismo Avalon-MM de rafaga, de modo que el
+  // gestor no distingue una de otra. Sustituir la memoria interna por el
+  // controlador de SDRAM es cambiar este parametro, nada mas.
+  generate
+    if (FB_ONCHIP) begin : g_fb_interno
+      framebuffer_onchip #(
+        .SCREEN_W(SCREEN_W), .SCREEN_H(SCREEN_H), .PIXEL_BITS(PIXEL_BITS),
+        .BURST_LEN(Acelerador_pkg::BURST_LEN),
+        .SD_ADDR_BITS(Acelerador_pkg::SD_ADDR_BITS),
+        .FB_BASE_A(Acelerador_pkg::FB_BASE_A),
+        .FB_BASE_B(Acelerador_pkg::FB_BASE_B)
+      ) u_fbmem (
+        .clk(clk), .rst_n(rst_n),
+        .sd_read(m_read), .sd_write(m_write), .sd_address(m_address),
+        .sd_burstcount(m_burstcount), .sd_writedata(m_writedata),
+        .sd_waitrequest(m_waitrequest), .sd_readdata(m_readdata),
+        .sd_readdatavalid(m_readdatavalid),
+        .words_written(), .words_read(), .range_errors());
+    end else begin : g_fb_externo
+      assign m_waitrequest   = sd_waitrequest;
+      assign m_readdata      = sd_readdata;
+      assign m_readdatavalid = sd_readdatavalid;
+    end
+  endgenerate
+
+  // Las salidas reflejan el maestro en las dos ramas: con el framebuffer
+  // interno dejan ver la transaccion sin sondear la jerarquia.
+  assign sd_read       = m_read;
+  assign sd_write      = m_write;
+  assign sd_address    = m_address;
+  assign sd_burstcount = m_burstcount;
+  assign sd_writedata  = m_writedata;
 
 endmodule
