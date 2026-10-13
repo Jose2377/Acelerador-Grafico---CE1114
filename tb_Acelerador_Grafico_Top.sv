@@ -68,10 +68,14 @@ module tb_Acelerador_Grafico_Top;
   logic               comand_w_ena;
   logic        [31:0] comand_w_data;
 
-  // Puerto de lectura del framebuffer, atendido por el modelo del banco
-  logic               fb_req, fb_front, fb_ready, fb_valid_in;
-  logic [AW-1:0]      fb_addr;
-  logic [PB-1:0]      fb_data_in;
+  // Maestro de rafaga hacia la SDRAM, atendido por el modelo del banco
+  logic               sd_read, sd_write, sd_waitrequest, sd_readdatavalid;
+  logic [Acelerador_pkg::SD_ADDR_BITS-1:0] sd_address;
+  logic [$clog2(Acelerador_pkg::BURST_LEN+1)-1:0] sd_burstcount;
+  logic [PB-1:0]      sd_writedata, sd_readdata;
+
+  // Instrumentacion del gestor de framebuffer
+  logic [31:0]        burst_writes, burst_reads, pixels_written, out_of_range;
 
   // Salida de video
   logic        [7:0]  vga_r, vga_g, vga_b;
@@ -101,8 +105,10 @@ module tb_Acelerador_Grafico_Top;
     .clk_pix(clk_pix), .rst_pix_n(rst_pix_n),
     .enable(enable), .reset_soft(reset_soft),
     .comand_w_ena(comand_w_ena), .comand_w_data(comand_w_data),
-    .fb_req(fb_req), .fb_addr(fb_addr), .fb_front(fb_front),
-    .fb_ready(fb_ready), .fb_data_in(fb_data_in), .fb_valid_in(fb_valid_in),
+    .sd_read(sd_read), .sd_write(sd_write), .sd_address(sd_address),
+    .sd_burstcount(sd_burstcount), .sd_writedata(sd_writedata),
+    .sd_waitrequest(sd_waitrequest), .sd_readdata(sd_readdata),
+    .sd_readdatavalid(sd_readdatavalid),
     .vga_r(vga_r), .vga_g(vga_g), .vga_b(vga_b),
     .vga_hs(vga_hs), .vga_vs(vga_vs),
     .vga_blank_n(vga_blank_n), .vga_sync_n(vga_sync_n),
@@ -115,48 +121,92 @@ module tb_Acelerador_Grafico_Top;
     .err_last(err_last), .err_count(err_count),
     .perf_cycles(perf_cycles), .perf_commands(perf_commands),
     .perf_pixels(perf_pixels), .perf_dropped(perf_dropped),
-    .seq_last(seq_last), .clip_count(clip_count)
+    .seq_last(seq_last), .clip_count(clip_count),
+    .burst_writes(burst_writes), .burst_reads(burst_reads),
+    .pixels_written(pixels_written), .out_of_range(out_of_range)
   );
 
-  //================================================ modelo del framebuffer
-  // Ocupa el lugar del gestor de framebuffer y del controlador de SDRAM,
-  // que todavia no existen. Dos buffers: el rasterizador escribe en el
-  // trasero, en el dominio de 100 MHz, y el barrido lee del delantero, en el
-  // dominio de pixel.
-  localparam int FB_LAT = 3;          // ciclos de latencia de lectura
+  //====================================================== modelo de la SDRAM
+  // Ocupa el lugar de sdram_controller. Habla el mismo Avalon-MM de rafaga
+  // que implementara el modulo real: peticion con direccion y longitud,
+  // espera mediante waitrequest y datos de vuelta marcados con valid.
+  //
+  // La memoria se modela plana e indexada por direccion de palabra, con los
+  // dos buffers separados por FB_BASE_B. Ademas introduce esperas: es lo que
+  // obliga al arbitro a decidir y al rasterizador a detenerse.
+  localparam int SD_LAT   = 4;        // ciclos entre la peticion y el dato
+  localparam int SD_WORDS = 2 * Acelerador_pkg::FB_BASE_B;
 
-  logic [PB-1:0] mem_fb [0:1][0:W*H-1];
+  logic [PB-1:0] sdram [0:SD_WORDS-1];
 
-  // Escritura: siempre al buffer trasero, que es el contrario del delantero.
+  // Esperas periodicas, como las de un refresco o una activacion de fila.
+  int   sd_espera_cnt = 0;
+  logic sd_ocupada;
+  always @(posedge clk) sd_espera_cnt <= (sd_espera_cnt == 29) ? 0 : sd_espera_cnt + 1;
+  assign sd_ocupada     = (sd_espera_cnt < 3);
+  assign sd_waitrequest = sd_ocupada;
+
+  // Escritura de rafaga: la direccion llega con el primer latido y avanza
+  // sola mientras write siga alto y waitrequest en bajo.
+  logic [Acelerador_pkg::SD_ADDR_BITS-1:0] sd_wr_ptr;
+  int   sd_wr_quedan  = 0;
+  int   sd_escrituras = 0;            // palabras escritas en total
+
   always @(posedge clk) begin
-    if (px_valid) mem_fb[~buffer_sel][px_addr] <= px_color;
-  end
-
-  // Contencion simulada del arbitro: cada cierto tiempo la memoria deja de
-  // aceptar peticiones unos ciclos, como cuando atiende al rasterizador.
-  // Es lo que pone a prueba el margen del buffer de lineas.
-  int  arb_cnt = 0;
-  logic estancado;
-  always @(posedge clk_pix) arb_cnt <= (arb_cnt == 49) ? 0 : arb_cnt + 1;
-  assign estancado = (arb_cnt < 2);
-  assign fb_ready  = !estancado;
-
-  // Lectura con latencia: la peticion entra en una tuberia y el dato sale
-  // FB_LAT ciclos despues, en orden.
-  logic [PB-1:0] lat_data [0:FB_LAT-1];
-  logic          lat_val  [0:FB_LAT-1];
-
-  always @(posedge clk_pix) begin
-    for (int i = FB_LAT-1; i > 0; i--) begin
-      lat_data[i] <= lat_data[i-1];
-      lat_val[i]  <= lat_val[i-1];
+    if (sd_write && !sd_waitrequest) begin
+      if (sd_wr_quedan == 0) begin
+        sdram[sd_address] <= sd_writedata;
+        sd_wr_ptr         <= sd_address + 1;
+        sd_wr_quedan      <= sd_burstcount - 1;
+      end else begin
+        sdram[sd_wr_ptr] <= sd_writedata;
+        sd_wr_ptr        <= sd_wr_ptr + 1;
+        sd_wr_quedan     <= sd_wr_quedan - 1;
+      end
+      sd_escrituras <= sd_escrituras + 1;
     end
-    lat_val[0]  <= fb_req && fb_ready;
-    lat_data[0] <= mem_fb[fb_front][fb_addr];
   end
 
-  assign fb_data_in  = lat_data[FB_LAT-1];
-  assign fb_valid_in = lat_val[FB_LAT-1];
+  // Lectura de rafaga: se acepta la peticion y los datos salen en orden,
+  // uno por ciclo, tras SD_LAT ciclos.
+  logic [Acelerador_pkg::SD_ADDR_BITS-1:0] sd_rd_ptr;
+  int   sd_rd_quedan = 0;
+
+  logic [PB-1:0] sd_lat_data [0:SD_LAT-1];
+  logic          sd_lat_val  [0:SD_LAT-1];
+  int            sd_lecturas = 0;
+
+  always @(posedge clk) begin
+    for (int i = SD_LAT-1; i > 0; i--) begin
+      sd_lat_data[i] <= sd_lat_data[i-1];
+      sd_lat_val[i]  <= sd_lat_val[i-1];
+    end
+    sd_lat_val[0]  <= 1'b0;
+
+    if (sd_read && !sd_waitrequest && (sd_rd_quedan == 0)) begin
+      // Primer latido de la rafaga
+      sd_lat_data[0] <= sdram[sd_address];
+      sd_lat_val[0]  <= 1'b1;
+      sd_rd_ptr      <= sd_address + 1;
+      sd_rd_quedan   <= sd_burstcount - 1;
+      sd_lecturas    <= sd_lecturas + 1;
+    end else if (sd_rd_quedan > 0) begin
+      sd_lat_data[0] <= sdram[sd_rd_ptr];
+      sd_lat_val[0]  <= 1'b1;
+      sd_rd_ptr      <= sd_rd_ptr + 1;
+      sd_rd_quedan   <= sd_rd_quedan - 1;
+      sd_lecturas    <= sd_lecturas + 1;
+    end
+  end
+
+  assign sd_readdata      = sd_lat_data[SD_LAT-1];
+  assign sd_readdatavalid = sd_lat_val[SD_LAT-1];
+
+  // Vista de la memoria por buffer, para las comprobaciones del banco.
+  function automatic logic [PB-1:0] sdram_px(input logic buf_b, input int idx);
+    sdram_px = sdram[(buf_b ? Acelerador_pkg::FB_BASE_B
+                            : Acelerador_pkg::FB_BASE_A) + idx];
+  endfunction
 
   //================================================ captura de la salida VGA
   // Reconstruye el cuadro a partir de lo que sale por el puerto de video, no
@@ -206,7 +256,7 @@ module tb_Acelerador_Grafico_Top;
   // rapido para que un cuadro entero quepa en poco tiempo de simulacion.
   // Lo que se verifica es la estructura de los contadores contra la tabla.
   logic vesa_clk = 1'b0;
-  always #0.25 vesa_clk = ~vesa_clk;   // 2 GHz: un cuadro entero cabe en 210 us
+  always #0.05 vesa_clk = ~vesa_clk;   // rapido a proposito: un cuadro en 42 us
 
   logic vesa_hs, vesa_vs, vesa_de, vesa_lfin, vesa_cini, vesa_vact;
 
@@ -223,7 +273,7 @@ module tb_Acelerador_Grafico_Top;
     .V_POL(Acelerador_pkg::VGA_VS_POL)
   ) u_vesa (
     .clk_pix(vesa_clk), .rst_n(rst_n),
-    .hsync(vesa_hs), .vsync(vesa_vs), .de(vesa_de),
+    .hsync(vesa_hs), .vsync(vesa_vs), .data_active(vesa_de),
     .pix_x(), .pix_y(),
     .linea_fin(vesa_lfin), .cuadro_inicio(vesa_cini),
     .vsync_act(vesa_vact));
@@ -234,6 +284,7 @@ module tb_Acelerador_Grafico_Top;
   logic vesa_hs_reposo = 1'b0, vesa_vs_reposo = 1'b0;
 
   int vh = 0, vhs = 0, vl = 0, vls = 0, vvis = 0;
+  int vesa_cuadros = 0;   // cuadros completos medidos
   logic vesa_hs_q, vesa_vs_q, vesa_lfin_q;
 
   always @(posedge vesa_clk) begin
@@ -265,6 +316,7 @@ module tb_Acelerador_Grafico_Top;
       vesa_vs_ancho  <= vls;
       vesa_v_periodo <= vl;
       vesa_visibles  <= vvis;
+      vesa_cuadros   <= vesa_cuadros + 1;
       vl   <= 0;
       vvis <= 0;
     end
@@ -303,8 +355,11 @@ module tb_Acelerador_Grafico_Top;
   logic buffer_antes;      // buffer delantero antes de un intercambio
   logic vio_moe06 = 1'b0;  // la maquina paso por MOE-06 alguna vez
 
+  // Con contrapresion el mismo pixel se presenta varios ciclos seguidos
+  // hasta que el gestor de framebuffer lo acepta. Lo que se cuenta es el
+  // pixel aceptado, no el ciclo en que estuvo presentado.
   always @(posedge clk) begin
-    if (px_valid) begin
+    if (px_valid && dut.px_ready) begin
       fb[px_y][px_x]  <= px_color;
       fbw[px_y][px_x] <= 1'b1;
       emitidos        <= emitidos + 1;
@@ -771,6 +826,10 @@ module tb_Acelerador_Grafico_Top;
     // la frecuencia solo importa sobre el hardware.
     $display("");
     $display("--- 15. Temporizacion VESA 640 x 480 a 60 Hz --------------");
+    // El primer cuadro arranca a medias, porque los contadores empiezan con
+    // el reinicio y no con el inicio de cuadro. Se descarta esperando a que
+    // haya varios cuadros completos medidos.
+    while (vesa_cuadros < 3) @(posedge vesa_clk);
     chk("periodo horizontal en relojes de pixel", vesa_h_periodo,
         Acelerador_pkg::VGA_H_VISIBLE + Acelerador_pkg::VGA_H_FRONT +
         Acelerador_pkg::VGA_H_SYNC    + Acelerador_pkg::VGA_H_BACK);
@@ -794,6 +853,7 @@ module tb_Acelerador_Grafico_Top;
     $display("");
     $display("--- 16. Barrido de video de extremo a extremo -------------");
     borrar_fb();
+    emitidos = 0;
     enviar(OPC_CLEAR,     16'd300, 0,0, 0,0, 0,0, 8'h00, 8'h00, 8'h20, 0);
     enviar(OPC_RECT,      16'd301, 1,1, 62,46, 0,0, 8'hFF, 8'hFF, 8'hFF, 0);
     enviar(OPC_RECT_FILL, 16'd302, 4,4, 16,14, 0,0, 8'h00, 8'h00, 8'hFF, 0);
@@ -803,6 +863,22 @@ module tb_Acelerador_Grafico_Top;
     enviar(OPC_CIRC_FILL, 16'd306, 55,35, 0,0, 0,0, 8'hFF, 8'h80, 8'h00, 6);
     esperar_fin();
     chk("la escena se rasterizo entera", perfilar_escritos(), W*H);
+    volcar("escena_referencia");
+
+    // Antes de intercambiar: lo que el gestor dejo en la memoria tiene que
+    // ser exactamente lo que el rasterizador produjo. Esta comprobacion
+    // separa el camino de escritura del de lectura, de modo que una
+    // diferencia posterior solo puede venir del barrido.
+    difs = 0;
+    for (int y = 0; y < H; y++)
+      for (int x = 0; x < W; x++)
+        if (sdram_px(~buffer_sel, y*W + x) !== fb[y][x]) begin
+          if (difs < 8)
+            $display("      memoria (%0d,%0d) idx=%0d: 0x%04h, esperado 0x%04h",
+                     x, y, y*W+x, sdram_px(~buffer_sel, y*W + x), fb[y][x]);
+          difs++;
+        end
+    chk("la memoria contiene la escena rasterizada", difs, 0);
 
     // Hasta aqui la escena esta en el buffer trasero y el monitor sigue
     // viendo el delantero. El intercambio es lo que la hace visible.
@@ -818,9 +894,29 @@ module tb_Acelerador_Grafico_Top;
     difs = 0;
     for (int y = 0; y < H; y++)
       for (int x = 0; x < W; x++)
-        if (cap_fb[y][x] !== fb[y][x]) difs++;
+        if (cap_fb[y][x] !== fb[y][x]) begin
+          if (difs < 12)
+            $display("      dif en (%0d,%0d): barrido 0x%04h, rasterizado 0x%04h",
+                     x, y, cap_fb[y][x], fb[y][x]);
+          difs++;
+        end
     chk("la imagen barrida coincide con la rasterizada", difs, 0);
 
+    // Contabilidad de la ruta de escritura: lo que el rasterizador entrego,
+    // lo que el gestor acepto y lo que llego de verdad a la memoria tienen
+    // que coincidir. Si no, se estan perdiendo pixeles entre medio.
+    chk("ninguna escritura se perdio camino a memoria",
+        sd_escrituras, int'(pixels_written));
+    chk("ninguna escritura fuera de region", int'(out_of_range), 0);
+
+    // La razon de ser del combinador: un relleno a pantalla completa escribe
+    // en direcciones contiguas, de modo que la memoria tiene que ver ocho
+    // veces menos transacciones que pixeles. Sin combinar, bw valdria lo
+    // mismo que el numero de pixeles.
+    chk_rango("palabras por transaccion de escritura",
+              int'(pixels_written) / int'(burst_writes), 2, 9);
+    chk_rango("palabras por transaccion de lectura",
+              int'(sd_lecturas) / int'(burst_reads), 2, 9);
     chk("sin vaciado del buffer de lineas", int'(vga_underrun), 0);
     chk_rango("cuadros barridos", int'(vga_frames), 0, 1000000);
     volcar_captura("salida_vga");

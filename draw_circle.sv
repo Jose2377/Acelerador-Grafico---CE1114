@@ -4,6 +4,7 @@ module draw_circle #(
   input  logic                    clk,
   input  logic                    rst_n,
   input  logic                    start,
+  input  logic                    stall,
   input  logic                    fill,
   input  logic signed [15:0]      cx_in, cy_in,
   input  logic        [9:0]       r_in,
@@ -45,7 +46,7 @@ module draw_circle #(
       cx <= '0; cy <= '0; rr <= '0; x <= '0; y <= '0; oct <= '0;
       dx <= '0; dy <= '0; err <= '0; r2 <= '0; dx2 <= '0; dy2 <= '0;
       col <= '0;
-    end else begin
+    end else if (!stall) begin
       case (st)
         K_IDLE: if (start) begin
           cx <= cx_in;  cy <= cy_in;  rr <= 16'(r_in);

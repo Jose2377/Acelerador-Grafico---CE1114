@@ -4,6 +4,7 @@ module draw_pixel #(
   input  logic                    clk,
   input  logic                    rst_n,
   input  logic                    start,
+  input  logic                    stall,
   input  logic signed [15:0]      x0, y0,
   input  logic [PIXEL_BITS-1:0]   color_in,
   output logic                    busy,
@@ -19,11 +20,13 @@ module draw_pixel #(
   logic signed [15:0]    x, y;
   logic [PIXEL_BITS-1:0] col;
 
+  // Con stall en alto la maquina se congela por completo. 
+  // El pixel presente se mantiene en la salida hasta que lo acepten. 
   always_ff @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
       st <= P_IDLE;
       x <= '0;  y <= '0;  col <= '0;
-    end else begin
+    end else if (!stall) begin
       case (st)
         P_IDLE: if (start) begin
           x <= x0;  y <= y0;  col <= color_in;

@@ -6,6 +6,7 @@ module draw_trian #(
   input  logic                    clk,
   input  logic                    rst_n,
   input  logic                    start,
+  input  logic                    stall,
   input  logic                    fill,
   input  logic signed [15:0]      x0, y0, x1, y1, x2, y2,
   input  logic [PIXEL_BITS-1:0]   color_in,
@@ -31,7 +32,7 @@ module draw_trian #(
   logic [PIXEL_BITS-1:0] lg_color;
 
   draw_line #(.PIXEL_BITS(PIXEL_BITS)) u_gen (
-    .clk(clk), .rst_n(rst_n), .start(lg_start),
+    .clk(clk), .rst_n(rst_n), .start(lg_start), .stall(stall),
     .x0_in(lg_x0), .y0_in(lg_y0), .x1_in(lg_x1), .y1_in(lg_y1),
     .color_in(col),
     .busy(lg_busy), .done(lg_done),
@@ -56,7 +57,7 @@ module draw_trian #(
       e0 <= '0; e1 <= '0; e2 <= '0; e0r <= '0; e1r <= '0; e2r <= '0;
       sx0 <= '0; sx1 <= '0; sx2 <= '0; sy0 <= '0; sy1 <= '0; sy2 <= '0;
       col <= '0;
-    end else begin
+    end else if (!stall) begin
       lg_start <= 1'b0;
       case (st)
         T_IDLE: if (start) begin

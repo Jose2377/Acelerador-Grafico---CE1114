@@ -4,6 +4,7 @@ module draw_line #(
   input  logic                    clk,
   input  logic                    rst_n,
   input  logic                    start,
+  input  logic                    stall,
   input  logic signed [15:0]      x0_in, y0_in, x1_in, y1_in,
   input  logic [PIXEL_BITS-1:0]   color_in,
   output logic                    busy,
@@ -29,7 +30,7 @@ module draw_line #(
       st <= L_IDLE;
       x <= '0; y <= '0; xe <= '0; ye <= '0; sx <= '0; sy <= '0;
       dx <= '0; dy <= '0; err <= '0; col <= '0;
-    end else begin
+    end else if (!stall) begin
       case (st)
         L_IDLE: if (start) begin
           x  <= x0_in;  y  <= y0_in;

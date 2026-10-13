@@ -22,14 +22,17 @@ module Acelerador_Grafico_Top #(
   input  logic               comand_w_ena,
   input  logic        [31:0] comand_w_data,
 
-  // Lectura del framebuffer por el barrido de video. 
-  // Va en el dominio de pixel y sale al exterior mientras no exista el gestor de framebuffer.
-  output logic                                   frame_buffer_req,
-  output logic [$clog2(SCREEN_W*SCREEN_H)-1:0]   frame_buffer_addr,
-  output logic                                   frame_buffer_front,
-  input  logic                                   frame_buffer_ready,
-  input  logic [PIXEL_BITS-1:0]                  frame_buffer_data_in,
-  input  logic                                   frame_buffer_valid_in,
+  // Maestro de rafaga Avalon-MM hacia el controlador de SDRAM. Es lo unico
+  // que queda abierto de la ruta de datos grafica: el puerto de lectura del
+  // barrido ya lo cierra el gestor de framebuffer dentro de este modulo.
+  output logic                                   sd_read,
+  output logic                                   sd_write,
+  output logic [Acelerador_pkg::SD_ADDR_BITS-1:0] sd_address,
+  output logic [$clog2(Acelerador_pkg::BURST_LEN+1)-1:0] sd_burstcount,
+  output logic [PIXEL_BITS-1:0]                  sd_writedata,
+  input  logic                                   sd_waitrequest,
+  input  logic [PIXEL_BITS-1:0]                  sd_readdata,
+  input  logic                                   sd_readdatavalid,
 
   // Salida de video hacia el conversor de la placa
   output logic        [7:0]  vga_r, vga_g, vga_b,
@@ -68,7 +71,13 @@ module Acelerador_Grafico_Top #(
 
   // Auxiliares
   output logic        [15:0] seq_last,
-  output logic        [31:0] clip_count
+  output logic        [31:0] clip_count,
+
+  // Instrumentacion del gestor de framebuffer
+  output logic        [31:0] burst_writes,
+  output logic        [31:0] burst_reads,
+  output logic        [31:0] pixels_written,
+  output logic        [31:0] out_of_range
 );
 
   // Ensamblador de las seis palabras del paquete
@@ -151,10 +160,12 @@ module Acelerador_Grafico_Top #(
 
   // Procesador de comandos y rasterizador 2D
   logic [31:0] pix_count;
+  logic        px_ready;
 
   processor_raster #(.SCREEN_W(SCREEN_W), .SCREEN_H(SCREEN_H),
                      .PIXEL_BITS(PIXEL_BITS)) u_raster (
     .clk(clk), .rst_n(rst_n),
+    .stall(!px_ready),
     .start(ras_start), .op(ras_op),
     .x0(ras_x0), .y0(ras_y0), .x1(ras_x1), .y1(ras_y1),
     .x2(ras_x2), .y2(ras_y2), .radius(ras_radius),
@@ -208,6 +219,12 @@ module Acelerador_Grafico_Top #(
   logic front_buffer_pix;             // buffer_sel visto desde el dominio pixel
   logic vsync_pix;                    // VSYNC activo en alto, dominio de pixel
 
+  // Puerto de lectura del barrido, ahora interno: lo cierra el gestor de
+  // framebuffer. Vive entero en el dominio de pixel.
+  logic                                   fb_req, fb_front, fb_ready, fb_valid;
+  logic [$clog2(SCREEN_W*SCREEN_H)-1:0]   fb_addr;
+  logic [PIXEL_BITS-1:0]                  fb_data;
+
 
   sync2 #(.VALOR_RESET(1'b0)) u_sync_buffer (
     .clk_dst(clk_pix), .rst_n(rst_pix_n),
@@ -229,12 +246,40 @@ module Acelerador_Grafico_Top #(
   ) u_vga (
     .clk_pix(clk_pix), .rst_n(rst_pix_n),
     .front_buffer(front_buffer_pix),
-    .frame_buffer_req(frame_buffer_req), .frame_buffer_addr(frame_buffer_addr), .frame_buffer_front(fb_front),
-    .frame_buffer_ready(frame_buffer_ready), .frame_buffer_data_in(frame_buffer_data_in), .frame_buffer_valid_in(frame_buffer_valid_in),
+    .frame_buffer_req(fb_req), .frame_buffer_addr(fb_addr),
+    .frame_buffer_front(fb_front),
+    .frame_buffer_ready(fb_ready), .frame_buffer_data_in(fb_data),
+    .frame_buffer_valid_in(fb_valid),
     .vga_r(vga_r), .vga_g(vga_g), .vga_b(vga_b),
     .vga_hs(vga_hs), .vga_vs(vga_vs),
     .vga_blank_n(vga_blank_n), .vga_sync_n(vga_sync_n),
     .vsync_act(vsync_pix),
     .underrun(vga_underrun), .frame_count(vga_frames));
+
+  // Gestor de framebuffer
+  logic vaciar_combinador;
+  assign vaciar_combinador = !ras_busy;
+
+  framebuffer_controller #(
+    .SCREEN_W(SCREEN_W), .SCREEN_H(SCREEN_H), .PIXEL_BITS(PIXEL_BITS),
+    .BURST_LEN(Acelerador_pkg::BURST_LEN),
+    .SD_ADDR_BITS(Acelerador_pkg::SD_ADDR_BITS),
+    .FB_BASE_A(Acelerador_pkg::FB_BASE_A),
+    .FB_BASE_B(Acelerador_pkg::FB_BASE_B)
+  ) u_fbc (
+    .clk(clk), .rst_n(rst_n),
+    .px_valid(px_valid), .px_addr(px_addr), .px_color(px_color),
+    .px_ready(px_ready),
+    .buffer_sel(buffer_sel), .vaciar(vaciar_combinador),
+    .clk_pix(clk_pix), .rst_pix_n(rst_pix_n),
+    .frame_buffer_req(fb_req), .frame_buffer_addr(fb_addr),
+    .frame_buffer_front(fb_front), .frame_buffer_ready(fb_ready),
+    .frame_buffer_data_in(fb_data), .frame_buffer_valid_in(fb_valid),
+    .sd_read(sd_read), .sd_write(sd_write), .sd_address(sd_address),
+    .sd_burstcount(sd_burstcount), .sd_writedata(sd_writedata),
+    .sd_waitrequest(sd_waitrequest), .sd_readdata(sd_readdata),
+    .sd_readdatavalid(sd_readdatavalid),
+    .burst_writes(burst_writes), .burst_reads(burst_reads),
+    .pixels_written(pixels_written), .out_of_range(out_of_range));
 
 endmodule

@@ -7,6 +7,8 @@ module pixel_gen #(
   input  logic                    rst_n,
   input  logic                    clr_cnt,
 
+  input  logic                    px_ready,
+
   // Flujo
   input  logic                    valid_in,
   input  logic signed [15:0]      x_in, y_in,
@@ -43,8 +45,8 @@ module pixel_gen #(
       pix_count  <= '0;
       clip_count <= '0;
     end else begin
-      if (px_valid) pix_count  <= pix_count  + 32'd1;
-      if (fuera)    clip_count <= clip_count + 32'd1;
+      if (px_valid && px_ready) pix_count  <= pix_count  + 32'd1;
+      if (fuera    && px_ready) clip_count <= clip_count + 32'd1;
     end
   end
 

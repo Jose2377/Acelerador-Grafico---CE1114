@@ -8,6 +8,7 @@ module processor_raster #(
 
   // Comando decodificado
   input  logic               start,
+  input  logic               stall,     // El gestor de framebuffer no acepta
   input  logic        [3:0]  op,
   input  logic signed [15:0] x0, y0, x1, y1, x2, y2,
   input  logic        [9:0]  radius,
@@ -78,12 +79,23 @@ module processor_raster #(
 
   // Inicializacion de variables
   logic s_pix, s_rect, s_line, s_circ, s_tria;
-  assign s_pix  = start &&  (op == OP_PIXEL);
-  assign s_rect = start && ((op == OP_RECT) || (op == OP_RECT_FILL)
+
+  logic start_pend, start_ef, ocupado;
+
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n)      start_pend <= 1'b0;
+    else if (start)  start_pend <= 1'b1;
+    else if (start_ef) start_pend <= 1'b0;
+  end
+
+  assign start_ef = start_pend && !stall && !ocupado;
+
+  assign s_pix  = start_ef &&  (op == OP_PIXEL);
+  assign s_rect = start_ef && ((op == OP_RECT) || (op == OP_RECT_FILL)
                          || (op == OP_CLEAR));
-  assign s_line = start &&  (op == OP_LINE);
-  assign s_circ = start && ((op == OP_CIRC) || (op == OP_CIRC_FILL));
-  assign s_tria = start && ((op == OP_TRIA) || (op == OP_TRIA_FILL));
+  assign s_line = start_ef &&  (op == OP_LINE);
+  assign s_circ = start_ef && ((op == OP_CIRC) || (op == OP_CIRC_FILL));
+  assign s_tria = start_ef && ((op == OP_TRIA) || (op == OP_TRIA_FILL));
 
   logic               bp, br, bl, bc, bt;
   logic               dp, dr, dl, dc, dt;
@@ -94,32 +106,32 @@ module processor_raster #(
 
   // Llamados de operaciones
   draw_pixel #(.PIXEL_BITS(PIXEL_BITS)) u_pix (
-    .clk(clk), .rst_n(rst_n), .start(s_pix),
+    .clk(clk), .rst_n(rst_n), .start(s_pix), .stall(stall),
     .x0(x0), .y0(y0), .color_in(color565),
     .busy(bp), .done(dp), .px_valid(vp),
     .px_x(xp), .px_y(yp), .px_color(cp));
 
   draw_rect #(.PIXEL_BITS(PIXEL_BITS)) u_rect (
-    .clk(clk), .rst_n(rst_n), .start(s_rect), .fill(rfill),
+    .clk(clk), .rst_n(rst_n), .start(s_rect), .stall(stall), .fill(rfill),
     .x0(rx0), .y0(ry0), .x1(rx1), .y1(ry1), .color_in(color565),
     .busy(br), .done(dr), .px_valid(vr),
     .px_x(xr), .px_y(yr), .px_color(cr));
 
   draw_line #(.PIXEL_BITS(PIXEL_BITS)) u_line (
-    .clk(clk), .rst_n(rst_n), .start(s_line),
+    .clk(clk), .rst_n(rst_n), .start(s_line), .stall(stall),
     .x0_in(x0), .y0_in(y0), .x1_in(x1), .y1_in(y1), .color_in(color565),
     .busy(bl), .done(dl), .px_valid(vl),
     .px_x(xl), .px_y(yl), .px_color(cl));
 
   draw_circle #(.PIXEL_BITS(PIXEL_BITS)) u_circ (
-    .clk(clk), .rst_n(rst_n), .start(s_circ), .fill(op == OP_CIRC_FILL),
+    .clk(clk), .rst_n(rst_n), .start(s_circ), .stall(stall), .fill(op == OP_CIRC_FILL),
     .cx_in(x0), .cy_in(y0), .r_in(radius), .color_in(color565),
     .busy(bc), .done(dc), .px_valid(vc),
     .px_x(xc), .px_y(yc), .px_color(cc));
 
   draw_trian #(.SCREEN_W(SCREEN_W), .SCREEN_H(SCREEN_H),
                .PIXEL_BITS(PIXEL_BITS)) u_tria (
-    .clk(clk), .rst_n(rst_n), .start(s_tria), .fill(op == OP_TRIA_FILL),
+    .clk(clk), .rst_n(rst_n), .start(s_tria), .stall(stall), .fill(op == OP_TRIA_FILL),
     .x0(x0), .y0(y0), .x1(x1), .y1(y1), .x2(x2), .y2(y2),
     .color_in(color565),
     .busy(bt), .done(dt), .px_valid(vt),
@@ -143,13 +155,24 @@ module processor_raster #(
   // Generador de pixeles
   pixel_gen #(.SCREEN_W(SCREEN_W), .SCREEN_H(SCREEN_H),
               .PIXEL_BITS(PIXEL_BITS)) u_pxgen (
-    .clk(clk), .rst_n(rst_n), .clr_cnt(clr_cnt),
+    .clk(clk), .rst_n(rst_n), .clr_cnt(clr_cnt), .px_ready(!stall),
     .valid_in(v_raw), .x_in(x_raw), .y_in(y_raw), .color_in(k_raw),
     .px_valid(px_valid), .px_x(px_x), .px_y(px_y),
     .px_color(px_color), .px_addr(px_addr),
     .pix_count(pix_count), .clip_count(clip_count));
 
-  assign busy = bp | br | bl | bc | bt;
-  assign done = dp | dr | dl | dc | dt;
+  assign ocupado = bp | br | bl | bc | bt;
+  assign busy    = ocupado | start_pend;
+
+  logic done_raw, done_q;
+
+  assign done_raw = dp | dr | dl | dc | dt;
+
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) done_q <= 1'b0;
+    else        done_q <= done_raw;
+  end
+
+  assign done = done_raw && !done_q;
 
 endmodule

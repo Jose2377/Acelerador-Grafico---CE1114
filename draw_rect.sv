@@ -4,6 +4,7 @@ module draw_rect #(
   input  logic                    clk,
   input  logic                    rst_n,
   input  logic                    start,
+  input  logic                    stall,
   input  logic                    fill,
   input  logic signed [15:0]      x0, y0, x1, y1,
   input  logic [PIXEL_BITS-1:0]   color_in,
@@ -25,7 +26,7 @@ module draw_rect #(
     if (!rst_n) begin
       st <= R_IDLE;
       xa <= '0; xb <= '0; ya <= '0; yb <= '0; cx <= '0; cy <= '0; col <= '0;
-    end else begin
+    end else if (!stall) begin
       case (st)
         R_IDLE: if (start) begin
           xa <= (x0 < x1) ? x0 : x1;   xb <= (x0 > x1) ? x0 : x1;
