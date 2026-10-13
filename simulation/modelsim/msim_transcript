@@ -12,252 +12,254 @@
 # 
 # vlog -sv -work work +incdir+C:/Users/Jose\ Maria\ Vindas/Documents/GitHub/Acelerador-Grafico---CE1114 {C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/Acelerador_pkg.sv}
 # Model Technology ModelSim - Intel FPGA Edition vlog 10.5b Compiler 2016.10 Oct  5 2016
-# Start time: 01:06:26 on Oct 13,2026
+# Start time: 02:22:50 on Oct 13,2026
 # vlog -reportprogress 300 -sv -work work "+incdir+C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114" C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/Acelerador_pkg.sv 
 # -- Compiling package Acelerador_pkg
 # 
 # Top level modules:
 # 	--none--
-# End time: 01:06:26 on Oct 13,2026, Elapsed time: 0:00:00
+# End time: 02:22:50 on Oct 13,2026, Elapsed time: 0:00:00
 # Errors: 0, Warnings: 0
 # vlog -sv -work work +incdir+C:/Users/Jose\ Maria\ Vindas/Documents/GitHub/Acelerador-Grafico---CE1114 {C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/fifo.sv}
 # Model Technology ModelSim - Intel FPGA Edition vlog 10.5b Compiler 2016.10 Oct  5 2016
-# Start time: 01:06:26 on Oct 13,2026
+# Start time: 02:22:50 on Oct 13,2026
 # vlog -reportprogress 300 -sv -work work "+incdir+C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114" C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/fifo.sv 
 # -- Compiling module fifo
 # 
 # Top level modules:
 # 	fifo
-# End time: 01:06:26 on Oct 13,2026, Elapsed time: 0:00:00
+# End time: 02:22:50 on Oct 13,2026, Elapsed time: 0:00:00
 # Errors: 0, Warnings: 0
 # vlog -sv -work work +incdir+C:/Users/Jose\ Maria\ Vindas/Documents/GitHub/Acelerador-Grafico---CE1114 {C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/draw_pixel.sv}
 # Model Technology ModelSim - Intel FPGA Edition vlog 10.5b Compiler 2016.10 Oct  5 2016
-# Start time: 01:06:26 on Oct 13,2026
+# Start time: 02:22:50 on Oct 13,2026
 # vlog -reportprogress 300 -sv -work work "+incdir+C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114" C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/draw_pixel.sv 
 # -- Compiling module draw_pixel
 # 
 # Top level modules:
 # 	draw_pixel
-# End time: 01:06:26 on Oct 13,2026, Elapsed time: 0:00:00
+# End time: 02:22:50 on Oct 13,2026, Elapsed time: 0:00:00
 # Errors: 0, Warnings: 0
 # vlog -sv -work work +incdir+C:/Users/Jose\ Maria\ Vindas/Documents/GitHub/Acelerador-Grafico---CE1114 {C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/draw_rect.sv}
 # Model Technology ModelSim - Intel FPGA Edition vlog 10.5b Compiler 2016.10 Oct  5 2016
-# Start time: 01:06:26 on Oct 13,2026
+# Start time: 02:22:50 on Oct 13,2026
 # vlog -reportprogress 300 -sv -work work "+incdir+C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114" C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/draw_rect.sv 
 # -- Compiling module draw_rect
 # 
 # Top level modules:
 # 	draw_rect
-# End time: 01:06:26 on Oct 13,2026, Elapsed time: 0:00:00
+# End time: 02:22:50 on Oct 13,2026, Elapsed time: 0:00:00
 # Errors: 0, Warnings: 0
 # vlog -sv -work work +incdir+C:/Users/Jose\ Maria\ Vindas/Documents/GitHub/Acelerador-Grafico---CE1114 {C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/draw_circle.sv}
 # Model Technology ModelSim - Intel FPGA Edition vlog 10.5b Compiler 2016.10 Oct  5 2016
-# Start time: 01:06:26 on Oct 13,2026
+# Start time: 02:22:50 on Oct 13,2026
 # vlog -reportprogress 300 -sv -work work "+incdir+C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114" C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/draw_circle.sv 
 # -- Compiling module draw_circle
 # 
 # Top level modules:
 # 	draw_circle
-# End time: 01:06:26 on Oct 13,2026, Elapsed time: 0:00:00
+# End time: 02:22:50 on Oct 13,2026, Elapsed time: 0:00:00
 # Errors: 0, Warnings: 0
 # vlog -sv -work work +incdir+C:/Users/Jose\ Maria\ Vindas/Documents/GitHub/Acelerador-Grafico---CE1114 {C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/draw_trian.sv}
 # Model Technology ModelSim - Intel FPGA Edition vlog 10.5b Compiler 2016.10 Oct  5 2016
-# Start time: 01:06:26 on Oct 13,2026
+# Start time: 02:22:50 on Oct 13,2026
 # vlog -reportprogress 300 -sv -work work "+incdir+C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114" C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/draw_trian.sv 
 # -- Compiling module draw_trian
 # 
 # Top level modules:
 # 	draw_trian
-# End time: 01:06:26 on Oct 13,2026, Elapsed time: 0:00:00
+# End time: 02:22:50 on Oct 13,2026, Elapsed time: 0:00:00
 # Errors: 0, Warnings: 0
 # vlog -sv -work work +incdir+C:/Users/Jose\ Maria\ Vindas/Documents/GitHub/Acelerador-Grafico---CE1114 {C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/draw_line.sv}
 # Model Technology ModelSim - Intel FPGA Edition vlog 10.5b Compiler 2016.10 Oct  5 2016
-# Start time: 01:06:26 on Oct 13,2026
+# Start time: 02:22:50 on Oct 13,2026
 # vlog -reportprogress 300 -sv -work work "+incdir+C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114" C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/draw_line.sv 
 # -- Compiling module draw_line
 # 
 # Top level modules:
 # 	draw_line
-# End time: 01:06:26 on Oct 13,2026, Elapsed time: 0:00:00
+# End time: 02:22:50 on Oct 13,2026, Elapsed time: 0:00:00
 # Errors: 0, Warnings: 0
 # vlog -sv -work work +incdir+C:/Users/Jose\ Maria\ Vindas/Documents/GitHub/Acelerador-Grafico---CE1114 {C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/clip_scissor.sv}
 # Model Technology ModelSim - Intel FPGA Edition vlog 10.5b Compiler 2016.10 Oct  5 2016
-# Start time: 01:06:26 on Oct 13,2026
+# Start time: 02:22:50 on Oct 13,2026
 # vlog -reportprogress 300 -sv -work work "+incdir+C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114" C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/clip_scissor.sv 
 # -- Compiling module clip_scissor
 # 
 # Top level modules:
 # 	clip_scissor
-# End time: 01:06:26 on Oct 13,2026, Elapsed time: 0:00:00
+# End time: 02:22:51 on Oct 13,2026, Elapsed time: 0:00:01
 # Errors: 0, Warnings: 0
 # vlog -sv -work work +incdir+C:/Users/Jose\ Maria\ Vindas/Documents/GitHub/Acelerador-Grafico---CE1114 {C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/addr_calc.sv}
 # Model Technology ModelSim - Intel FPGA Edition vlog 10.5b Compiler 2016.10 Oct  5 2016
-# Start time: 01:06:27 on Oct 13,2026
+# Start time: 02:22:51 on Oct 13,2026
 # vlog -reportprogress 300 -sv -work work "+incdir+C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114" C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/addr_calc.sv 
 # -- Compiling module addr_calc
 # 
 # Top level modules:
 # 	addr_calc
-# End time: 01:06:27 on Oct 13,2026, Elapsed time: 0:00:00
+# End time: 02:22:51 on Oct 13,2026, Elapsed time: 0:00:00
 # Errors: 0, Warnings: 0
 # vlog -sv -work work +incdir+C:/Users/Jose\ Maria\ Vindas/Documents/GitHub/Acelerador-Grafico---CE1114 {C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/pixel_gen.sv}
 # Model Technology ModelSim - Intel FPGA Edition vlog 10.5b Compiler 2016.10 Oct  5 2016
-# Start time: 01:06:27 on Oct 13,2026
+# Start time: 02:22:51 on Oct 13,2026
 # vlog -reportprogress 300 -sv -work work "+incdir+C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114" C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/pixel_gen.sv 
 # -- Compiling module pixel_gen
 # 
 # Top level modules:
 # 	pixel_gen
-# End time: 01:06:27 on Oct 13,2026, Elapsed time: 0:00:00
+# End time: 02:22:51 on Oct 13,2026, Elapsed time: 0:00:00
 # Errors: 0, Warnings: 0
 # vlog -sv -work work +incdir+C:/Users/Jose\ Maria\ Vindas/Documents/GitHub/Acelerador-Grafico---CE1114 {C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/sync2.sv}
 # Model Technology ModelSim - Intel FPGA Edition vlog 10.5b Compiler 2016.10 Oct  5 2016
-# Start time: 01:06:27 on Oct 13,2026
+# Start time: 02:22:51 on Oct 13,2026
 # vlog -reportprogress 300 -sv -work work "+incdir+C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114" C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/sync2.sv 
 # -- Compiling module sync2
 # 
 # Top level modules:
 # 	sync2
-# End time: 01:06:27 on Oct 13,2026, Elapsed time: 0:00:00
+# End time: 02:22:51 on Oct 13,2026, Elapsed time: 0:00:00
 # Errors: 0, Warnings: 0
 # vlog -sv -work work +incdir+C:/Users/Jose\ Maria\ Vindas/Documents/GitHub/Acelerador-Grafico---CE1114 {C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/vga_timing.sv}
 # Model Technology ModelSim - Intel FPGA Edition vlog 10.5b Compiler 2016.10 Oct  5 2016
-# Start time: 01:06:27 on Oct 13,2026
+# Start time: 02:22:51 on Oct 13,2026
 # vlog -reportprogress 300 -sv -work work "+incdir+C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114" C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/vga_timing.sv 
 # -- Compiling module vga_timing
 # 
 # Top level modules:
 # 	vga_timing
-# End time: 01:06:27 on Oct 13,2026, Elapsed time: 0:00:00
+# End time: 02:22:51 on Oct 13,2026, Elapsed time: 0:00:00
 # Errors: 0, Warnings: 0
 # vlog -sv -work work +incdir+C:/Users/Jose\ Maria\ Vindas/Documents/GitHub/Acelerador-Grafico---CE1114 {C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/line_buffer.sv}
 # Model Technology ModelSim - Intel FPGA Edition vlog 10.5b Compiler 2016.10 Oct  5 2016
-# Start time: 01:06:27 on Oct 13,2026
+# Start time: 02:22:51 on Oct 13,2026
 # vlog -reportprogress 300 -sv -work work "+incdir+C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114" C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/line_buffer.sv 
 # -- Compiling module line_buffer
 # 
 # Top level modules:
 # 	line_buffer
-# End time: 01:06:27 on Oct 13,2026, Elapsed time: 0:00:00
+# End time: 02:22:51 on Oct 13,2026, Elapsed time: 0:00:00
 # Errors: 0, Warnings: 0
 # vlog -sv -work work +incdir+C:/Users/Jose\ Maria\ Vindas/Documents/GitHub/Acelerador-Grafico---CE1114 {C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/async_fifo.sv}
 # Model Technology ModelSim - Intel FPGA Edition vlog 10.5b Compiler 2016.10 Oct  5 2016
-# Start time: 01:06:27 on Oct 13,2026
+# Start time: 02:22:51 on Oct 13,2026
 # vlog -reportprogress 300 -sv -work work "+incdir+C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114" C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/async_fifo.sv 
 # -- Compiling module async_fifo
 # 
 # Top level modules:
 # 	async_fifo
-# End time: 01:06:27 on Oct 13,2026, Elapsed time: 0:00:00
+# End time: 02:22:51 on Oct 13,2026, Elapsed time: 0:00:00
 # Errors: 0, Warnings: 0
 # vlog -sv -work work +incdir+C:/Users/Jose\ Maria\ Vindas/Documents/GitHub/Acelerador-Grafico---CE1114 {C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/framebuffer_controller.sv}
 # Model Technology ModelSim - Intel FPGA Edition vlog 10.5b Compiler 2016.10 Oct  5 2016
-# Start time: 01:06:27 on Oct 13,2026
+# Start time: 02:22:51 on Oct 13,2026
 # vlog -reportprogress 300 -sv -work work "+incdir+C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114" C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/framebuffer_controller.sv 
 # -- Compiling module framebuffer_controller
 # 
 # Top level modules:
 # 	framebuffer_controller
-# End time: 01:06:27 on Oct 13,2026, Elapsed time: 0:00:00
+# End time: 02:22:51 on Oct 13,2026, Elapsed time: 0:00:00
 # Errors: 0, Warnings: 0
 # vlog -sv -work work +incdir+C:/Users/Jose\ Maria\ Vindas/Documents/GitHub/Acelerador-Grafico---CE1114 {C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/framebuffer_onchip.sv}
 # Model Technology ModelSim - Intel FPGA Edition vlog 10.5b Compiler 2016.10 Oct  5 2016
-# Start time: 01:06:27 on Oct 13,2026
+# Start time: 02:22:51 on Oct 13,2026
 # vlog -reportprogress 300 -sv -work work "+incdir+C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114" C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/framebuffer_onchip.sv 
 # -- Compiling module framebuffer_onchip
 # 
 # Top level modules:
 # 	framebuffer_onchip
-# End time: 01:06:27 on Oct 13,2026, Elapsed time: 0:00:00
+# End time: 02:22:51 on Oct 13,2026, Elapsed time: 0:00:00
 # Errors: 0, Warnings: 0
 # vlog -sv -work work +incdir+C:/Users/Jose\ Maria\ Vindas/Documents/GitHub/Acelerador-Grafico---CE1114 {C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/rend_counter.sv}
 # Model Technology ModelSim - Intel FPGA Edition vlog 10.5b Compiler 2016.10 Oct  5 2016
-# Start time: 01:06:27 on Oct 13,2026
+# Start time: 02:22:51 on Oct 13,2026
 # vlog -reportprogress 300 -sv -work work "+incdir+C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114" C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/rend_counter.sv 
 # -- Compiling module rend_counter
 # 
 # Top level modules:
 # 	rend_counter
-# End time: 01:06:27 on Oct 13,2026, Elapsed time: 0:00:00
+# End time: 02:22:51 on Oct 13,2026, Elapsed time: 0:00:00
 # Errors: 0, Warnings: 0
 # vlog -sv -work work +incdir+C:/Users/Jose\ Maria\ Vindas/Documents/GitHub/Acelerador-Grafico---CE1114 {C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/led_status.sv}
 # Model Technology ModelSim - Intel FPGA Edition vlog 10.5b Compiler 2016.10 Oct  5 2016
-# Start time: 01:06:27 on Oct 13,2026
+# Start time: 02:22:51 on Oct 13,2026
 # vlog -reportprogress 300 -sv -work work "+incdir+C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114" C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/led_status.sv 
 # -- Compiling module led_status
 # 
 # Top level modules:
 # 	led_status
-# End time: 01:06:27 on Oct 13,2026, Elapsed time: 0:00:00
+# End time: 02:22:51 on Oct 13,2026, Elapsed time: 0:00:00
 # Errors: 0, Warnings: 0
 # vlog -sv -work work +incdir+C:/Users/Jose\ Maria\ Vindas/Documents/GitHub/Acelerador-Grafico---CE1114 {C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/Acelerador_Grafico_Top.sv}
 # Model Technology ModelSim - Intel FPGA Edition vlog 10.5b Compiler 2016.10 Oct  5 2016
-# Start time: 01:06:28 on Oct 13,2026
+# Start time: 02:22:51 on Oct 13,2026
 # vlog -reportprogress 300 -sv -work work "+incdir+C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114" C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/Acelerador_Grafico_Top.sv 
 # -- Compiling module Acelerador_Grafico_Top
 # -- Importing package Acelerador_pkg
 # 
 # Top level modules:
 # 	Acelerador_Grafico_Top
-# End time: 01:06:28 on Oct 13,2026, Elapsed time: 0:00:00
+# End time: 02:22:51 on Oct 13,2026, Elapsed time: 0:00:00
 # Errors: 0, Warnings: 0
 # vlog -sv -work work +incdir+C:/Users/Jose\ Maria\ Vindas/Documents/GitHub/Acelerador-Grafico---CE1114 {C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/decoder_fsm.sv}
 # Model Technology ModelSim - Intel FPGA Edition vlog 10.5b Compiler 2016.10 Oct  5 2016
-# Start time: 01:06:28 on Oct 13,2026
+# Start time: 02:22:51 on Oct 13,2026
 # vlog -reportprogress 300 -sv -work work "+incdir+C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114" C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/decoder_fsm.sv 
 # -- Compiling module decoder_fsm
 # -- Importing package Acelerador_pkg
 # 
 # Top level modules:
 # 	decoder_fsm
-# End time: 01:06:28 on Oct 13,2026, Elapsed time: 0:00:00
+# End time: 02:22:51 on Oct 13,2026, Elapsed time: 0:00:00
 # Errors: 0, Warnings: 0
 # vlog -sv -work work +incdir+C:/Users/Jose\ Maria\ Vindas/Documents/GitHub/Acelerador-Grafico---CE1114 {C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/processor_raster.sv}
 # Model Technology ModelSim - Intel FPGA Edition vlog 10.5b Compiler 2016.10 Oct  5 2016
-# Start time: 01:06:28 on Oct 13,2026
+# Start time: 02:22:51 on Oct 13,2026
 # vlog -reportprogress 300 -sv -work work "+incdir+C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114" C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/processor_raster.sv 
 # -- Compiling module processor_raster
 # -- Importing package Acelerador_pkg
 # 
 # Top level modules:
 # 	processor_raster
-# End time: 01:06:28 on Oct 13,2026, Elapsed time: 0:00:00
+# End time: 02:22:51 on Oct 13,2026, Elapsed time: 0:00:00
 # Errors: 0, Warnings: 0
 # vlog -sv -work work +incdir+C:/Users/Jose\ Maria\ Vindas/Documents/GitHub/Acelerador-Grafico---CE1114 {C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/vga_controller.sv}
 # Model Technology ModelSim - Intel FPGA Edition vlog 10.5b Compiler 2016.10 Oct  5 2016
-# Start time: 01:06:28 on Oct 13,2026
+# Start time: 02:22:51 on Oct 13,2026
 # vlog -reportprogress 300 -sv -work work "+incdir+C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114" C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/vga_controller.sv 
 # -- Compiling module vga_controller
 # -- Importing package Acelerador_pkg
 # 
 # Top level modules:
 # 	vga_controller
-# End time: 01:06:28 on Oct 13,2026, Elapsed time: 0:00:00
+# End time: 02:22:51 on Oct 13,2026, Elapsed time: 0:00:00
 # Errors: 0, Warnings: 0
 # 
-vlog "C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/tb_Acelerador_Grafico_Top"
-# Model Technology ModelSim - Intel FPGA Edition vlog 10.5b Compiler 2016.10 Oct  5 2016
-# Start time: 01:07:05 on Oct 13,2026
-# vlog -reportprogress 300 C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/tb_Acelerador_Grafico_Top 
-# ** Error: (vlog-7) Failed to open design unit file "C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/tb_Acelerador_Grafico_Top" in read mode.
-# No such file or directory. (errno = ENOENT)
-# End time: 01:07:05 on Oct 13,2026, Elapsed time: 0:00:00
-# Errors: 1, Warnings: 0
-# C:/intelFPGA/18.1/modelsim_ase/win32aloem/vlog failed.
 vlog "C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/tb_Acelerador_Grafico_Top.sv"
 # Model Technology ModelSim - Intel FPGA Edition vlog 10.5b Compiler 2016.10 Oct  5 2016
-# Start time: 01:07:11 on Oct 13,2026
+# Start time: 02:23:52 on Oct 13,2026
 # vlog -reportprogress 300 C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/tb_Acelerador_Grafico_Top.sv 
 # -- Compiling module tb_Acelerador_Grafico_Top
 # -- Importing package Acelerador_pkg
 # 
 # Top level modules:
 # 	tb_Acelerador_Grafico_Top
-# End time: 01:07:11 on Oct 13,2026, Elapsed time: 0:00:00
+# End time: 02:23:52 on Oct 13,2026, Elapsed time: 0:00:00
+# Errors: 0, Warnings: 0
+vlog "C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/tb_escena_faro.sv"
+# Model Technology ModelSim - Intel FPGA Edition vlog 10.5b Compiler 2016.10 Oct  5 2016
+# Start time: 02:24:07 on Oct 13,2026
+# vlog -reportprogress 300 C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/tb_escena_faro.sv 
+# -- Compiling module tb_escena_faro
+# -- Importing package Acelerador_pkg
+# 
+# Top level modules:
+# 	tb_escena_faro
+# End time: 02:24:07 on Oct 13,2026, Elapsed time: 0:00:00
 # Errors: 0, Warnings: 0
 vsim work.tb_Acelerador_Grafico_Top
 # vsim work.tb_Acelerador_Grafico_Top 
-# Start time: 01:07:19 on Oct 13,2026
+# Start time: 02:24:11 on Oct 13,2026
 # Loading sv_std.std
 # Loading work.Acelerador_pkg
 # Loading work.tb_Acelerador_Grafico_Top
@@ -444,19 +446,12 @@ run -all
 # --- 16. Barrido de video de extremo a extremo -------------
 #   [OK  ] la escena se rasterizo entera                  = 3072
 #   -> fotograma 9 volcado: escena_referencia (3072 pixeles)
-#       memoria (1,2) idx=129: 0x0004, esperado 0xffff
-#       memoria (24,2) idx=152: 0x6000, esperado 0x0004
-#       memoria (25,2) idx=153: 0x6000, esperado 0x0004
-#       memoria (26,2) idx=154: 0x6800, esperado 0x0004
-#       memoria (27,2) idx=155: 0x6800, esperado 0x0004
-#       memoria (28,2) idx=156: 0x7000, esperado 0x0004
-#       memoria (29,2) idx=157: 0x7000, esperado 0x0004
-#       memoria (30,2) idx=158: 0x7800, esperado 0x0004
-#   [FALLA] la memoria contiene la escena rasterizada      = 134 (esperado 0)
+#   [OK  ] la memoria contiene la escena rasterizada      = 0
 #   [OK  ] el intercambio cambio de buffer                = 1
 #   [OK  ] pixeles capturados en un cuadro                = 3072
 #   [OK  ] la imagen barrida coincide con la rasterizada  = 0
-#   [FALLA] ninguna escritura se perdio camino a memoria   = 14869 (esperado 14584)
+#   [OK  ] ninguna escritura se perdio camino a memoria   = 14584
+#   [OK  ] la memoria no vio accesos fuera de region      = 0
 #   [OK  ] ninguna escritura fuera de region              = 0
 #   [OK  ] palabras por transaccion de escritura          = 4
 #   [OK  ] palabras por transaccion de lectura            = 7
@@ -480,13 +475,342 @@ run -all
 #   [OK  ] el latido cambio de estado                     = 1
 # 
 # ==========================================================
-#  RESULTADO: 2 comprobacion(es) fallaron
+#  RESULTADO: todas las comprobaciones pasaron
 #  Fotogramas volcados: 11
 #  Archivos: raster_dump.csv, raster_pruebas.csv
 #  Para verlos:  python ver_raster.py
 # ==========================================================
 # 
-# ** Note: $finish    : C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/tb_Acelerador_Grafico_Top.sv(999)
+# ** Note: $finish    : C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/tb_Acelerador_Grafico_Top.sv(1004)
 #    Time: 1268520 ns  Iteration: 1  Instance: /tb_Acelerador_Grafico_Top
 # 1
-# Break in Module tb_Acelerador_Grafico_Top at C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/tb_Acelerador_Grafico_Top.sv line 999
+# Break in Module tb_Acelerador_Grafico_Top at C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/tb_Acelerador_Grafico_Top.sv line 1004
+vsim work.tb_escena_faro
+# End time: 02:25:24 on Oct 13,2026, Elapsed time: 0:01:13
+# Errors: 0, Warnings: 0
+# vsim work.tb_escena_faro 
+# Start time: 02:25:24 on Oct 13,2026
+# Loading sv_std.std
+# Loading work.Acelerador_pkg
+# Loading work.tb_escena_faro
+# Loading work.Acelerador_Grafico_Top
+# Loading work.fifo
+# Loading work.decoder_fsm
+# Loading work.processor_raster
+# Loading work.draw_pixel
+# Loading work.draw_rect
+# Loading work.draw_line
+# Loading work.draw_circle
+# Loading work.draw_trian
+# Loading work.pixel_gen
+# Loading work.clip_scissor
+# Loading work.addr_calc
+# Loading work.rend_counter
+# Loading work.led_status
+# Loading work.sync2
+# Loading work.vga_controller
+# Loading work.vga_timing
+# Loading work.line_buffer
+# Loading work.framebuffer_controller
+# Loading work.async_fifo
+# Loading work.framebuffer_onchip
+run -all
+# 
+# ==========================================================
+#  Escena unica: Faro en la costa al atardecer
+#  Region visible: 64 x 48, 16 bits por pixel
+# ==========================================================
+# 
+# --- 1. Dibujo de la escena -------------------------------
+#   44 comandos de dibujo, 6830 pixeles aceptados
+# 
+# --- 2. Presentacion e informe ----------------------------
+#   buffer delantero tras el intercambio: B
+#   ciclos de rasterizacion : 32084
+#   comandos completados    : 45
+#   pixeles escritos        : 6830
+#   paquetes descartados    : 0
+#   rafagas de escritura    : 1048
+#   rafagas de lectura      : 776
+# 
+# --- 3. Captura del barrido de video ----------------------
+#   cuadros barridos: 4, pixeles capturados: 3072
+# 
+# --- 4. Comprobaciones ------------------------------------
+#   [OK  ] el sistema vuelve a la espera                  = 1
+#   [OK  ] ocupado en bajo                                = 0
+#   [OK  ] cola vacia                                     = 1
+#   [OK  ] sin errores registrados                        = 0
+#   [OK  ] sin desbordamiento de la cola                  = 0
+#   [OK  ] sin paquetes descartados                       = 0
+#   [OK  ] comandos completados                           = 45
+#   [OK  ] ultimo SEQ_ID atendido                         = 46
+#   [OK  ] el medidor coincide con lo observado           = 6830
+#   [OK  ] pixeles anotados por el gestor                 = 6830
+#   [OK  ] ningun pixel fuera de pantalla                 = 0
+#   [OK  ] direccion lineal siempre correcta              = 0
+#   [OK  ] sin escrituras fuera de region                 = 0
+#   [OK  ] el barrido nunca se quedo sin datos            = 0
+#   [OK  ] buffer delantero tras el SWAP                  = 1
+#   [OK  ] pixeles distintos escritos                     = 3072
+# 
+#   [OK  ] cielo del cenit                                = 0x18a7
+#   [OK  ] banda alta del cielo                           = 0x310b
+#   [OK  ] banda del horizonte                            = 0xfd8a
+#   [OK  ] centro del disco solar                         = 0xff72
+#   [OK  ] torre del faro, tramo blanco                   = 0xef5c
+#   [OK  ] torre del faro, franja roja                    = 0xc1a5
+#   [OK  ] lampara encendida                              = 0xffd8
+#   [OK  ] acantilado en primer plano                     = 0x1905
+#   [OK  ] mar en primer plano                            = 0x1129
+#   [OK  ] mastil del velero                              = 0x18c5
+#   [OK  ] reguero del sol en el agua                     = 0xfeaf
+# 
+#   [OK  ] el barrido coincide con lo rasterizado         = 0
+# 
+# --- 5. Volcado -------------------------------------------
+#   -> fotograma 0 volcado: faro_rasterizado (3072 pixeles)
+#   -> fotograma 1 volcado: faro_barrido_vga (barrido de video)
+# 
+# ==========================================================
+#  ESCENA CORRECTA: todas las comprobaciones pasaron
+# ==========================================================
+# 
+#  Para ver la imagen:  python ver_raster.py
+# 
+# ** Note: $finish    : C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/tb_escena_faro.sv(585)
+#    Time: 655675100 ps  Iteration: 2  Instance: /tb_escena_faro
+# 1
+# Break in Module tb_escena_faro at C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/tb_escena_faro.sv line 585
+vsim work.tb_Acelerador_Grafico_Top
+# End time: 02:25:52 on Oct 13,2026, Elapsed time: 0:00:28
+# Errors: 0, Warnings: 0
+# vsim work.tb_Acelerador_Grafico_Top 
+# Start time: 02:25:52 on Oct 13,2026
+# Loading sv_std.std
+# Loading work.Acelerador_pkg
+# Loading work.tb_Acelerador_Grafico_Top
+# Loading work.Acelerador_Grafico_Top
+# Loading work.fifo
+# Loading work.decoder_fsm
+# Loading work.processor_raster
+# Loading work.draw_pixel
+# Loading work.draw_rect
+# Loading work.draw_line
+# Loading work.draw_circle
+# Loading work.draw_trian
+# Loading work.pixel_gen
+# Loading work.clip_scissor
+# Loading work.addr_calc
+# Loading work.rend_counter
+# Loading work.led_status
+# Loading work.sync2
+# Loading work.vga_controller
+# Loading work.vga_timing
+# Loading work.line_buffer
+# Loading work.framebuffer_controller
+# Loading work.async_fifo
+# Loading work.framebuffer_onchip
+run -all
+# 
+# ==========================================================
+#  Cola de comandos, decodificador y rasterizador
+#  Region visible: 64 x 48, 16 bits por pixel
+#  Profundidad de la cola: 16 comandos
+# ==========================================================
+# 
+# --- 0. Inicializacion y estado de arranque ----------------
+#   [OK  ] modo tras la inicializacion                    = 1
+#   [OK  ] cola vacia al arrancar                         = 1
+#   [OK  ] nivel de la cola al arrancar                   = 0
+#   [OK  ] sin errores al arrancar                        = 0
+#   [OK  ] buffer delantero al arrancar                   = 0
+# 
+# --- 1. Conversion de color por desplazamiento y OR --------
+#   [OK  ] RGB888(0,0,0) a RGB565                         = 0x0000
+#   [OK  ] RGB888(255,255,255) a RGB565                   = 0xffff
+#   [OK  ] RGB888(255,0,0) a RGB565                       = 0xf800
+#   [OK  ] RGB888(0,255,0) a RGB565                       = 0x07e0
+#   [OK  ] RGB888(0,0,255) a RGB565                       = 0x001f
+#   [OK  ] RGB888(255,255,0) a RGB565                     = 0xffe0
+#   [OK  ] RGB888(0,255,255) a RGB565                     = 0x07ff
+#   [OK  ] RGB888(255,0,255) a RGB565                     = 0xf81f
+#   [OK  ] RGB888(7,3,7) a RGB565                         = 0x0000
+#   [OK  ] RGB888(8,4,8) a RGB565                         = 0x0821
+#   [OK  ] RGB888(18,52,86) a RGB565                      = 0x11aa
+# 
+# --- 2. Un paquete de 24 bytes de extremo a extremo --------
+#   [OK  ] pixeles emitidos por DRAW_PIXEL                = 1
+#   [OK  ] pixel (10,10) en rojo                          = 0xf800
+#   [OK  ] SEQ_ID recuperado del paquete                  = 43981
+#   [OK  ] comandos de la ventana                         = 1
+#   [OK  ] NOP no emite pixeles                           = 0
+#   [OK  ] NOP cuenta como comando                        = 2
+#   [OK  ] pixel (11,10) en negro                         = 0x0000
+#   [OK  ] pixel fuera de pantalla no se escribe          = 0
+#   [OK  ] recortar no genera error                       = 0
+# 
+# --- 3. Linea de Bresenham ---------------------------------
+#   [OK  ] linea horizontal (0,0)-(10,0)                  = 11
+#   [OK  ] extremo inicial (0,0) en verde                 = 0x07e0
+#   [OK  ] extremo final (10,0) en verde                  = 0x07e0
+#   [OK  ] linea vertical (0,0)-(0,10)                    = 11
+#   [OK  ] diagonal perfecta (0,0)-(10,10)                = 11
+#   [OK  ] pendiente suave (0,0)-(20,7)                   = 21
+#   [OK  ] linea degenerada (5,5)-(5,5)                   = 1
+#   [OK  ] linea recortada: solo la parte visible         = 21
+#   -> fotograma 0 volcado: lineas_bresenham (71 pixeles)
+# 
+# --- 4. Rectangulo, contorno y relleno ---------------------
+#   [OK  ] relleno 10x6                                   = 60
+#   [OK  ] vecino exterior (14,9)                         = 0
+#   [OK  ] relleno uniforme: centro (8,6) azul            = 0x001f
+#   [OK  ] contorno 10x6 (perimetro)                      = 28
+#   [OK  ] interior hueco (25,6)                          = 0
+#   [OK  ] borde superior (25,4) amarillo                 = 0xffe0
+#   [OK  ] borde derecho (29,6) amarillo                  = 0xffe0
+#   -> fotograma 1 volcado: rectangulos (88 pixeles)
+# 
+# --- 5. Circulo, contorno y relleno ------------------------
+#   [OK  ] centro vacio (32,24)                           = 0
+#   [OK  ] contorno (42,24) en cian                       = 0x07ff
+#   [OK  ] contorno (32,14) en cian                       = 0x07ff
+#   [OK  ] fuera del disco (16,10)                        = 0
+#   [OK  ] centro del disco en magenta                    = 0xf81f
+#   [OK  ] borde del disco en magenta                     = 0xf81f
+#   [OK  ] area del disco r=5 (esperado ~79)              = 81
+#   -> fotograma 2 volcado: circulos (133 pixeles)
+# 
+# --- 6. Triangulo, contorno y relleno ----------------------
+#   [OK  ] interior hueco (20,35)                         = 0
+#   [OK  ] arista 1: vertice (20,20) en rojo              = 0xf800
+#   [OK  ] arista 2: vertice (30,40) en rojo              = 0xf800
+#   [OK  ] arista 3: base (20,40) en rojo                 = 0xf800
+#   [OK  ] exterior (36,22)                               = 0
+#   [OK  ] interior relleno (44,35) en verde              = 0x07e0
+#   [OK  ] area del triangulo (esperado ~210)             = 221
+#   -> fotograma 3 volcado: triangulos (281 pixeles)
+# 
+# --- 7. Borrado de pantalla completa -----------------------
+#   [OK  ] pixeles de CLEAR                               = 3072
+#   [OK  ] fondo (32,24) en azul                          = 0x001f
+#   [OK  ] esquina (63,47) en azul                        = 0x001f
+# 
+# --- 8. Lote de comandos y orden FIFO ----------------------
+#   [OK  ] ocho pixeles del lote escritos                 = 8
+#   [OK  ] ningun comando del lote se perdio              = 0
+#   [OK  ] SEQ_ID del ultimo del lote                     = 7
+#   [OK  ] primero del lote (0,5)                         = 1
+#   [OK  ] ultimo del lote (21,5)                         = 1
+#   [OK  ] todos los del lote presentes                   = 8
+#   [OK  ] cola vacia tras el lote                        = 1
+# 
+# --- 9. Desbordamiento de la cola (EC-08) ------------------
+#   [OK  ] cola llena                                     = 1
+#   [OK  ] nivel de la cola al tope                       = 16
+#   [OK  ] bit de overflow activo                         = 1
+#   [OK  ] ultimo error registrado es EC-08               = 8
+#   [OK  ] errores contabilizados                         = 4
+#   [OK  ] los almacenados se ejecutaron                  = 16
+#   [OK  ] primer comando del lote sobrevivio             = 1
+#   [OK  ] comando FD-1 sobrevivio                        = 1
+#   [OK  ] comando FD fue descartado                      = 0
+#   [OK  ] comando FD+3 fue descartado                    = 0
+#   [OK  ] la maquina paso por MOE-06                     = 1
+#   [OK  ] MOE-06 no es absorbente                        = 1
+#   -> fotograma 4 volcado: desbordamiento_de_la_cola (16 pixeles)
+# 
+# --- 10. Comandos invalidos (EC-06 y EC-07) ----------------
+#   [OK  ] opcode desconocido no dibuja                   = 0
+#   [OK  ] ultimo error es EC-06                          = 6
+#   [OK  ] radio nulo no dibuja                           = 0
+#   [OK  ] ultimo error es EC-07                          = 7
+#   [OK  ] tras dos errores el sistema sigue              = 100
+#   [OK  ] comando valido posterior (6,6)                 = 0x07e0
+#   [OK  ] modo final de vuelta en espera                 = 1
+#   -> fotograma 5 volcado: errores_y_recuperacion (100 pixeles)
+# 
+# --- 11. SWAP_BUFFER en el flanco de VSYNC (MOE-04) --------
+#   [OK  ] buffer antes del swap                          = 0
+#   [OK  ] el swap espera al flanco de VSYNC              = 0
+#   [OK  ] modo durante la espera es MOE-04               = 3
+#   [OK  ] buffer intercambiado tras el VSYNC             = 1
+#   [OK  ] segundo swap vuelve al buffer A                = 0
+# 
+# --- 12. Ventana de medicion e informe (MOE-05) ------------
+#   [OK  ] contador de comandos reiniciado                = 0
+#   [OK  ] contador de pixeles reiniciado                 = 0
+#   [OK  ] pixeles acumulados en la ventana               = 200
+#   [OK  ] INF publica los pixeles de la ventana          = 200
+#   [OK  ] INF publica los comandos de la ventana         = 2
+#   [OK  ] INF publica los descartes de la ventana        = 0
+#   [OK  ] INF publica ciclos distintos de cero           = 622
+#   [OK  ] la ventana queda reiniciada                    = 0
+#   -> fotograma 6 volcado: ventana_de_medicion (200 pixeles)
+# 
+# --- 13. Escena de demostracion en color -------------------
+#   [OK  ] la escena completa se ejecuto en orden         = 208
+#   [OK  ] sin descartes en la escena                     = 0
+#   [OK  ] discrepancias de px_addr                       = 0
+#   -> fotograma 7 volcado: escena_de_demostracion (3072 pixeles)
+# 
+# --- 14. Rampa de color RGB565 -----------------------------
+#   [OK  ] rampa: rojo maximo en (62,7)                   = 0xf800
+#   [OK  ] rampa: verde maximo en (62,23)                 = 0x07c0
+#   [OK  ] rampa: azul maximo en (62,39)                  = 0x001f
+#   [OK  ] rampa: nivel cero en (0,7)                     = 0x0000
+#   -> fotograma 8 volcado: rampa_de_color (2880 pixeles)
+# 
+# --- 15. Temporizacion VESA 640 x 480 a 60 Hz --------------
+#   [OK  ] periodo horizontal en relojes de pixel         = 800
+#   [OK  ] ancho del pulso HSYNC                          = 96
+#   [OK  ] lineas por cuadro                              = 525
+#   [OK  ] ancho del pulso VSYNC en lineas                = 2
+#   [OK  ] pixeles visibles por cuadro                    = 307200
+#   [OK  ] HSYNC en reposo es alto (polaridad negativa)   = 1
+#   [OK  ] VSYNC en reposo es alto (polaridad negativa)   = 1
+# 
+# --- 16. Barrido de video de extremo a extremo -------------
+#   [OK  ] la escena se rasterizo entera                  = 3072
+#   -> fotograma 9 volcado: escena_referencia (3072 pixeles)
+#   [OK  ] la memoria contiene la escena rasterizada      = 0
+#   [OK  ] el intercambio cambio de buffer                = 1
+#   [OK  ] pixeles capturados en un cuadro                = 3072
+#   [OK  ] la imagen barrida coincide con la rasterizada  = 0
+#   [OK  ] ninguna escritura se perdio camino a memoria   = 14584
+#   [OK  ] la memoria no vio accesos fuera de region      = 0
+#   [OK  ] ninguna escritura fuera de region              = 0
+#   [OK  ] palabras por transaccion de escritura          = 4
+#   [OK  ] palabras por transaccion de lectura            = 7
+#   [OK  ] sin vaciado del buffer de lineas               = 0
+#   [OK  ] cuadros barridos                               = 7
+#   -> fotograma 10 volcado: salida_vga (barrido de video)
+# 
+# --- 17. Medidor de rendimiento e indicador de estado ------
+#   [OK  ] ciclos publicados por el medidor               = 315
+#   [OK  ] ciclos reales transcurridos                    = 4334
+#   [OK  ] el medidor ignora el tiempo en reposo          = 1
+#   [OK  ] pixeles de la ventana                          = 100
+#   [OK  ] comandos de la ventana, sin contar el INF      = 1
+#   [OK  ] LED del modo coincide con el modo              = 1
+#   [OK  ] LED de ocupado en reposo                       = 0
+#   [OK  ] LED de buffer sigue a buffer_sel               = 1
+#   [OK  ] LED de error apagado antes                     = 0
+#   [OK  ] LED de error encendido tras el fallo           = 1
+#   [OK  ] el destello sigue encendido a mitad            = 1
+#   [OK  ] el destello se apaga al cumplirse              = 0
+#   [OK  ] el latido cambio de estado                     = 1
+# 
+# ==========================================================
+#  RESULTADO: todas las comprobaciones pasaron
+#  Fotogramas volcados: 11
+#  Archivos: raster_dump.csv, raster_pruebas.csv
+#  Para verlos:  python ver_raster.py
+# ==========================================================
+# 
+# ** Note: $finish    : C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/tb_Acelerador_Grafico_Top.sv(1004)
+#    Time: 1268520 ns  Iteration: 1  Instance: /tb_Acelerador_Grafico_Top
+# 1
+# Break in Module tb_Acelerador_Grafico_Top at C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/tb_Acelerador_Grafico_Top.sv line 1004
+# End time: 02:28:14 on Oct 13,2026, Elapsed time: 0:02:22
+# Errors: 0, Warnings: 0

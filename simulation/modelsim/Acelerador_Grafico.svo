@@ -16,7 +16,7 @@
 // PROGRAM "Quartus Prime"
 // VERSION "Version 18.1.0 Build 625 09/12/2018 SJ Lite Edition"
 
-// DATE "10/13/2026 01:04:08"
+// DATE "10/13/2026 02:22:18"
 
 // 
 // Device: Altera 5CSEMA5F31C6 Package FBGA896
@@ -79,56 +79,56 @@ module Acelerador_Grafico_Top (
 	burst_reads,
 	pixels_written,
 	out_of_range);
-input 	logic clk ;
-input 	logic rst_n ;
-input 	logic clk_pix ;
-input 	logic rst_pix_n ;
-input 	logic enable ;
-input 	logic reset_soft ;
-input 	logic comand_w_ena ;
-input 	logic [31:0] comand_w_data ;
-output 	logic sd_read ;
-output 	logic sd_write ;
-output 	logic [24:0] sd_address ;
-output 	logic [3:0] sd_burstcount ;
-output 	logic [15:0] sd_writedata ;
-input 	logic sd_waitrequest ;
-input 	logic [15:0] sd_readdata ;
-input 	logic sd_readdatavalid ;
-output 	logic [7:0] vga_r ;
-output 	logic [7:0] vga_g ;
-output 	logic [7:0] vga_b ;
-output 	logic vga_hs ;
-output 	logic vga_vs ;
-output 	logic vga_blank_n ;
-output 	logic vga_sync_n ;
-output 	logic vga_underrun ;
-output 	logic [31:0] vga_frames ;
-output 	logic px_valid ;
-output 	logic [5:0] px_x ;
-output 	logic [5:0] px_y ;
-output 	logic [15:0] px_color ;
-output 	logic [11:0] px_addr ;
-output 	logic buffer_sel ;
-output 	logic busy ;
-output 	logic [2:0] modo ;
-output 	logic [4:0] fifo_level ;
-output 	logic fifo_full ;
-output 	logic fifo_empty ;
-output 	logic overflow ;
-output 	logic [3:0] err_last ;
-output 	logic [15:0] err_count ;
-output 	logic [31:0] perf_cycles ;
-output 	logic [31:0] perf_commands ;
-output 	logic [31:0] perf_pixels ;
-output 	logic [31:0] perf_dropped ;
-output 	logic [15:0] seq_last ;
-output 	logic [31:0] clip_count ;
-output 	logic [9:0] leds ;
-output 	logic [31:0] burst_writes ;
-output 	logic [31:0] burst_reads ;
-output 	logic [31:0] pixels_written ;
-output 	logic [31:0] out_of_range ;
+input 	clk;
+input 	rst_n;
+input 	clk_pix;
+input 	rst_pix_n;
+input 	enable;
+input 	reset_soft;
+input 	comand_w_ena;
+input 	[31:0] comand_w_data;
+output 	sd_read;
+output 	sd_write;
+output 	[24:0] sd_address;
+output 	[3:0] sd_burstcount;
+output 	[15:0] sd_writedata;
+input 	sd_waitrequest;
+input 	[15:0] sd_readdata;
+input 	sd_readdatavalid;
+output 	[7:0] vga_r;
+output 	[7:0] vga_g;
+output 	[7:0] vga_b;
+output 	vga_hs;
+output 	vga_vs;
+output 	vga_blank_n;
+output 	vga_sync_n;
+output 	vga_underrun;
+output 	[31:0] vga_frames;
+output 	px_valid;
+output 	[5:0] px_x;
+output 	[5:0] px_y;
+output 	[15:0] px_color;
+output 	[11:0] px_addr;
+output 	buffer_sel;
+output 	busy;
+output 	[2:0] modo;
+output 	[4:0] fifo_level;
+output 	fifo_full;
+output 	fifo_empty;
+output 	overflow;
+output 	[3:0] err_last;
+output 	[15:0] err_count;
+output 	[31:0] perf_cycles;
+output 	[31:0] perf_commands;
+output 	[31:0] perf_pixels;
+output 	[31:0] perf_dropped;
+output 	[15:0] seq_last;
+output 	[31:0] clip_count;
+output 	[9:0] leds;
+output 	[31:0] burst_writes;
+output 	[31:0] burst_reads;
+output 	[31:0] pixels_written;
+output 	[31:0] out_of_range;
 
 // Design Ports Information
 // vga_r[0]	=>  Location: PIN_AJ11,	 I/O Standard: 2.5 V,	 Current Strength: Default

@@ -215,9 +215,13 @@ module tb_Acelerador_Grafico_Top;
 
   // Vista de la memoria por buffer, para las comprobaciones del banco.
   function automatic logic [PB-1:0] sdram_px(input logic buf_b, input int idx);
-    sdram_px = sdram[(buf_b ? Acelerador_pkg::FB_BASE_B
-                            : Acelerador_pkg::FB_BASE_A) + idx];
+    sdram_px = dut.g_fb_interno.u_fbmem.leer_pixel(buf_b, idx);
   endfunction
+
+  // Palabras que llegaron de verdad a la memoria, contadas por ella misma.
+  wire [31:0] mem_escrituras = dut.g_fb_interno.u_fbmem.words_written;
+  wire [31:0] mem_lecturas   = dut.g_fb_interno.u_fbmem.words_read;
+  wire [31:0] mem_fuera      = dut.g_fb_interno.u_fbmem.range_errors;
 
   //================================================ captura de la salida VGA
   // Reconstruye el cuadro a partir de lo que sale por el puerto de video, no
@@ -924,7 +928,8 @@ module tb_Acelerador_Grafico_Top;
     // lo que el gestor acepto y lo que llego de verdad a la memoria tienen
     // que coincidir. Si no, se estan perdiendo pixeles entre medio.
     chk("ninguna escritura se perdio camino a memoria",
-        sd_escrituras, int'(pixels_written));
+        int'(mem_escrituras), int'(pixels_written));
+    chk("la memoria no vio accesos fuera de region", int'(mem_fuera), 0);
     chk("ninguna escritura fuera de region", int'(out_of_range), 0);
 
     // La razon de ser del combinador: un relleno a pantalla completa escribe
@@ -934,7 +939,7 @@ module tb_Acelerador_Grafico_Top;
     chk_rango("palabras por transaccion de escritura",
               int'(pixels_written) / int'(burst_writes), 2, 9);
     chk_rango("palabras por transaccion de lectura",
-              int'(sd_lecturas) / int'(burst_reads), 2, 9);
+              int'(mem_lecturas) / int'(burst_reads), 2, 9);
     chk("sin vaciado del buffer de lineas", int'(vga_underrun), 0);
     chk_rango("cuadros barridos", int'(vga_frames), 0, 1000000);
     volcar_captura("salida_vga");

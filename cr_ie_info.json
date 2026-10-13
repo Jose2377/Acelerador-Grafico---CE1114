@@ -1,0 +1,22 @@
+{
+	"system" : {
+		"platform" : "windows64",
+		"os_name" : "Windows 10",
+		"os_version" : "10.0"
+	},
+	"error" : {
+		"executable" : "quartus_map",
+		"comment" : "not_applicable",
+		"error_message" : "Access Violation at 0X00007FF9A8477BD0",
+		"source_file" : "unknown",
+		"line" : "0",
+		"stack_trace" : "\t0x7ff9a8477bcf: synth_vrfx + 0x127bcf (?RecursiveResolve@VeriFunctionCall@@UEAAXPEAVVeriScope@@AEBVVeriEnv@@@Z + 0x26f)\n\t0x7ff9a84787f9: synth_vrfx + 0x1287f9 (?Resolve@VeriExpression@@UEAAXPEAVVeriScope@@AEBVVeriEnv@@@Z + 0x49)\n\t0x7ff9a84774f3: synth_vrfx + 0x1274f3 (?RecursiveResolve@VeriAssignmentOperator@@UEAAXPEAVVeriScope@@AEBVVeriEnv@@@Z + 0x243)\n\t0x7ff9a84787f9: synth_vrfx + 0x1287f9 (?Resolve@VeriExpression@@UEAAXPEAVVeriScope@@AEBVVeriEnv@@@Z + 0x49)\n\t0x7ff9a84ce0c4: synth_vrfx + 0x17e0c4 (?RecursiveResolve@VeriBlockingAssign@@UEAAXPEAVVeriScope@@@Z + 0x34)\n\t0x7ff9a84cf4db: synth_vrfx + 0x17f4db (?Resolve@VeriStatement@@UEAAXPEAVVeriScope@@@Z + 0x2b)\n\t0x7ff9a84c85d2: synth_vrfx + 0x1785d2 (?RecursiveResolve@VeriFunctionDecl@@UEAAXPEAVVeriScope@@@Z + 0x132)\n\t0x7ff9a84c91a8: synth_vrfx + 0x1791a8 (?Resolve@VeriModuleItem@@UEAAXPEAVVeriScope@@@Z + 0x38)\n\t0x7ff9a8432356: synth_vrfx + 0xe2356 (?Resolve@VeriModule@@UEAAXXZ + 0x246)\n\t0x7ff9a83b5286: synth_vrfx + 0x65286 (?resolve_all_design_units@VRFX_ANALYZER_IMPL@@SA_NPEAVHDB_NAMESPACE@@PEAV?$list@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$allocator@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@2@@std@@1@Z + 0x276)\n\t0x7ff9ab475106: synth_sgn + 0x85106 (?start@SGN_ANALYZER@@QEAAXXZ + 0x7a6)\n\t0x7ff9ab4031f6: synth_sgn + 0x131f6 (?sgn_qic_full@@YA?AW4SGN_STATE_ENUM@@PEAVCMP_FACADE@@AEAV?$vector@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$allocator@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@2@@std@@AEAV?$vector@NV?$allocator@N@std@@@4@@Z + 0x146)\n\t0x7ff6db664351: quartus_map + 0x4351 (?qsyn_execute_sgn@@YA?AW4SGN_STATE_ENUM@@PEAVCMP_FACADE@@AEAV?$vector@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$allocator@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@2@@std@@AEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@4@PEAVTHR_NAMED_PIPE@@3@Z + 0x131)\n\t0x7ff6db673f9c: quartus_map + 0x13f9c (?execute_core@QSYN_FRAMEWORK@@AEAA_NPEAVTHR_NAMED_PIPE@@0@Z + 0x12c)\n\t0x7ff6db673aa6: quartus_map + 0x13aa6 (?execute@QSYN_FRAMEWORK@@UEAA_NXZ + 0x496)\n\t0x7ffa84b012bc: comp_qexe + 0x112bc (qexe_do_normal + 0x1ec)\n\t0x7ffa84b06142: comp_qexe + 0x16142 (qexe_run + 0x432)\n\t0x7ffa84b06e51: comp_qexe + 0x16e51 (?qexe_standard_main@@YAHPEAVQEXE_FRAMEWORK@@PEAPEBUQEXE_OPTION_DEFINITION@@HPEAPEBD@Z + 0xc1)\n\t0x7ff6db67b08b: quartus_map + 0x1b08b (?qsyn_main@@YAHHPEAPEBD@Z + 0x51b)\n\t0x7ffab1fa2e98: CCL_MSG + 0x12e98 (?msg_main_thread@@YAPEAXPEAX@Z + 0x18)\n\t0x7ffab1fa467e: CCL_MSG + 0x1467e (?msg_thread_wrapper@@YAPEAXP6APEAXPEAX@Z0@Z + 0x6e)\n\t0x7ffab6316660: ccl_mem + 0x16660 (?mem_thread_wrapper@@YAPEAXP6APEAXPEAX@Z0@Z + 0x70)\n\t0x7ffab1fa2761: CCL_MSG + 0x12761 (?msg_exe_main@@YAHHPEAPEBDP6AHH0@Z@Z + 0xa1)\n\t0x7ff6db689872: quartus_map + 0x29872 (__tmainCRTStartup + 0x10e)\n\t0x7ffad3cccd86: KERNEL32 + 0x2cd86 (BaseThreadInitThunk + 0x16)\n\t0x7ffad556caeb: ntdll + 0xacaeb (RtlUserThreadStart + 0x2b)\n",
+		"subsystem" : "unknown"
+	},
+	"quartus" : {
+		"quartus_bits" : "64",
+		"version" : "18.1.0",
+		"build" : "625",
+		"edition" : "Lite Edition"
+	}
+}
