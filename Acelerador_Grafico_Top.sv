@@ -2,7 +2,8 @@ module Acelerador_Grafico_Top #(
   parameter int SCREEN_W   = Acelerador_pkg::SCREEN_W,
   parameter int SCREEN_H   = Acelerador_pkg::SCREEN_H,
   parameter int PIXEL_BITS = Acelerador_pkg::PIXEL_BITS,
-  parameter int FIFO_DEPTH = Acelerador_pkg::FIFO_DEPTH
+  parameter int FIFO_DEPTH = Acelerador_pkg::FIFO_DEPTH,
+  parameter int SYS_CLK_HZ = Acelerador_pkg::SYS_CLK_HZ
 )(
   // Dominio de rasterizado y SDRAM, 100 MHz
   input  logic               clk,
@@ -72,6 +73,9 @@ module Acelerador_Grafico_Top #(
   // Auxiliares
   output logic        [15:0] seq_last,
   output logic        [31:0] clip_count,
+
+  // Indicador de estado sobre los LED rojos de la placa
+  output logic        [9:0]  leds,
 
   // Instrumentacion del gestor de framebuffer
   output logic        [31:0] burst_writes,
@@ -178,49 +182,56 @@ module Acelerador_Grafico_Top #(
 
   // Medidor de rendimiento
   //
-  // La ventana se abre al salir de MOE-01 o tras cada INF, y se cierra cuando el decodificador decodifica INF.
-  // Los registros publicados se conservan hasta el siguiente informe, el HPS puede leerlos sin prisa.
-
-  logic [31:0] ciclos, comandos, descartes;
-  logic        ventana_reset;
+  // Se mide el tiempo de rasterizacion, es decir los ciclos con un comando en vuelo
+  // NO los ciclos de reloj transcurridos. 
+  // Eso hace comparables dos ventanas aunque entre ellas el sistema haya estado esperando a la red.
+  
+  logic [31:0] ciclos, comandos, pixeles, descartes;
+  logic        ventana_reset, px_tick;
 
   assign ventana_reset = perf_clear || (modo == Acelerador_pkg::MOE_INIT);
 
+  // Un pixel cuenta cuando el gestor de framebuffer lo acepta, no cuando el rasterizador lo presenta.
+  // Con contrapresion el mismo pixel se presenta varios ciclos seguidos.
+  assign px_tick = px_valid && px_ready;
+
+  rend_counter u_rend (
+    .clk(clk), .rst_n(rst_n),
+    .latch(perf_latch), .ventana_reset(ventana_reset),
+    .rasterizando(busy && enable),
+    .comand_tick(comand_tick), .px_tick(px_tick), .drop_tick(fifo_drop),
+    .ciclos(ciclos), .comandos(comandos),
+    .pixeles(pixeles), .descartes(descartes),
+    .perf_cycles(perf_cycles), .perf_commands(perf_commands),
+    .perf_pixels(perf_pixels), .perf_dropped(perf_dropped));
+
+  // Indicador de estado
+  // El error llega como pulso de un ciclo, asi que el modulo lo alarga hasta
+  // hacerlo visible. Aqui solo se detecta el flanco del contador de errores.
+  
+  logic [15:0] err_count_q;
+  logic        err_tick;
+
   always_ff @(posedge clk or negedge rst_n) begin
-    if (!rst_n) begin
-      ciclos        <= '0;
-      comandos      <= '0;
-      descartes     <= '0;
-      perf_cycles   <= '0;
-      perf_commands <= '0;
-      perf_pixels   <= '0;
-      perf_dropped  <= '0;
-    end else begin
-      if (perf_latch) begin
-        // Foto de la ventana que se cierra.
-        perf_cycles   <= ciclos;
-        perf_commands <= comandos;
-        perf_pixels   <= pix_count;
-        perf_dropped  <= descartes;
-      end
-
-      if (ventana_reset)   ciclos <= '0;
-      else if (enable)     ciclos <= ciclos + 32'd1;
-
-      if (ventana_reset)   comandos <= '0;
-      else if (comand_tick)   comandos <= comandos + 32'd1;
-
-      if (ventana_reset)   descartes <= '0;
-      else if (fifo_drop)  descartes <= descartes + 32'd1;
-    end
+    if (!rst_n) err_count_q <= '0;
+    else        err_count_q <= err_count;
   end
+
+  assign err_tick = (err_count != err_count_q);
+
+  led_status #(.SYS_CLK_HZ(SYS_CLK_HZ)) u_leds (
+    .clk(clk), .rst_n(rst_n),
+    .modo(modo), .busy(busy), .err_tick(err_tick),
+    .overflow(overflow), .fifo_full(fifo_full),
+    .buffer_sel(buffer_sel), .underrun(vga_underrun),
+    .leds(leds));
 
   // Sincronizador de relojes
   logic front_buffer_pix;             // buffer_sel visto desde el dominio pixel
   logic vsync_pix;                    // VSYNC activo en alto, dominio de pixel
 
-  // Puerto de lectura del barrido, ahora interno: lo cierra el gestor de
-  // framebuffer. Vive entero en el dominio de pixel.
+  // Puerto de lectura del barrido,lo cierra el gestor de framebuffer. 
+  // Vive entero en el dominio de pixel.
   logic                                   fb_req, fb_front, fb_ready, fb_valid;
   logic [$clog2(SCREEN_W*SCREEN_H)-1:0]   fb_addr;
   logic [PIXEL_BITS-1:0]                  fb_data;

@@ -76,6 +76,7 @@ module tb_Acelerador_Grafico_Top;
 
   // Instrumentacion del gestor de framebuffer
   logic [31:0]        burst_writes, burst_reads, pixels_written, out_of_range;
+  logic [9:0]         leds;
 
   // Salida de video
   logic        [7:0]  vga_r, vga_g, vga_b;
@@ -99,8 +100,15 @@ module tb_Acelerador_Grafico_Top;
   logic        [15:0] seq_last;
   logic        [31:0] clip_count;
 
+  // El reloj declarado al indicador de estado se reduce a proposito: con los
+  // 100 MHz reales un destello dura 12 millones de ciclos y no cabria en la
+  // simulacion. La logica que se verifica es la misma.
+  localparam int LED_CLK_HZ   = 10_000;
+  localparam int LED_DESTELLO = (LED_CLK_HZ / 1000) * 120;   // 1200 ciclos
+  localparam int LED_LATIDO   = (LED_CLK_HZ / 1000) * 500;   // 5000 ciclos
+
   Acelerador_Grafico_Top #(.SCREEN_W(W), .SCREEN_H(H), .PIXEL_BITS(PB),
-                           .FIFO_DEPTH(FD)) dut (
+                           .FIFO_DEPTH(FD), .SYS_CLK_HZ(LED_CLK_HZ)) dut (
     .clk(clk), .rst_n(rst_n),
     .clk_pix(clk_pix), .rst_pix_n(rst_pix_n),
     .enable(enable), .reset_soft(reset_soft),
@@ -121,6 +129,7 @@ module tb_Acelerador_Grafico_Top;
     .err_last(err_last), .err_count(err_count),
     .perf_cycles(perf_cycles), .perf_commands(perf_commands),
     .perf_pixels(perf_pixels), .perf_dropped(perf_dropped),
+    .leds(leds),
     .seq_last(seq_last), .clip_count(clip_count),
     .burst_writes(burst_writes), .burst_reads(burst_reads),
     .pixels_written(pixels_written), .out_of_range(out_of_range)
@@ -353,6 +362,13 @@ module tb_Acelerador_Grafico_Top;
   int   err_dir = 0;       // discrepancias entre px_addr y y*W + x
   int   difs = 0;          // diferencias entre lo barrido y lo rasterizado
   logic buffer_antes;      // buffer delantero antes de un intercambio
+  logic latido_antes;      // estado del latido antes de esperar
+  int   ciclos_antes = 0, ciclos_reales = 0;
+
+  // Reloj de referencia del banco, para contrastar el tiempo transcurrido
+  // contra el tiempo de rasterizacion que publica el medidor.
+  int   ciclos_tb = 0;
+  always @(posedge clk) ciclos_tb <= ciclos_tb + 1;
   logic vio_moe06 = 1'b0;  // la maquina paso por MOE-06 alguna vez
 
   // Con contrapresion el mismo pixel se presenta varios ciclos seguidos
@@ -920,6 +936,50 @@ module tb_Acelerador_Grafico_Top;
     chk("sin vaciado del buffer de lineas", int'(vga_underrun), 0);
     chk_rango("cuadros barridos", int'(vga_frames), 0, 1000000);
     volcar_captura("salida_vga");
+
+    //-------------------------- 17. Medidor de rendimiento e indicador
+    $display("");
+    $display("--- 17. Medidor de rendimiento e indicador de estado ------");
+
+    // Lo que mide perf_cycles es el tiempo de rasterizacion, no el tiempo
+    // transcurrido. Se cierra una ventana, se deja el sistema parado un buen
+    // rato sin mandar nada y se vuelve a cerrar: los ciclos publicados tienen
+    // que ser una fraccion minima de los ciclos que pasaron de verdad.
+    cmd(OPC_INF, 0,0, 0,0, 0,0, 8'h00, 8'h00, 8'h00, 0);
+    ciclos_antes = ciclos_tb;
+    cmd(OPC_RECT_FILL, 0,0, 9,9, 0,0, 8'hFF, 8'hFF, 8'hFF, 0);  // 100 pixeles
+    repeat (4000) @(negedge clk);                               // sistema parado
+    cmd(OPC_INF, 0,0, 0,0, 0,0, 8'h00, 8'h00, 8'h00, 0);
+    ciclos_reales = ciclos_tb - ciclos_antes;
+    chk_rango("ciclos publicados por el medidor", int'(perf_cycles), 100, 2000);
+    chk_rango("ciclos reales transcurridos", ciclos_reales, 4000, 100000);
+    chk("el medidor ignora el tiempo en reposo",
+        int'(perf_cycles < (ciclos_reales / 2)), 1);
+    chk("pixeles de la ventana", int'(perf_pixels), 100);
+    // La foto se toma al decodificar INF, antes de contarlo: el comando que
+    // cierra la ventana no forma parte de lo medido.
+    chk("comandos de la ventana, sin contar el INF", int'(perf_commands), 1);
+
+    // Indicador de estado: los tres bits bajos reproducen el modo.
+    chk("LED del modo coincide con el modo", int'(leds[2:0]), int'(modo));
+    chk("LED de ocupado en reposo", int'(leds[3]), 0);
+    chk("LED de buffer sigue a buffer_sel", int'(leds[6]), int'(buffer_sel));
+
+    // El error dura un ciclo; el indicador tiene que alargarlo. Se provoca
+    // uno y se comprueba que enciende, que sigue encendido mucho despues del
+    // ciclo en que ocurrio, y que acaba apagandose.
+    chk("LED de error apagado antes", int'(leds[4]), 0);
+    cmd(8'h0C, 0,0, 0,0, 0,0, 8'hFF, 8'hFF, 8'hFF, 0);   // opcode inexistente
+    chk("LED de error encendido tras el fallo", int'(leds[4]), 1);
+    repeat (LED_DESTELLO / 2) @(negedge clk);
+    chk("el destello sigue encendido a mitad", int'(leds[4]), 1);
+    repeat (LED_DESTELLO) @(negedge clk);
+    chk("el destello se apaga al cumplirse", int'(leds[4]), 0);
+
+    // El latido distingue un sistema parado de uno en reposo.
+    latido_antes = leds[9];
+    repeat (LED_LATIDO + 10) @(negedge clk);
+    chk("el latido cambio de estado", int'(leds[9] != latido_antes), 1);
 
     //------------------------------------------------------------ resumen
     $display("");
