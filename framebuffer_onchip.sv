@@ -87,9 +87,13 @@ module framebuffer_onchip #(
   logic [PIXEL_BITS-1:0] mem [0:MEM_WORDS-1];
 
   // Inicializacion de Memoria
+`ifndef SYNTHESIS
+`ifndef ALTERA_RESERVED_QIS
   initial begin
     for (int i = 0; i < MEM_WORDS; i++) mem[i] = '0;
   end
+`endif
+`endif
 
   // Traduccion de direccion
   // La base se decide comparando, no mirando un bit, para que el modulo siga
@@ -167,7 +171,7 @@ module framebuffer_onchip #(
   logic [PIXEL_BITS-1:0] ram_data [0:RD_LATENCY-1];
   logic                  ram_valid  [0:RD_LATENCY-1];
 
-  always_ff @(posedge clk) begin
+  always @(posedge clk) begin
     if (wr_valido) mem[wr_idx] <= sd_writedata;
     ram_data[0] <= mem[rd_idx_seguro];
     for (int i = 1; i < RD_LATENCY; i++) ram_data[i] <= ram_data[i-1];
@@ -228,6 +232,7 @@ module framebuffer_onchip #(
   endfunction
 
 `ifndef SYNTHESIS
+`ifndef ALTERA_RESERVED_QIS
 
   // Comprobaciones de protocolo
   // El modelo del banco acepta en silencio cualquier cosa. Este modulo avisa:
@@ -280,6 +285,7 @@ module framebuffer_onchip #(
       $error("framebuffer_onchip: la rafaga de lectura se salio de la memoria en t=%0t",
              $time);
   end
+`endif
 `endif
 
 endmodule

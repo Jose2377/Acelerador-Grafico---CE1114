@@ -1,3 +1,5 @@
+`timescale 1ns / 1ps
+
 //=============================================================================
 // draw_pixel.sv
 // Modulo : Dibujo de un pixel suelto  (OP_PIXEL)

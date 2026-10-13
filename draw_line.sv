@@ -1,3 +1,5 @@
+`timescale 1ns / 1ps
+
 //=============================================================================
 // draw_line.sv
 // Modulo : Dibujo de linea recta por el algoritmo de Bresenham  (OP_LINE)

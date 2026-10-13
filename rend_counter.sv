@@ -1,3 +1,5 @@
+`timescale 1ns / 1ps
+
 // El diseno distingue dos magnitudes.
 //
 // Tiempo de rasterizacion: 

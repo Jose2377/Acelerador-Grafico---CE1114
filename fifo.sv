@@ -1,3 +1,5 @@
+`timescale 1ns / 1ps
+
 //=============================================================================
 // fifo.sv
 // Modulo : Cola de comandos sincrona  (registro COMAND_FIFO_W)

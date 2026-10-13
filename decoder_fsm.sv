@@ -1,3 +1,5 @@
+`timescale 1ns / 1ps
+
 //=============================================================================
 // decoder_fsm.sv
 // Modulo : Decodificador de comandos y maquina de estados del sistema

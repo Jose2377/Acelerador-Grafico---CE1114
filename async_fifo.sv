@@ -1,3 +1,5 @@
+`timescale 1ns / 1ps
+
 //=============================================================================
 // async_fifo.sv
 // Modulo : Cola asincrona entre dos dominios de reloj

@@ -1,3 +1,5 @@
+`timescale 1ns / 1ps
+
 //=============================================================================
 // vga_controller.sv
 // Modulo : Controlador de video, prebusqueda de lineas y salida VGA

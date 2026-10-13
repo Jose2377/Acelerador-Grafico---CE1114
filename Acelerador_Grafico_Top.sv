@@ -1,3 +1,5 @@
+`timescale 1ns / 1ps
+
 //=============================================================================
 // Acelerador_Grafico_Top.sv
 // Proyecto : Unidad de aceleracion grafica 2D  -  ITCR CE-1114

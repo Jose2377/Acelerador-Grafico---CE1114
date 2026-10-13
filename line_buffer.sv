@@ -1,3 +1,5 @@
+`timescale 1ns / 1ps
+
 //=============================================================================
 // line_buffer.sv
 // Modulo : Memoria de lineas entre la prebusqueda y el barrido de video

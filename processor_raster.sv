@@ -1,3 +1,5 @@
+`timescale 1ns / 1ps
+
 //=============================================================================
 // processor_raster.sv
 // Modulo : Rasterizador 2D, reparto de comandos entre los modulos de dibujo

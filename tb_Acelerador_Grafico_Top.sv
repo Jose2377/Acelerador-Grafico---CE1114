@@ -1,3 +1,5 @@
+`timescale 1ns / 1ps
+
 //=============================================================================
 // tb_Acelerador_Grafico_Top.sv
 // Banco de pruebas del camino completo: paquete de 24 bytes, cola,

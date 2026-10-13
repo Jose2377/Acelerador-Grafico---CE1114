@@ -1,0 +1,18 @@
+transcript on
+if {[file exists rtl_work]} {
+	vdel -lib rtl_work -all
+}
+vlib rtl_work
+vmap work rtl_work
+
+vlog -sv -work work +incdir+C:/Users/Jose\ Maria\ Vindas/Documents/GitHub/Acelerador-Grafico---CE1114 {C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/Acelerador_pkg.sv}
+vlog -sv -work work +incdir+C:/Users/Jose\ Maria\ Vindas/Documents/GitHub/Acelerador-Grafico---CE1114 {C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/draw_pixel.sv}
+vlog -sv -work work +incdir+C:/Users/Jose\ Maria\ Vindas/Documents/GitHub/Acelerador-Grafico---CE1114 {C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/draw_rect.sv}
+vlog -sv -work work +incdir+C:/Users/Jose\ Maria\ Vindas/Documents/GitHub/Acelerador-Grafico---CE1114 {C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/draw_circle.sv}
+vlog -sv -work work +incdir+C:/Users/Jose\ Maria\ Vindas/Documents/GitHub/Acelerador-Grafico---CE1114 {C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/draw_trian.sv}
+vlog -sv -work work +incdir+C:/Users/Jose\ Maria\ Vindas/Documents/GitHub/Acelerador-Grafico---CE1114 {C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/draw_line.sv}
+vlog -sv -work work +incdir+C:/Users/Jose\ Maria\ Vindas/Documents/GitHub/Acelerador-Grafico---CE1114 {C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/clip_scissor.sv}
+vlog -sv -work work +incdir+C:/Users/Jose\ Maria\ Vindas/Documents/GitHub/Acelerador-Grafico---CE1114 {C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/addr_calc.sv}
+vlog -sv -work work +incdir+C:/Users/Jose\ Maria\ Vindas/Documents/GitHub/Acelerador-Grafico---CE1114 {C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/pixel_gen.sv}
+vlog -sv -work work +incdir+C:/Users/Jose\ Maria\ Vindas/Documents/GitHub/Acelerador-Grafico---CE1114 {C:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114/Acelerador_Grafico_Top.sv}
+

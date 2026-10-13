@@ -1,3 +1,5 @@
+`timescale 1ns / 1ps
+
 // Reparto de los diez LED de la DE1-SoC:
 //
 //   LEDR[2:0]  modo del sistema, MOE-01 a MOE-06 en binario

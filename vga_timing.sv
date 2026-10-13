@@ -1,3 +1,5 @@
+`timescale 1ns / 1ps
+
 //=============================================================================
 // vga_timing.sv
 // Modulo : Generador de temporizacion VGA

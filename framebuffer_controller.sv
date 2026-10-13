@@ -1,3 +1,5 @@
+`timescale 1ns / 1ps
+
 //=============================================================================
 // framebuffer_controller.sv
 // Modulo : Gestor de framebuffer, unico dueno del acceso a la memoria
@@ -170,6 +172,9 @@ module framebuffer_controller #(
   logic            rd_buf;
   logic [BCW-1:0]  rd_cnt, rd_recibidos;
 
+  // Senales del agrupador de lectura.
+  logic rd_contiguo, rd_frontera, rd_cabe, rd_hay_sitio, rd_listo;
+
   logic [PXAW-1:0]       wr_base;
   logic                  wr_buf;
   logic [BCW-1:0]        wr_cnt, wr_enviados;
@@ -201,7 +206,6 @@ module framebuffer_controller #(
   
   localparam int PACIENCIA = 16;      // ciclos sin direccion nueva
 
-  logic rd_contiguo, rd_frontera, rd_cabe, rd_hay_sitio, rd_listo;
   logic [$clog2(PACIENCIA+1)-1:0] rd_espera;
 
   assign rd_contiguo  = !arf_empty

@@ -1,3 +1,5 @@
+`timescale 1ns / 1ps
+
 //=============================================================================
 // draw_trian.sv
 // Modulo : Triangulo, contorno o relleno  (OP_TRIA, OP_TRIA_FILL)

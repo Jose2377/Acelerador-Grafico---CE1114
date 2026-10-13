@@ -1,3 +1,5 @@
+`timescale 1ns / 1ps
+
 //=============================================================================
 // addr_calc.sv
 // Modulo : Traductor de coordenada de pantalla a direccion lineal

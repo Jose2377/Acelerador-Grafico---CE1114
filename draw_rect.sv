@@ -1,3 +1,5 @@
+`timescale 1ns / 1ps
+
 //=============================================================================
 // draw_rect.sv
 // Modulo : Rectangulo, contorno o relleno  (OP_RECT, OP_RECT_FILL, OP_CLEAR)

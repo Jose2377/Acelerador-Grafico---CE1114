@@ -1,3 +1,5 @@
+`timescale 1ns / 1ps
+
 //=============================================================================
 // pixel_gen.sv
 // Modulo : Salida comun del rasterizador  (interfaz IF-07)

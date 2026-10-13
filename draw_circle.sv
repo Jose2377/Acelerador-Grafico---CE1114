@@ -1,3 +1,5 @@
+`timescale 1ns / 1ps
+
 //=============================================================================
 // draw_circle.sv
 // Modulo : Circulo, contorno o relleno  (OP_CIRC, OP_CIRC_FILL)

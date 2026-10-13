@@ -1,3 +1,5 @@
+`timescale 1ns / 1ps
+
 //=============================================================================
 // sync2.sv
 // Modulo : Sincronizador de dos biestables para cruce de dominios de reloj

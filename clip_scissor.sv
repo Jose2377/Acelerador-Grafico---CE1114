@@ -1,3 +1,5 @@
+`timescale 1ns / 1ps
+
 //=============================================================================
 // clip_scissor.sv
 // Modulo : Recorte de pixeles contra la region visible
