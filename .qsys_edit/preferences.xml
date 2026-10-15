@@ -3,12 +3,13 @@
  <debug showDebugMenu="0" />
  <systemtable filter="All Interfaces">
   <columns>
-   <connections preferredWidth="111" />
+   <connections preferredWidth="143" />
    <irq preferredWidth="34" />
    <inputclock preferredWidth="256" />
   </columns>
  </systemtable>
- <library expandedCategories="Project,Library" />
+ <library
+   expandedCategories="Library/Basic Functions/Bridges and Adaptors,Library/Processors and Peripherals,Library/Processors and Peripherals/Peripherals,Library/Basic Functions,Project,Library,Library/Basic Functions/Bridges and Adaptors/Memory Mapped" />
  <window width="1920" height="1020" x="0" y="0" />
  <generation path="Platform_Designer/" simulation="VERILOG" block_symbol_file="0" />
 </preferences>
