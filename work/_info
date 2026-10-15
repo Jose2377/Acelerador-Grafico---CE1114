@@ -1,0 +1,569 @@
+m255
+K4
+z2
+13
+!s112 1.1
+!i10d 8192
+!i10e 25
+!i10f 100
+cModel Technology
+Z0 dC:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114
+vAcelerador_Grafico_Top
+Z1 DXx6 sv_std 3 std 0 22 AD7iAPLo6nTIKk<N0eo=D3
+Z2 DXx4 work 14 Acelerador_pkg 0 22 CKeoSYnKeJ;1::Jj__lXd0
+Z3 !s110 1792047810
+!i10b 1
+!s100 TZVZM]1YiQJ3XnUf@S=KW2
+IVhAK_<JA=l?XiOYgTUg6:2
+Z4 VDg1SIo80bB@j0V0VzS_@n1
+!s105 Acelerador_Grafico_Top_sv_unit
+S1
+R0
+w1792041851
+8Acelerador_Grafico_Top.sv
+FAcelerador_Grafico_Top.sv
+L0 50
+Z5 OV;L;10.5b;63
+r1
+!s85 0
+31
+Z6 !s108 1792047810.000000
+!s107 Acelerador_Grafico_Top.sv|
+!s90 -reportprogress|300|-sv|Acelerador_Grafico_Top.sv|
+!i113 1
+o-sv
+Z7 tCvgOpt 0
+n@acelerador_@grafico_@top
+XAcelerador_pkg
+R1
+Z8 !s110 1792047808
+!i10b 1
+!s100 kg3Fdj0m0BcfW3JYC1BXT0
+ICKeoSYnKeJ;1::Jj__lXd0
+VCKeoSYnKeJ;1::Jj__lXd0
+S1
+R0
+w1791870831
+8Acelerador_pkg.sv
+FAcelerador_pkg.sv
+Z9 L0 23
+R5
+r1
+!s85 0
+31
+Z10 !s108 1792047808.000000
+!s107 Acelerador_pkg.sv|
+!s90 -reportprogress|300|-sv|Acelerador_pkg.sv|
+!i113 1
+o-sv
+R7
+n@acelerador_pkg
+vaddr_calc
+R1
+Z11 !s110 1792047809
+!i10b 1
+!s100 eW]flc_4YG`TzHk;J378[3
+I@PVj4k[l>>g;dL>cHj?IG0
+R4
+!s105 addr_calc_sv_unit
+S1
+R0
+Z12 w1791874720
+8addr_calc.sv
+Faddr_calc.sv
+Z13 L0 16
+R5
+r1
+!s85 0
+31
+Z14 !s108 1792047809.000000
+!s107 addr_calc.sv|
+!s90 -reportprogress|300|-sv|addr_calc.sv|
+!i113 1
+o-sv
+R7
+vasync_fifo
+R1
+R11
+!i10b 1
+!s100 :c5m2FNCRzZe>oKokWRLL0
+I_idXaS>oIA`Q>J^Sb[liM3
+R4
+!s105 async_fifo_sv_unit
+S1
+R0
+R12
+8async_fifo.sv
+Fasync_fifo.sv
+Z15 L0 37
+R5
+r1
+!s85 0
+31
+R14
+!s107 async_fifo.sv|
+!s90 -reportprogress|300|-sv|async_fifo.sv|
+!i113 1
+o-sv
+R7
+vclip_scissor
+R1
+R11
+!i10b 1
+!s100 1EW?U7j9M8I<[[ZkQ0OP61
+I6omW]YcI[;j]@1B0]efYH3
+R4
+!s105 clip_scissor_sv_unit
+S1
+R0
+R12
+8clip_scissor.sv
+Fclip_scissor.sv
+R9
+R5
+r1
+!s85 0
+31
+R14
+!s107 clip_scissor.sv|
+!s90 -reportprogress|300|-sv|clip_scissor.sv|
+!i113 1
+o-sv
+R7
+vdecoder_fsm
+R1
+R2
+R8
+!i10b 1
+!s100 dWeH:5HUAnT8?EFVKl:Wd0
+IOK[iU8hKIkW1Qh^a38@2D1
+R4
+!s105 decoder_fsm_sv_unit
+S1
+R0
+R12
+8decoder_fsm.sv
+Fdecoder_fsm.sv
+L0 43
+R5
+r1
+!s85 0
+31
+R10
+!s107 decoder_fsm.sv|
+!s90 -reportprogress|300|-sv|decoder_fsm.sv|
+!i113 1
+o-sv
+R7
+vdraw_circle
+R1
+R8
+!i10b 1
+!s100 hLK>DL@bhBAieE4XBJgO:1
+IaezgZKkK^N3QZYn^XeUS81
+R4
+!s105 draw_circle_sv_unit
+S1
+R0
+R12
+8draw_circle.sv
+Fdraw_circle.sv
+L0 30
+R5
+r1
+!s85 0
+31
+R10
+!s107 draw_circle.sv|
+!s90 -reportprogress|300|-sv|draw_circle.sv|
+!i113 1
+o-sv
+R7
+vdraw_line
+R1
+R11
+!i10b 1
+!s100 k=_D5G71K09fDNMonn4d=0
+IlJ<>H3fl6_YP[MoGPJdDE1
+R4
+!s105 draw_line_sv_unit
+S1
+R0
+R12
+8draw_line.sv
+Fdraw_line.sv
+L0 32
+R5
+r1
+!s85 0
+31
+R14
+!s107 draw_line.sv|
+!s90 -reportprogress|300|-sv|draw_line.sv|
+!i113 1
+o-sv
+R7
+vdraw_pixel
+R1
+R8
+!i10b 1
+!s100 U`__n?1P0BmHiOB=GZom:0
+IZ@KPB[bYD5QF`7ZD^VmO:0
+R4
+!s105 draw_pixel_sv_unit
+S1
+R0
+R12
+8draw_pixel.sv
+Fdraw_pixel.sv
+L0 19
+R5
+r1
+!s85 0
+31
+R10
+!s107 draw_pixel.sv|
+!s90 -reportprogress|300|-sv|draw_pixel.sv|
+!i113 1
+o-sv
+R7
+vdraw_rect
+R1
+R8
+!i10b 1
+!s100 QKTFMZjfWKf[dBm75JIfN0
+IFiBF^6MgIC^E;hg_>T>?V2
+R4
+!s105 draw_rect_sv_unit
+S1
+R0
+R12
+8draw_rect.sv
+Fdraw_rect.sv
+L0 27
+R5
+r1
+!s85 0
+31
+R10
+!s107 draw_rect.sv|
+!s90 -reportprogress|300|-sv|draw_rect.sv|
+!i113 1
+o-sv
+R7
+vdraw_trian
+R1
+R11
+!i10b 1
+!s100 47]5c[=Q?f6ldXWgbiT330
+I@6?GRJ[h?b]0i9eV_e@kB3
+R4
+!s105 draw_trian_sv_unit
+S1
+R0
+R12
+8draw_trian.sv
+Fdraw_trian.sv
+L0 38
+R5
+r1
+!s85 0
+31
+R10
+!s107 draw_trian.sv|
+!s90 -reportprogress|300|-sv|draw_trian.sv|
+!i113 1
+o-sv
+R7
+vfifo
+R1
+R8
+!i10b 1
+!s100 V5T0_aF^X6:EP9UK<KK0e0
+INfRC^XS:4QKDM<8iMni3^3
+R4
+!s105 fifo_sv_unit
+S1
+R0
+R12
+8fifo.sv
+Ffifo.sv
+Z16 L0 40
+R5
+r1
+!s85 0
+31
+R10
+!s107 fifo.sv|
+!s90 -reportprogress|300|-sv|fifo.sv|
+!i113 1
+o-sv
+R7
+vframebuffer_controller
+R1
+R11
+!i10b 1
+!s100 j>YS:0CH`5Qe4e>FN`W:L2
+ID737PHDSJU=UDAALaoRXd1
+R4
+!s105 framebuffer_controller_sv_unit
+S1
+R0
+R12
+8framebuffer_controller.sv
+Fframebuffer_controller.sv
+L0 52
+R5
+r1
+!s85 0
+31
+R14
+!s107 framebuffer_controller.sv|
+!s90 -reportprogress|300|-sv|framebuffer_controller.sv|
+!i113 1
+o-sv
+R7
+vframebuffer_onchip
+R1
+R3
+!i10b 1
+!s100 @K5`b8AD2N4cBka@dQ^Pl3
+IR0eW6`FcmYO5_Y=@QzW4V1
+R4
+!s105 framebuffer_onchip_sv_unit
+S1
+R0
+w1791874307
+8framebuffer_onchip.sv
+Fframebuffer_onchip.sv
+R16
+R5
+r1
+!s85 0
+31
+R6
+!s107 framebuffer_onchip.sv|
+!s90 -reportprogress|300|-sv|framebuffer_onchip.sv|
+!i113 1
+o-sv
+R7
+vled_status
+R1
+R3
+!i10b 1
+!s100 j8E[4gEGCfQa9M8F=kmQ51
+ICl9]DfooEOU:Xg17e[0fX1
+R4
+!s105 led_status_sv_unit
+S1
+R0
+R12
+8led_status.sv
+Fled_status.sv
+R13
+R5
+r1
+!s85 0
+31
+R6
+!s107 led_status.sv|
+!s90 -reportprogress|300|-sv|led_status.sv|
+!i113 1
+o-sv
+R7
+vline_buffer
+R1
+R11
+!i10b 1
+!s100 g5B0JAaGlEUon3gCiWOZN0
+I=el5AJfcaZ;l:ej>e6GBc0
+R4
+!s105 line_buffer_sv_unit
+S1
+R0
+R12
+8line_buffer.sv
+Fline_buffer.sv
+R9
+R5
+r1
+!s85 0
+31
+R14
+!s107 line_buffer.sv|
+!s90 -reportprogress|300|-sv|line_buffer.sv|
+!i113 1
+o-sv
+R7
+vpixel_gen
+R1
+R11
+!i10b 1
+!s100 M[2i92CJ?::O`hF7RmSjT1
+IHU62k];ISGiUT`773[^=a1
+R4
+!s105 pixel_gen_sv_unit
+S1
+R0
+R12
+8pixel_gen.sv
+Fpixel_gen.sv
+L0 24
+R5
+r1
+!s85 0
+31
+R14
+!s107 pixel_gen.sv|
+!s90 -reportprogress|300|-sv|pixel_gen.sv|
+!i113 1
+o-sv
+R7
+vprocessor_raster
+R1
+R2
+R8
+!i10b 1
+!s100 3Y_G50RAhl2e43?>fLPhP1
+IcIg9b[KcP[iEe98c0:@1I1
+R4
+!s105 processor_raster_sv_unit
+S1
+R0
+R12
+8processor_raster.sv
+Fprocessor_raster.sv
+R15
+R5
+r1
+!s85 0
+31
+R10
+!s107 processor_raster.sv|
+!s90 -reportprogress|300|-sv|processor_raster.sv|
+!i113 1
+o-sv
+R7
+vrend_counter
+R1
+R3
+!i10b 1
+!s100 hTJM59P:T?mjcicPonH>z2
+I<GSc[mmn:BF6I]3BC6mGa0
+R4
+!s105 rend_counter_sv_unit
+S1
+R0
+Z17 w1791874721
+8rend_counter.sv
+Frend_counter.sv
+L0 18
+R5
+r1
+!s85 0
+31
+R6
+!s107 rend_counter.sv|
+!s90 -reportprogress|300|-sv|rend_counter.sv|
+!i113 1
+o-sv
+R7
+vsync2
+R1
+R11
+!i10b 1
+!s100 gfW?36K89i_nG6aEjSM]B1
+IZ2dW<:mLZgZ[[jlCo;TD[0
+R4
+!s105 sync2_sv_unit
+S1
+R0
+R17
+8sync2.sv
+Fsync2.sv
+R9
+R5
+r1
+!s85 0
+31
+R14
+!s107 sync2.sv|
+!s90 -reportprogress|300|-sv|sync2.sv|
+!i113 1
+o-sv
+R7
+vtb_Acelerador_Grafico_Top
+R1
+R2
+R3
+!i10b 1
+!s100 ^eOJdKc=EAAIfz=0Cakl`3
+IS]G:QnMoVXcEI8nnB_=T51
+R4
+!s105 tb_Acelerador_Grafico_Top_sv_unit
+S1
+R0
+w1791876199
+8tb_Acelerador_Grafico_Top.sv
+Ftb_Acelerador_Grafico_Top.sv
+R9
+R5
+r1
+!s85 0
+31
+R6
+!s107 tb_Acelerador_Grafico_Top.sv|
+!s90 -reportprogress|300|-sv|tb_Acelerador_Grafico_Top.sv|
+!i113 1
+o-sv
+R7
+ntb_@acelerador_@grafico_@top
+vvga_controller
+R1
+R2
+R11
+!i10b 1
+!s100 6bI1YT;4nO6b578R5ZCAo1
+I]=:kP_3GcIzXzeGn2ImFz0
+R4
+!s105 vga_controller_sv_unit
+S1
+R0
+R17
+8vga_controller.sv
+Fvga_controller.sv
+L0 42
+R5
+r1
+!s85 0
+31
+R14
+!s107 vga_controller.sv|
+!s90 -reportprogress|300|-sv|vga_controller.sv|
+!i113 1
+o-sv
+R7
+vvga_timing
+R1
+R11
+!i10b 1
+!s100 Lel@:g;BlTYLdzT`]69zD2
+Iah29Wc]kma51R3M6gXkY?0
+R4
+!s105 vga_timing_sv_unit
+S1
+R0
+R17
+8vga_timing.sv
+Fvga_timing.sv
+L0 36
+R5
+r1
+!s85 0
+31
+R14
+!s107 vga_timing.sv|
+!s90 -reportprogress|300|-sv|vga_timing.sv|
+!i113 1
+o-sv
+R7

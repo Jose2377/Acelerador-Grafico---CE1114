@@ -54,6 +54,23 @@ module Acelerador_Grafico_Top #(
   parameter int FIFO_DEPTH = Acelerador_pkg::FIFO_DEPTH,
   parameter int SYS_CLK_HZ = Acelerador_pkg::SYS_CLK_HZ,
 
+  // Temporizacion del barrido de video.
+  // Los valores por defecto son los reducidos del paquete, que es lo que usan
+  // los bancos de pruebas; el nivel de placa los sobrescribe con la tabla VESA
+  // de 640 x 480 a 60 Hz sin tocar el paquete ni la simulacion.
+  //
+  // Invariante: H_VISIBLE tiene que coincidir con SCREEN_W y V_VISIBLE con
+  // SCREEN_H. Si no, el indice de pixel que produce vga_controller y el que
+  // espera framebuffer_controller no tienen el mismo ancho.
+  parameter int H_VISIBLE  = Acelerador_pkg::H_VISIBLE,
+  parameter int H_FRONT    = Acelerador_pkg::H_FRONT,
+  parameter int H_SYNC     = Acelerador_pkg::H_SYNC,
+  parameter int H_BACK     = Acelerador_pkg::H_BACK,
+  parameter int V_VISIBLE  = Acelerador_pkg::V_VISIBLE,
+  parameter int V_FRONT    = Acelerador_pkg::V_FRONT,
+  parameter int V_SYNC     = Acelerador_pkg::V_SYNC,
+  parameter int V_BACK     = Acelerador_pkg::V_BACK,
+
   // Seleccion del medio que guarda el framebuffer.
   // 1 = framebuffer_onchip, 0 = el maestro de rafaga sale por los puertos
   parameter bit FB_ONCHIP  = 1'b1
@@ -308,10 +325,10 @@ module Acelerador_Grafico_Top #(
 
   // VGA controller
   vga_controller #(
-    .H_VISIBLE(Acelerador_pkg::H_VISIBLE), .H_FRONT(Acelerador_pkg::H_FRONT),
-    .H_SYNC(Acelerador_pkg::H_SYNC),       .H_BACK(Acelerador_pkg::H_BACK),
-    .V_VISIBLE(Acelerador_pkg::V_VISIBLE), .V_FRONT(Acelerador_pkg::V_FRONT),
-    .V_SYNC(Acelerador_pkg::V_SYNC),       .V_BACK(Acelerador_pkg::V_BACK),
+    .H_VISIBLE(H_VISIBLE), .H_FRONT(H_FRONT),
+    .H_SYNC(H_SYNC),       .H_BACK(H_BACK),
+    .V_VISIBLE(V_VISIBLE), .V_FRONT(V_FRONT),
+    .V_SYNC(V_SYNC),       .V_BACK(V_BACK),
     .H_POL(Acelerador_pkg::VGA_HS_POL),    .V_POL(Acelerador_pkg::VGA_VS_POL),
     .PIXEL_BITS(PIXEL_BITS),
     .LINES(Acelerador_pkg::LINE_BUF_LINES)
