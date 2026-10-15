@@ -1,0 +1,142 @@
+/*
+WARNING: Do NOT edit the input and output ports in this file in a text
+editor if you plan to continue editing the block that represents it in
+the Block Editor! File corruption is VERY likely to occur.
+*/
+/*
+Copyright (C) 2018  Intel Corporation. All rights reserved.
+Your use of Intel Corporation's design tools, logic functions 
+and other software and tools, and its AMPP partner logic 
+functions, and any output files from any of the foregoing 
+(including device programming or simulation files), and any 
+associated documentation or information are expressly subject 
+to the terms and conditions of the Intel Program License 
+Subscription Agreement, the Intel Quartus Prime License Agreement,
+the Intel FPGA IP License Agreement, or other applicable license
+agreement, including, without limitation, that your use is for
+the sole purpose of programming logic devices manufactured by
+Intel and sold by Intel or its authorized distributors.  Please
+refer to the applicable agreement for further details.
+*/
+(header "symbol" (version "1.1"))
+(symbol
+	(rect 0 0 336 248)
+	(text "soc_system" (rect 133 -1 183 11)(font "Arial" (font_size 10)))
+	(text "inst" (rect 8 232 20 244)(font "Arial" ))
+	(port
+		(pt 336 72)
+		(input)
+		(text "avm_regs_waitrequest" (rect 0 0 92 12)(font "Arial" (font_size 8)))
+		(text "avm_regs_waitrequest" (rect 220 61 340 72)(font "Arial" (font_size 8)))
+		(line (pt 336 72)(pt 192 72)(line_width 1))
+	)
+	(port
+		(pt 336 88)
+		(input)
+		(text "avm_regs_readdata[31..0]" (rect 0 0 106 12)(font "Arial" (font_size 8)))
+		(text "avm_regs_readdata[31..0]" (rect 207 77 351 88)(font "Arial" (font_size 8)))
+		(line (pt 336 88)(pt 192 88)(line_width 3))
+	)
+	(port
+		(pt 336 104)
+		(input)
+		(text "avm_regs_readdatavalid" (rect 0 0 100 12)(font "Arial" (font_size 8)))
+		(text "avm_regs_readdatavalid" (rect 213 93 345 104)(font "Arial" (font_size 8)))
+		(line (pt 336 104)(pt 192 104)(line_width 1))
+	)
+	(port
+		(pt 0 72)
+		(input)
+		(text "clk_100_clk" (rect 0 0 46 12)(font "Arial" (font_size 8)))
+		(text "clk_100_clk" (rect 4 61 70 72)(font "Arial" (font_size 8)))
+		(line (pt 0 72)(pt 80 72)(line_width 1))
+	)
+	(port
+		(pt 0 112)
+		(input)
+		(text "reset_reset_n" (rect 0 0 56 12)(font "Arial" (font_size 8)))
+		(text "reset_reset_n" (rect 4 101 82 112)(font "Arial" (font_size 8)))
+		(line (pt 0 112)(pt 80 112)(line_width 1))
+	)
+	(port
+		(pt 336 120)
+		(output)
+		(text "avm_regs_burstcount" (rect 0 0 89 12)(font "Arial" (font_size 8)))
+		(text "avm_regs_burstcount" (rect 226 109 340 120)(font "Arial" (font_size 8)))
+		(line (pt 336 120)(pt 192 120)(line_width 1))
+	)
+	(port
+		(pt 336 136)
+		(output)
+		(text "avm_regs_writedata[31..0]" (rect 0 0 106 12)(font "Arial" (font_size 8)))
+		(text "avm_regs_writedata[31..0]" (rect 204 125 354 136)(font "Arial" (font_size 8)))
+		(line (pt 336 136)(pt 192 136)(line_width 3))
+	)
+	(port
+		(pt 336 152)
+		(output)
+		(text "avm_regs_address[5..0]" (rect 0 0 100 12)(font "Arial" (font_size 8)))
+		(text "avm_regs_address[5..0]" (rect 214 141 346 152)(font "Arial" (font_size 8)))
+		(line (pt 336 152)(pt 192 152)(line_width 3))
+	)
+	(port
+		(pt 336 168)
+		(output)
+		(text "avm_regs_write" (rect 0 0 66 12)(font "Arial" (font_size 8)))
+		(text "avm_regs_write" (rect 253 157 337 168)(font "Arial" (font_size 8)))
+		(line (pt 336 168)(pt 192 168)(line_width 1))
+	)
+	(port
+		(pt 336 184)
+		(output)
+		(text "avm_regs_read" (rect 0 0 66 12)(font "Arial" (font_size 8)))
+		(text "avm_regs_read" (rect 256 173 334 184)(font "Arial" (font_size 8)))
+		(line (pt 336 184)(pt 192 184)(line_width 1))
+	)
+	(port
+		(pt 336 200)
+		(output)
+		(text "avm_regs_byteenable[3..0]" (rect 0 0 110 12)(font "Arial" (font_size 8)))
+		(text "avm_regs_byteenable[3..0]" (rect 201 189 351 200)(font "Arial" (font_size 8)))
+		(line (pt 336 200)(pt 192 200)(line_width 3))
+	)
+	(port
+		(pt 336 216)
+		(output)
+		(text "avm_regs_debugaccess" (rect 0 0 100 12)(font "Arial" (font_size 8)))
+		(text "avm_regs_debugaccess" (rect 212 205 332 216)(font "Arial" (font_size 8)))
+		(line (pt 336 216)(pt 192 216)(line_width 1))
+	)
+	(drawing
+		(text "avm_regs" (rect 193 43 434 99)(font "Arial" (color 128 0 0)(font_size 9)))
+		(text "waitrequest" (rect 141 67 348 144)(font "Arial" (color 0 0 0)))
+		(text "readdata" (rect 152 83 352 176)(font "Arial" (color 0 0 0)))
+		(text "readdatavalid" (rect 132 99 342 208)(font "Arial" (color 0 0 0)))
+		(text "burstcount" (rect 144 115 348 240)(font "Arial" (color 0 0 0)))
+		(text "writedata" (rect 151 131 356 272)(font "Arial" (color 0 0 0)))
+		(text "address" (rect 155 147 352 304)(font "Arial" (color 0 0 0)))
+		(text "write" (rect 169 163 368 336)(font "Arial" (color 0 0 0)))
+		(text "read" (rect 170 179 364 368)(font "Arial" (color 0 0 0)))
+		(text "byteenable" (rect 143 195 346 400)(font "Arial" (color 0 0 0)))
+		(text "debugaccess" (rect 134 211 334 432)(font "Arial" (color 0 0 0)))
+		(text "clk_100" (rect 38 43 118 99)(font "Arial" (color 128 0 0)(font_size 9)))
+		(text "clk" (rect 85 67 188 144)(font "Arial" (color 0 0 0)))
+		(text "reset" (rect 51 83 132 179)(font "Arial" (color 128 0 0)(font_size 9)))
+		(text "reset_n" (rect 85 107 212 224)(font "Arial" (color 0 0 0)))
+		(text " system " (rect 301 232 650 474)(font "Arial" ))
+		(line (pt 80 32)(pt 192 32)(line_width 1))
+		(line (pt 192 32)(pt 192 232)(line_width 1))
+		(line (pt 80 232)(pt 192 232)(line_width 1))
+		(line (pt 80 32)(pt 80 232)(line_width 1))
+		(line (pt 191 52)(pt 191 220)(line_width 1))
+		(line (pt 190 52)(pt 190 220)(line_width 1))
+		(line (pt 81 52)(pt 81 76)(line_width 1))
+		(line (pt 82 52)(pt 82 76)(line_width 1))
+		(line (pt 81 92)(pt 81 116)(line_width 1))
+		(line (pt 82 92)(pt 82 116)(line_width 1))
+		(line (pt 0 0)(pt 336 0)(line_width 1))
+		(line (pt 336 0)(pt 336 248)(line_width 1))
+		(line (pt 0 248)(pt 336 248)(line_width 1))
+		(line (pt 0 0)(pt 0 248)(line_width 1))
+	)
+)
