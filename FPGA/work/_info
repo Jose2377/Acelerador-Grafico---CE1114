@@ -11,7 +11,7 @@ Z0 dC:/Users/Jose Maria Vindas/Documents/GitHub/Acelerador-Grafico---CE1114
 vAcelerador_Grafico_Top
 Z1 DXx6 sv_std 3 std 0 22 AD7iAPLo6nTIKk<N0eo=D3
 Z2 DXx4 work 14 Acelerador_pkg 0 22 CKeoSYnKeJ;1::Jj__lXd0
-Z3 !s110 1792047810
+Z3 !s110 1792093724
 !i10b 1
 !s100 TZVZM]1YiQJ3XnUf@S=KW2
 IVhAK_<JA=l?XiOYgTUg6:2
@@ -27,7 +27,7 @@ Z5 OV;L;10.5b;63
 r1
 !s85 0
 31
-Z6 !s108 1792047810.000000
+Z6 !s108 1792093724.000000
 !s107 Acelerador_Grafico_Top.sv|
 !s90 -reportprogress|300|-sv|Acelerador_Grafico_Top.sv|
 !i113 1
@@ -36,7 +36,7 @@ Z7 tCvgOpt 0
 n@acelerador_@grafico_@top
 XAcelerador_pkg
 R1
-Z8 !s110 1792047808
+Z8 !s110 1792093722
 !i10b 1
 !s100 kg3Fdj0m0BcfW3JYC1BXT0
 ICKeoSYnKeJ;1::Jj__lXd0
@@ -51,7 +51,7 @@ R5
 r1
 !s85 0
 31
-Z10 !s108 1792047808.000000
+Z10 !s108 1792093722.000000
 !s107 Acelerador_pkg.sv|
 !s90 -reportprogress|300|-sv|Acelerador_pkg.sv|
 !i113 1
@@ -60,7 +60,7 @@ R7
 n@acelerador_pkg
 vaddr_calc
 R1
-Z11 !s110 1792047809
+Z11 !s110 1792093723
 !i10b 1
 !s100 eW]flc_4YG`TzHk;J378[3
 I@PVj4k[l>>g;dL>cHj?IG0
@@ -76,7 +76,7 @@ R5
 r1
 !s85 0
 31
-Z14 !s108 1792047809.000000
+Z14 !s108 1792093723.000000
 !s107 addr_calc.sv|
 !s90 -reportprogress|300|-sv|addr_calc.sv|
 !i113 1
@@ -84,7 +84,7 @@ o-sv
 R7
 vasync_fifo
 R1
-R11
+R3
 !i10b 1
 !s100 :c5m2FNCRzZe>oKokWRLL0
 I_idXaS>oIA`Q>J^Sb[liM3
@@ -100,7 +100,7 @@ R5
 r1
 !s85 0
 31
-R14
+R6
 !s107 async_fifo.sv|
 !s90 -reportprogress|300|-sv|async_fifo.sv|
 !i113 1
@@ -157,7 +157,7 @@ o-sv
 R7
 vdraw_circle
 R1
-R8
+R11
 !i10b 1
 !s100 hLK>DL@bhBAieE4XBJgO:1
 IaezgZKkK^N3QZYn^XeUS81
@@ -173,7 +173,7 @@ R5
 r1
 !s85 0
 31
-R10
+R14
 !s107 draw_circle.sv|
 !s90 -reportprogress|300|-sv|draw_circle.sv|
 !i113 1
@@ -229,7 +229,7 @@ o-sv
 R7
 vdraw_rect
 R1
-R8
+R11
 !i10b 1
 !s100 QKTFMZjfWKf[dBm75JIfN0
 IFiBF^6MgIC^E;hg_>T>?V2
@@ -245,7 +245,7 @@ R5
 r1
 !s85 0
 31
-R10
+R14
 !s107 draw_rect.sv|
 !s90 -reportprogress|300|-sv|draw_rect.sv|
 !i113 1
@@ -269,7 +269,7 @@ R5
 r1
 !s85 0
 31
-R10
+R14
 !s107 draw_trian.sv|
 !s90 -reportprogress|300|-sv|draw_trian.sv|
 !i113 1
@@ -301,7 +301,7 @@ o-sv
 R7
 vframebuffer_controller
 R1
-R11
+R3
 !i10b 1
 !s100 j>YS:0CH`5Qe4e>FN`W:L2
 ID737PHDSJU=UDAALaoRXd1
@@ -317,7 +317,7 @@ R5
 r1
 !s85 0
 31
-R14
+R6
 !s107 framebuffer_controller.sv|
 !s90 -reportprogress|300|-sv|framebuffer_controller.sv|
 !i113 1
@@ -373,7 +373,7 @@ o-sv
 R7
 vline_buffer
 R1
-R11
+R3
 !i10b 1
 !s100 g5B0JAaGlEUon3gCiWOZN0
 I=el5AJfcaZ;l:ej>e6GBc0
@@ -389,7 +389,7 @@ R5
 r1
 !s85 0
 31
-R14
+R6
 !s107 line_buffer.sv|
 !s90 -reportprogress|300|-sv|line_buffer.sv|
 !i113 1
@@ -495,7 +495,7 @@ R7
 vtb_Acelerador_Grafico_Top
 R1
 R2
-R3
+!s110 1792093725
 !i10b 1
 !s100 ^eOJdKc=EAAIfz=0Cakl`3
 IS]G:QnMoVXcEI8nnB_=T51
@@ -511,7 +511,7 @@ R5
 r1
 !s85 0
 31
-R6
+!s108 1792093725.000000
 !s107 tb_Acelerador_Grafico_Top.sv|
 !s90 -reportprogress|300|-sv|tb_Acelerador_Grafico_Top.sv|
 !i113 1
@@ -521,7 +521,7 @@ ntb_@acelerador_@grafico_@top
 vvga_controller
 R1
 R2
-R11
+R3
 !i10b 1
 !s100 6bI1YT;4nO6b578R5ZCAo1
 I]=:kP_3GcIzXzeGn2ImFz0
@@ -537,7 +537,7 @@ R5
 r1
 !s85 0
 31
-R14
+R6
 !s107 vga_controller.sv|
 !s90 -reportprogress|300|-sv|vga_controller.sv|
 !i113 1
@@ -545,7 +545,7 @@ o-sv
 R7
 vvga_timing
 R1
-R11
+R3
 !i10b 1
 !s100 Lel@:g;BlTYLdzT`]69zD2
 Iah29Wc]kma51R3M6gXkY?0
@@ -561,7 +561,7 @@ R5
 r1
 !s85 0
 31
-R14
+R6
 !s107 vga_timing.sv|
 !s90 -reportprogress|300|-sv|vga_timing.sv|
 !i113 1

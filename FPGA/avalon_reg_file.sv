@@ -23,7 +23,7 @@
 //                         [5]     fifo_empty
 //                         [6]     overflow
 //                         [7]     vga_underrun
-//                         [15:8]  fifo_level
+//                         [15:8]  fifo_level, saturado en 255
 //                         [31:16] seq_last
 //   0x0C  CMD_FIFO_W  W   una palabra del paquete; seis escrituras
 //                         consecutivas (W0 a W5) encolan un comando
@@ -152,8 +152,20 @@ module avalon_reg_file #(
   // no atraviesa el interconnect del puente.
   logic [31:0] status_word, err_word;
 
+  // Nivel de la cola recortado al campo de 8 bits que STATUS le reserva en
+  // [15:8]. Con FIFO_DEPTH de 256 el nivel necesita 9 bits, porque tiene que
+  // poder valer 256; pero ese unico valor que no cabe es la cola llena, que
+  // fifo_full ya informa en el bit 4. Saturar en 255 no pierde informacion y
+  // conserva el mapa de registros tal como lo documenta el diseno.
+  localparam int   LVLX = (LVL_BITS > 9) ? LVL_BITS : 9;
+  logic [LVLX-1:0] nivel_ext;
+  logic [7:0]      nivel_8;
+
+  assign nivel_ext = LVLX'(fifo_level);
+  assign nivel_8   = (nivel_ext > LVLX'(255)) ? 8'hFF : nivel_ext[7:0];
+
   assign status_word = {seq_last,                        // [31:16]
-                        {(8-LVL_BITS){1'b0}}, fifo_level,// [15:8]
+                        nivel_8,                         // [15:8]
                         vga_underrun,                    // [7]
                         overflow,                        // [6]
                         fifo_empty,                      // [5]

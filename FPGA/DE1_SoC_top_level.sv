@@ -119,7 +119,11 @@ module DE1_SoC_top_level (
   localparam int SCREEN_H   = Acelerador_pkg::VGA_V_VISIBLE;      // 480
 
   localparam int PIXEL_BITS = Acelerador_pkg::PIXEL_BITS;         // 16, RGB565
-  localparam int FIFO_DEPTH = Acelerador_pkg::FIFO_DEPTH;
+  // La cola de 256 comandos que fija el documento de diseno. No se sube en
+  // Acelerador_pkg porque los bancos de pruebas leen FIFO_DEPTH de ahi y
+  // tendrian que encolar 256 comandos para provocar el desbordamiento de
+  // EC-08, alargando la simulacion sin ganar nada.
+  localparam int FIFO_DEPTH = 256;
   localparam int SD_AW      = Acelerador_pkg::SD_ADDR_BITS;       // 25, palabras
   localparam int BCW        = $clog2(Acelerador_pkg::BURST_LEN + 1);
   localparam int LVLW       = $clog2(FIFO_DEPTH) + 1;
