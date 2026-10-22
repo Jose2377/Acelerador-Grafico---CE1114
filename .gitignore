@@ -1,0 +1,77 @@
+# =====================================================================
+# .gitignore unificado del repositorio
+# Las reglas de cada subproyecto estan prefijadas con su carpeta para que
+# sigan aplicando solo a ese proyecto (igual que cuando estaban separadas).
+# =====================================================================
+
+# ---------------------------------------------------------------------
+# FPGA (Altera Quartus II)
+# ---------------------------------------------------------------------
+# Quartus II genera muchos archivos en el directorio principal (donde esta
+# el .qpf). Para versionar bien: crear carpetas propias para las entidades
+# y poner en ellas un .gitignore con la regla "!*" para permitir todo tipo
+# de archivos. Para versionar los SOF/POF generados, redirigir la salida a
+# una carpeta propia en:
+# "Assignments" -> "Settings" -> "Compilation Process Settings"
+# -> "Save project output files in specified directory"
+# y permitir en ella: !*.sof  !*.pof  (o usar un submodulo para binarios).
+
+# Hay que conservar todos los archivos HDL
+# FPGA/**/*.vhd
+# FPGA/**/*.v
+
+# Archivos generados por Quartus II
+FPGA/**/*_generation_script*
+FPGA/**/*_inst.vhd
+FPGA/**/*.bak
+FPGA/**/*.cmp
+FPGA/**/*.done
+FPGA/**/*.eqn
+FPGA/**/*.hex
+FPGA/**/*.html
+FPGA/**/*.jdi
+FPGA/**/*.jpg
+# FPGA/**/*.mif
+FPGA/**/*.pin
+FPGA/**/*.pof
+FPGA/**/*.ptf.*
+FPGA/**/*.qar
+FPGA/**/*.qarlog
+FPGA/**/*.qws
+FPGA/**/*.rpt
+FPGA/**/*.smsg
+FPGA/**/*.sof
+FPGA/**/*.sopc_builder
+FPGA/**/*.summary
+FPGA/**/*.tcl
+# Explicitly add any text files used
+FPGA/**/*.txt
+FPGA/**/*~
+FPGA/**/*example*
+FPGA/**/*sopc_*
+# FPGA/**/*.sdc  (quiero conservar los archivos de timing)
+
+# Carpetas generadas por Quartus II
+FPGA/*/db/
+FPGA/*/incremental_db/
+FPGA/*/simulation/
+FPGA/*/timing/
+FPGA/*/testbench/
+FPGA/*/*_sim/
+FPGA/**/incremental_db/
+FPGA/**/db/
+FPGA/**/_output_files/
+FPGA/**/PLLJ_PLLSPE_INFO.txt
+
+# Volcado del banco de pruebas y su visualizacion
+FPGA/**/raster_dump.csv
+FPGA/**/raster_pruebas.csv
+FPGA/**/salida/
+
+# ---------------------------------------------------------------------
+# Interfaz (Python)
+# ---------------------------------------------------------------------
+Interfaz/**/__pycache__/
+Interfaz/**/*.pyc
+Interfaz/reportes/*.csv
+Interfaz/reportes/*.log

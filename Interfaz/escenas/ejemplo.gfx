@@ -1,0 +1,15 @@
+# Escena de ejemplo: una instruccion por linea.
+color 255 0 0
+clear
+color 0 255 0
+rect 40 40 280 200
+rect_fill 300 40 600 200
+color 0 0 255
+line 0 0 639 479
+circ 160 380 60
+circ_fill 480 380 60
+color 255 255 0
+tria 60 240 200 240 130 330
+tria_fill 400 240 560 240 480 330
+swap
+inf
