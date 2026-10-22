@@ -4,72 +4,89 @@
 // processor_raster.sv
 // Modulo : Rasterizador 2D, reparto de comandos entre los modulos de dibujo
 //
-// Recibe un comando ya decodificado y lo encamina al modulo que sabe
-// dibujarlo. Tiene las cinco primitivas instanciadas en paralelo y
-// permanentemente, porque en hardware no se crean a demanda: lo que se
-// multiplexa es cual de ellas arranca y cual de las cinco salidas se
-// escucha. Solo una esta activa en cada momento, de modo que el area es el
-// precio y a cambio no hay recurso que compartir ni que arbitrar.
+// Recibe un comando ya decodificado y lo encamina al modulo que sabe dibujarlo. 
+// Tiene las cinco primitivas instanciadas en paralelo y permanentemente, porque en hardware no se crean a demanda: 
+// lo que se multiplexa es cual de ellas arranca y cual de las cinco salidas se escucha. 
+// Solo una esta activa en cada momento, de modo que el area es el precio,
+// y a cambio no hay recurso que compartir ni que arbitrar.
 //
-//   start   pulso del decodificador con los argumentos ya presentados
-//   op      operacion en codificacion reducida de 4 bits
-//   stall   el gestor de framebuffer no acepta: congela todo el camino
-//   busy    hay un comando en vuelo (incluido el que esta pendiente)
-//   done    pulso de un ciclo al completarse; lo espera MOE_WAIT
+//   Variables importantes aqui:
+//   start   Señal del decodificador con los argumentos ya presentados
+//   op      Operacion en codificacion reducida de 4 bits
+//   stall   Señal donde el gestor de framebuffer no esta aceptando datos: congela todo el camino
+//   busy    Hay un comando ejecutandose (incluido el que esta pendiente)
+//   done    Señal de un ciclo al completarse; lo espera MOE_WAIT
 //
 // Tres decisiones de diseno concentradas aqui:
 //
-//   - El color llega en RGB888 y se convierte a RGB565 con la funcion del
-//     paquete, que es desplazamiento y OR: no cuesta ningun ciclo.
-//   - CLEAR no tiene modulo propio. Se reescribe como un rectangulo relleno
-//     del tamano de la pantalla antes de arrancar draw_rect.
-//   - La operacion se registra en op_q al arrancar, de modo que el
-//     multiplexor de salida sigue apuntando al modulo correcto aunque la
-//     entrada op ya haya cambiado.
+//   - El color llega en RGB888 y se convierte a RGB565 con la funcion del paquete,
+//     que es desplazamiento y OR: no cuesta ningun ciclo.
+//   - CLEAR no tiene modulo propio. 
+//     Se reescribe como un rectangulo relleno del tamano de la pantalla antes de arrancar draw_rect.
+//   - La operacion se registra en op_q al arrancar,
+//     de modo que el multiplexor de salida sigue apuntando al modulo correcto aunque la entrada op ya haya cambiado.
 //
-// start_pend retiene la peticion cuando llega durante un stall o con una
-// figura todavia en curso, y la suelta en cuanto se puede atender; sin ello
-// un pulso de start coincidente con una espera se perderia.
+// start_pend retiene la peticion cuando llega durante un stall o con una figura todavia en curso, 
+// y la suelta en cuanto se puede atender; sin ello un pulso de start coincidente con una espera se perderia.
 //
-// done se filtra por flanco porque las maquinas de dibujo levantan su done
-// durante un ciclo entero y el decodificador espera un pulso unico.
+// done se filtra por flanco porque las maquinas de dibujo levantan su done durante un ciclo entero
+// y el decodificador espera un pulso unico.
+//
+// Entradas
+//   clk, rst_n                 Reloj del sistema y reinicio
+//   start                      Señal del decodificador que arranca el comando
+//   stall                      Señal que el gestor de framebuffer no esta aceptando datos: congela el rasterizado
+//   op                         Codigo de operacion: elige el modulo de dibujo
+//   x0, y0, x1, y1, x2, y2     Coordenadas del comando
+//   radius                     Radio, para el circulo
+//   color_r, color_g, color_b  Color del comando en RGB888 (palabra W4)
+//   clr_cnt                    Señal que reinicia los contadores de instrumentacion
+//
+// Salidas
+//   busy                  Señal que muestra que hay una figura en curso
+//   done                  Señal de un ciclo al terminar la figura
+//   px_valid              Solicitud de pixel valida
+//   px_x, px_y            Coordenada del pixel, ya recortada
+//   px_color              Su color en RGB565
+//   px_addr               Su direccion lineal en el framebuffer
+//   pix_count, clip_count Pixeles aceptados y pixeles recortados
 //=============================================================================
 module processor_raster #(
   parameter int SCREEN_W   = Acelerador_pkg::SCREEN_W,
   parameter int SCREEN_H   = Acelerador_pkg::SCREEN_H,
   parameter int PIXEL_BITS = Acelerador_pkg::PIXEL_BITS
 )(
-  input  logic               clk,
-  input  logic               rst_n,
+  input  logic               clk,       // Reloj del sistema
+  input  logic               rst_n,     // Reset del sistema
 
   // Comando decodificado
-  input  logic               start,
-  input  logic               stall,     // El gestor de framebuffer no acepta
-  input  logic        [3:0]  op,
-  input  logic signed [15:0] x0, y0, x1, y1, x2, y2,
-  input  logic        [9:0]  radius,
+  input  logic               start,     // Señal de inicio
+  input  logic               stall,     // El gestor de framebuffer no esta aceptando data
+  input  logic        [3:0]  op,        // Opcode de operacion
+  input  logic signed [15:0] x0, y0, x1, y1, x2, y2, // Coordenadas de comando
+  input  logic        [9:0]  radius,    // Radio de circulo
 
   // Color de la palabra W4 del paquete, en RGB888
-  input  logic        [7:0]  color_r,
-  input  logic        [7:0]  color_g,
-  input  logic        [7:0]  color_b,
+  input  logic        [7:0]  color_r,   // Color rojo
+  input  logic        [7:0]  color_g,   // Color verde
+  input  logic        [7:0]  color_b,   // Color azul
 
   // Control de la ventana de medicion
-  input  logic               clr_cnt,
+  input  logic               clr_cnt,   // Señal que reinicia los contadores de instrumentacion
 
-  output logic               busy,
-  output logic               done,
+  output logic               busy,      // Señal de ocupado
+  output logic               done,      // Señal de terminado
 
   // Solicitud de pixel
-  output logic               px_valid,
-  output logic [$clog2(SCREEN_W)-1:0] px_x,
-  output logic [$clog2(SCREEN_H)-1:0] px_y,
-  output logic [PIXEL_BITS-1:0]       px_color,
-  output logic [$clog2(SCREEN_W*SCREEN_H)-1:0] px_addr,
+  output logic               px_valid,                  // Si el pixel es valido
+  output logic [$clog2(SCREEN_W)-1:0] px_x,             // Coordenada x del pixel
+  output logic [$clog2(SCREEN_H)-1:0] px_y,             // Coordenada y del pixel
+  output logic [PIXEL_BITS-1:0]       px_color,         // Color del pixel
+  output logic [$clog2(SCREEN_W*SCREEN_H)-1:0] px_addr, // Direccion de memoria del pixel
 
   // Instrumentacion
-  output logic        [31:0] pix_count,
-  output logic        [31:0] clip_count
+  output logic        [31:0] pix_count,                 // Pixeles aceptados
+  output logic        [31:0] clip_count                 // Pixeles recortados
 );
 
   // Codigos de operacion
@@ -91,22 +108,21 @@ module processor_raster #(
   // Operacion en curso
   logic [3:0] op_q;
   always_ff @(posedge clk or negedge rst_n) begin
-    if (!rst_n)     op_q <= OP_PIXEL;
-    else if (start) op_q <= op;
+    if (!rst_n)     op_q <= OP_PIXEL; // Reset
+    else if (start) op_q <= op;       // Codigo actual
   end
 
   // Reasignacion de parametros
-  // CLEAR se reescribe como un rectangulo relleno del tamano de la pantalla
   logic signed [15:0] rx0, ry0, rx1, ry1;
   logic               rfill;
 
   always_comb begin
     case (op)
-      OP_CLEAR: begin
+      OP_CLEAR: begin // CLEAR se reescribe como un rectangulo relleno del tamano de la pantalla
         rx0 = 16'sd0;  ry0 = 16'sd0;
         rx1 = 16'(SCREEN_W - 1);  ry1 = 16'(SCREEN_H - 1);  rfill = 1'b1;
       end
-      default: begin
+      default: begin // Si no es Clear, se usan las coordenadas de entrada
         rx0 = x0;  ry0 = y0;  rx1 = x1;  ry1 = y1;
         rfill = (op == OP_RECT_FILL);
       end
@@ -124,15 +140,18 @@ module processor_raster #(
     else if (start_ef) start_pend <= 1'b0;
   end
 
+  // Start prinpical
   assign start_ef = start_pend && !stall && !ocupado;
-
+	
+  // Start segun comando actual
   assign s_pix  = start_ef &&  (op == OP_PIXEL);
-  assign s_rect = start_ef && ((op == OP_RECT) || (op == OP_RECT_FILL)
-                         || (op == OP_CLEAR));
+  assign s_rect = start_ef && ((op == OP_RECT) || (op == OP_RECT_FILL) || (op == OP_CLEAR));
   assign s_line = start_ef &&  (op == OP_LINE);
   assign s_circ = start_ef && ((op == OP_CIRC) || (op == OP_CIRC_FILL));
   assign s_tria = start_ef && ((op == OP_TRIA) || (op == OP_TRIA_FILL));
 
+  // Señales de salida para cada modulo de dibujo correspondiente.
+  // busy, done, pixel_valid, coordenda x, coordenada y, pixel_color
   logic               bp, br, bl, bc, bt;
   logic               dp, dr, dl, dc, dt;
   logic               vp, vr, vl, vc, vt;
@@ -140,7 +159,7 @@ module processor_raster #(
   logic signed [15:0] yp, yr, yl, yc, yt;
   logic [PIXEL_BITS-1:0] cp, cr, cl, cc, ct;
 
-  // Llamados de operaciones
+  // Llamados de modulos de dibujo.
   draw_pixel #(.PIXEL_BITS(PIXEL_BITS)) u_pix (
     .clk(clk), .rst_n(rst_n), .start(s_pix), .stall(stall),
     .x0(x0), .y0(y0), .color_in(color565),
@@ -178,6 +197,7 @@ module processor_raster #(
   logic signed [15:0]    x_raw, y_raw;
   logic [PIXEL_BITS-1:0] k_raw;
 
+  // Elige cual de los valores de modulos de dibujo se seleciona segun el comando actual.
   always_comb begin
     case (op_q)
       OP_PIXEL:               begin v_raw = vp; x_raw = xp; y_raw = yp; k_raw = cp; end
@@ -188,7 +208,7 @@ module processor_raster #(
     endcase
   end
 
-  // Generador de pixeles
+  // Generador de pixeles usando los valores del multiplexor de salida
   pixel_gen #(.SCREEN_W(SCREEN_W), .SCREEN_H(SCREEN_H),
               .PIXEL_BITS(PIXEL_BITS)) u_pxgen (
     .clk(clk), .rst_n(rst_n), .clr_cnt(clr_cnt), .px_ready(!stall),
@@ -197,18 +217,16 @@ module processor_raster #(
     .px_color(px_color), .px_addr(px_addr),
     .pix_count(pix_count), .clip_count(clip_count));
 
+  // Señales de salida
   assign ocupado = bp | br | bl | bc | bt;
   assign busy    = ocupado | start_pend;
-
   logic done_raw, done_q;
-
   assign done_raw = dp | dr | dl | dc | dt;
 
   always_ff @(posedge clk or negedge rst_n) begin
     if (!rst_n) done_q <= 1'b0;
     else        done_q <= done_raw;
   end
-
   assign done = done_raw && !done_q;
 
 endmodule

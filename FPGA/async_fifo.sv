@@ -33,6 +33,17 @@
 // Conservadora por construccion: full puede quedarse alto un poco mas de lo
 // necesario y empty tambien, porque los punteros cruzados llegan con dos
 // ciclos de retraso. Nunca al contrario, que es lo que importa.
+//
+// Entradas
+//   wr_clk, wr_rst_n   reloj y reinicio del dominio de escritura
+//   wr_ena, data_in    escritura de un dato en el dominio de escritura
+//   rd_clk, rd_rst_n   reloj y reinicio del dominio de lectura
+//   rd_ena             extraccion de un dato en el dominio de lectura
+//
+// Salidas
+//   full               no caben mas datos; visto desde el dominio de escritura
+//   data_out           dato en la cabeza, visto desde el dominio de lectura
+//   empty              no hay datos que leer
 //=============================================================================
 module async_fifo #(
   parameter int DATA_W = 16,

@@ -19,6 +19,15 @@
 //
 // El truncado de x_out e y_out solo tiene sentido cuando valid_out vale 1;
 // se hace sin condicion porque no cuesta nada y el consumidor ya mira valid.
+//
+// Entradas
+//   valid_in      hay un pixel presentado en x_in, y_in
+//   x_in, y_in    coordenada con signo que produce el modulo de dibujo
+//
+// Salidas
+//   valid_out     el pixel cae dentro de la pantalla: sigue hacia el framebuffer
+//   x_out, y_out  la misma coordenada ya truncada al ancho de la pantalla
+//   fuera         el pixel cae fuera y se descarta: alimenta el contador de recortes
 //=============================================================================
 module clip_scissor #(
   parameter int SCREEN_W = 64,

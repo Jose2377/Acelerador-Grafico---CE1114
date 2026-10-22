@@ -40,6 +40,29 @@
 // controlador, y avalon_reg_file comparte reloj con el puente ligero, de modo
 // que no hay cruce de dominio en el camino de los registros, tal como asume
 // la cabecera de avalon_reg_file.sv.
+//
+// Entradas
+//   CLOCK_50          oscilador de 50 MHz de la placa; alimenta el ALTPLL
+//   KEY_N             pulsadores, activos en bajo; KEY0 es el reinicio
+//   DRAM_DQ           bus de datos de la SDRAM (bidireccional)
+//   HPS_DDR3_*        bus de la DDR3 del HPS; parte es bidireccional
+//   HPS_ENET_RX_CLK, HPS_ENET_RX_DV, HPS_ENET_RX_DATA, HPS_ENET_MDIO
+//                     recepcion y gestion del Ethernet del HPS (IF-03)
+//   HPS_SD_CMD, HPS_SD_DATA
+//                     microSD de arranque del HPS (bidireccionales)
+//   HPS_UART_RX       consola serial del HPS, entrada
+//
+// Salidas
+//   LEDR              indicador de estado del sistema
+//   DRAM_ADDR, DRAM_BA, DRAM_CAS_N, DRAM_CKE, DRAM_CLK, DRAM_CS_N,
+//   DRAM_LDQM, DRAM_RAS_N, DRAM_UDQM, DRAM_WE_N
+//                     control de la SDRAM externa donde vive el framebuffer
+//   VGA_R, VGA_G, VGA_B, VGA_BLANK_N, VGA_CLK, VGA_HS, VGA_SYNC_N, VGA_VS
+//                     salida de video hacia el conversor de la placa
+//   HPS_ENET_GTX_CLK, HPS_ENET_TX_EN, HPS_ENET_TX_DATA, HPS_ENET_MDC
+//                     transmision y gestion del Ethernet del HPS
+//   HPS_SD_CLK        reloj de la microSD
+//   HPS_UART_TX       consola serial del HPS, salida
 //=============================================================================
 module DE1_SoC_top_level (
   //------------------------------------------------------- Reloj y pulsadores

@@ -20,6 +20,22 @@
 // pixel se presenta. Con contrapresion el mismo pixel se queda presentado
 // varios ciclos seguidos, y contar ciclos en vez de pixeles aceptados
 // inflaria la medida.
+//
+// Entradas
+//   clk, rst_n           reloj de rasterizado y reinicio asincrono activo en bajo
+//   clr_cnt              reinicia los dos contadores de instrumentacion
+//   px_ready             el gestor de framebuffer acepta el pixel presentado
+//   valid_in             hay un pixel en el flujo que llega de los modulos de dibujo
+//   x_in, y_in           su coordenada con signo
+//   color_in             su color en RGB565
+//
+// Salidas
+//   px_valid             solicitud de pixel valida (interfaz IF-07)
+//   px_x, px_y           coordenada ya recortada a la region visible
+//   px_color             color del pixel
+//   px_addr              direccion lineal del pixel en el framebuffer
+//   pix_count            pixeles aceptados por el gestor en la ventana
+//   clip_count           pixeles descartados por caer fuera de la pantalla
 //=============================================================================
 module pixel_gen #(
   parameter int SCREEN_W   = 64,

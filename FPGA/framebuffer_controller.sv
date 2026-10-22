@@ -48,6 +48,35 @@
 // Hacia abajo presenta un maestro Avalon-MM de rafaga, que atiende el
 // framebuffer interno o, en la placa, el controlador de SDRAM. Las dos
 // opciones son intercambiables sin tocar este modulo.
+//
+// Entradas
+//   clk, rst_n              reloj de rasterizado y SDRAM, y su reinicio activo en bajo
+//   px_valid                el rasterizador presenta un pixel
+//   px_addr                 indice de ese pixel en la pantalla
+//   px_color                su color en RGB565
+//   buffer_sel              buffer delantero, 0 = A y 1 = B; se escribe en el contrario
+//   vaciar                  cierra la rafaga incompleta cuando el rasterizador queda inactivo
+//   clk_pix, rst_pix_n      reloj y reinicio del dominio de pixel
+//   frame_buffer_req        el controlador VGA pide un pixel
+//   frame_buffer_addr       indice del pixel que pide
+//   frame_buffer_front      buffer del que debe leerlo
+//   sd_waitrequest          el medio de memoria no acepta la transaccion
+//   sd_readdata             dato devuelto por la memoria
+//   sd_readdatavalid        sd_readdata es valido en este ciclo
+//
+// Salidas
+//   px_ready                acepta el pixel del rasterizador; en bajo lo congela
+//   frame_buffer_ready      acepta la peticion del controlador VGA
+//   frame_buffer_data_in    pixel devuelto al controlador VGA
+//   frame_buffer_valid_in   ese pixel es valido en este ciclo
+//   sd_read, sd_write       maestro Avalon-MM de rafaga hacia la memoria
+//   sd_address              direccion de la rafaga
+//   sd_burstcount           longitud de la rafaga
+//   sd_writedata            dato escrito
+//   burst_writes            transacciones de escritura emitidas
+//   burst_reads             transacciones de lectura emitidas
+//   pixels_written          pixeles aceptados del rasterizador
+//   out_of_range            escrituras descartadas por caer fuera de las regiones
 //=============================================================================
 module framebuffer_controller #(
   parameter int SCREEN_W      = 64,

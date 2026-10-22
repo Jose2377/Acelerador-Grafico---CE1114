@@ -36,6 +36,22 @@
 // el error aparece donde se produce y no tres mil ciclos despues disfrazado
 // de imagen torcida. Un acceso fuera de region no se escribe, para no
 // corromper un pixel valido mientras se cuenta el suceso.
+//
+// Entradas
+//   clk, rst_n        reloj del sistema y reinicio asincrono activo en bajo
+//   sd_read           peticion de lectura del maestro de rafaga
+//   sd_write          peticion de escritura
+//   sd_address        direccion de la rafaga
+//   sd_burstcount     longitud de la rafaga
+//   sd_writedata      dato que se escribe
+//
+// Salidas
+//   sd_waitrequest    no acepta la transaccion todavia (modela las esperas)
+//   sd_readdata       dato devuelto
+//   sd_readdatavalid  sd_readdata es valido en este ciclo
+//   words_written     palabras escritas en total
+//   words_read        palabras devueltas en total
+//   range_errors      accesos que cayeron fuera de las dos regiones
 //=============================================================================
 module framebuffer_onchip #(
   parameter int SCREEN_W     = 64,

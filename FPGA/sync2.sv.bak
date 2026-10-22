@@ -1,0 +1,44 @@
+//=============================================================================
+// sync2.sv
+// Sincronizador de dos biestables para cruzar un bit entre dominios de reloj
+//
+// El sistema tiene dos dominios: rasterizado y SDRAM a 100 MHz, y pixel a
+// 25,175 MHz. No guardan ninguna relacion de fase, de modo que una senal
+// muestreada directamente de un dominio en el otro puede violar el tiempo de
+// establecimiento y quedar metaestable.
+//
+// Dos biestables en cadena dan al primero un ciclo entero para resolverse
+// antes de que el segundo lo lea. Solo sirve para senales de un bit que
+// cambian despacio frente al reloj de destino: un bus de varios bits
+// necesitaria codigo Gray o un protocolo de handshake, porque sus bits
+// podrian cruzar en ciclos distintos.
+//
+// En este diseno se usa para las dos unicas senales que cruzan: el VSYNC que
+// sube del dominio de pixel al de rasterizado, y el selector de buffer que
+// baja. Las dos cumplen la condicion: cambian una vez por cuadro.
+//=============================================================================
+module sync2 #(
+  parameter bit VALOR_RESET = 1'b0
+)(
+  input  logic clk_dst,
+  input  logic rst_n,
+  input  logic data_in,      // dominio de origen
+  output logic data_out      // dominio de clk_dst
+);
+
+  (* altera_attribute = "-name SYNCHRONIZER_IDENTIFICATION FORCED_IF_ASYNCHRONOUS" *)
+  logic meta, estable;
+
+  always_ff @(posedge clk_dst or negedge rst_n) begin
+    if (!rst_n) begin
+      meta    <= VALOR_RESET;
+      estable <= VALOR_RESET;
+    end else begin
+      meta    <= data_in;
+      estable <= meta;
+    end
+  end
+
+  assign data_out = estable;
+
+endmodule

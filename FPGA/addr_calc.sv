@@ -12,6 +12,12 @@
 // Puramente combinacional, sin reloj ni estado: el sintetizador resuelve la
 // multiplicacion por SCREEN_W como un desplazamiento cuando SCREEN_W es
 // potencia de dos, de modo que no consume ningun DSP ni ningun ciclo.
+//
+// Entradas
+//   x, y   coordenada del pixel dentro de la region visible
+//
+// Salidas
+//   addr   indice lineal de ese pixel en el framebuffer, y * SCREEN_W + x
 //=============================================================================
 module addr_calc #(
   parameter int SCREEN_W = 64,

@@ -46,6 +46,37 @@
 // Lo que el HPS ve de todo esto son los registros del mapa: CONTROL (0x04),
 // STATUS (0x08), CMD_FIFO_W (0x0C), ERR_INFO (0x10) y los de rendimiento
 // (0x14 a 0x20), cableados a los puertos de este modulo.
+//
+// Entradas
+//   clk, rst_n              dominio de rasterizado y SDRAM, 100 MHz
+//   clk_pix, rst_pix_n      dominio de pixel, lo fija la temporizacion VGA
+//   enable, reset_soft      bits del registro CONTROL (0x04)
+//   comand_w_ena            pulso de escritura en COMAND_FIFO_W (0x0C)
+//   comand_w_data           palabra del paquete, escritas en orden W0 a W5
+//   sd_waitrequest          el medio de memoria no acepta la transaccion
+//   sd_readdata             dato devuelto por la memoria
+//   sd_readdatavalid        sd_readdata es valido en este ciclo
+//
+// Salidas
+//   sd_read, sd_write, sd_address, sd_burstcount, sd_writedata
+//                           maestro Avalon-MM de rafaga hacia el framebuffer
+//                           (sin usar cuando FB_ONCHIP vale 1)
+//   vga_r, vga_g, vga_b, vga_hs, vga_vs, vga_blank_n, vga_sync_n
+//                           salida de video hacia el conversor de la placa
+//   vga_underrun, vga_frames
+//                           el barrido se quedo sin datos, y cuadros emitidos
+//   px_valid, px_x, px_y, px_color, px_addr
+//                           solicitud de pixel del rasterizador, para observacion
+//   buffer_sel              buffer delantero, 0 = A y 1 = B
+//   busy, modo, fifo_level, fifo_full, fifo_empty, overflow
+//                           registro STATUS (0x08)
+//   err_last, err_count     registro ERR_INFO (0x10)
+//   perf_cycles, perf_commands, perf_pixels, perf_dropped
+//                           registros de rendimiento (0x14 a 0x20)
+//   seq_last, clip_count    auxiliares de instrumentacion
+//   leds                    indicador de estado sobre los LED rojos de la placa
+//   burst_writes, burst_reads, pixels_written, out_of_range
+//                           instrumentacion del gestor de framebuffer
 //=============================================================================
 module Acelerador_Grafico_Top #(
   parameter int SCREEN_W   = Acelerador_pkg::SCREEN_W,

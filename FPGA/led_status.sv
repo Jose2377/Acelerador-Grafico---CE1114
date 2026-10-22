@@ -12,6 +12,19 @@
 //   LEDR[9]    latido, indica que el reloj del sistema vive
 //
 // El latido no es decorativo: distingue un sistema detenido de un sistema en reposo
+//
+// Entradas
+//   clk, rst_n   reloj del sistema y reinicio asincrono activo en bajo
+//   modo         modo del sistema, MOE-01 a MOE-06; sale por LEDR[2:0]
+//   busy         hay trabajo en curso
+//   err_tick     pulso: se registro un error; se alarga para que se vea
+//   overflow     nivel: hubo descartes en la ventana de medicion
+//   fifo_full    nivel: la cola de comandos esta llena ahora
+//   buffer_sel   buffer delantero, 0 es A y 1 es B
+//   underrun     nivel pegajoso del controlador VGA: el barrido se quedo sin datos
+//
+// Salidas
+//   leds         los diez LED rojos de la placa, con el reparto de arriba
 
 module led_status #(
   parameter int SYS_CLK_HZ = 100_000_000,

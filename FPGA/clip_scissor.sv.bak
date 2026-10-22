@@ -1,0 +1,37 @@
+//=============================================================================
+// clip_scissor.sv
+// Recorte de la region visible, pixel a pixel
+//
+// El recorte opera por pixel y no por operacion: una figura que entra y sale
+// de la pantalla se dibuja en su parte visible y solo los pixeles exteriores
+// se descartan, sin que el comando quede marcado como erroneo. Este modulo
+// es ademas la garantia de que el rasterizador nunca presente una direccion
+// fuera de la region asignada al framebuffer.
+//
+// Combinacional: no introduce latencia en la ruta de pixeles.
+//=============================================================================
+module clip_scissor #(
+  parameter int SCREEN_W = 64,
+  parameter int SCREEN_H = 48
+)(
+  input  logic               valid_i,
+  input  logic signed [15:0] x_i, y_i,
+  output logic               valid_o,
+  output logic [$clog2(SCREEN_W)-1:0] x_o,
+  output logic [$clog2(SCREEN_H)-1:0] y_o,
+  output logic               fuera          // descartado por recorte
+);
+
+  logic dentro;
+
+  assign dentro  = (x_i >= 0) && (x_i < SCREEN_W)
+                && (y_i >= 0) && (y_i < SCREEN_H);
+
+  assign valid_o = valid_i &&  dentro;
+  assign fuera   = valid_i && !dentro;
+
+  // Truncar es seguro porque solo se usa cuando dentro vale 1.
+  assign x_o = x_i[$clog2(SCREEN_W)-1:0];
+  assign y_o = y_i[$clog2(SCREEN_H)-1:0];
+
+endmodule

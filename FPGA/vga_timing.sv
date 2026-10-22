@@ -32,6 +32,18 @@
 //   cuadro_inicio  primer ciclo del intervalo vertical: empieza cuadro nuevo
 //   vsync_act      VSYNC con polaridad fija activa en alto, para cruzar al
 //                  otro dominio sin que el receptor tenga que conocer V_POL
+//
+// Entradas
+//   clk_pix        reloj de pixel; el cuadro avanza un pixel por ciclo
+//   rst_n          reinicio asincrono activo en bajo
+//
+// Salidas
+//   hsync, vsync   pulsos de sincronizacion, con la polaridad de H_POL y V_POL
+//   data_active    estamos dentro de la region visible
+//   pix_x, pix_y   coordenada del pixel en curso, valida con data_active alto
+//   linea_fin      ultimo pixel visible de una linea
+//   cuadro_inicio  primer ciclo del intervalo vertical
+//   vsync_act      VSYNC con polaridad fija activa en alto, para cruzar de dominio
 //=============================================================================
 module vga_timing #(
   parameter int H_VISIBLE = 640,

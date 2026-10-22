@@ -19,6 +19,16 @@
 // lectura queda registrada, de modo que el dato aparece un ciclo despues de
 // presentar la direccion; el controlador VGA compensa ese ciclo retrasando
 // igual las senales de sincronizacion.
+//
+// Entradas
+//   clk               reloj del dominio de pixel
+//   wr_ena            habilita la escritura de este ciclo
+//   wr_line, wr_x     ranura y columna donde escribir
+//   data_in           pixel que llega de la prebusqueda
+//   rd_line, rd_x     ranura y columna que se quieren leer
+//
+// Salidas
+//   data_out          pixel leido; aparece un ciclo despues de la direccion
 //=============================================================================
 module line_buffer #(
   parameter int LINES  = 4,

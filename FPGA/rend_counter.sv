@@ -14,6 +14,22 @@
 // La ventana se abre al salir de MOE-01 y tras cada INF, y se cierra cuando el decodificador decodifica INF. 
 // Al cerrarse se toma una foto que los registros conservan hasta el siguiente informe, 
 // de modo que el HPS pueda leer los cuatro valores sin carrera y sin prisa.
+//
+// Entradas
+//   clk, rst_n       reloj de rasterizado y reinicio asincrono activo en bajo
+//   latch            pulso: cerrar la ventana y tomar la foto de los cuatro valores
+//   ventana_reset    pulso: abrir una ventana de medicion nueva
+//   rasterizando     hay un comando en vuelo; es lo que cuenta perf_cycles
+//   comand_tick      pulso: un comando mas completado
+//   px_tick          pulso: un pixel mas aceptado por el gestor de framebuffer
+//   drop_tick        pulso: un paquete mas descartado por la cola
+//
+// Salidas
+//   ciclos, comandos, pixeles, descartes
+//                    valores en curso de la ventana abierta, para observacion
+//   perf_cycles, perf_commands, perf_pixels, perf_dropped
+//                    la foto de la ultima ventana cerrada, que leen los
+//                    registros PERF_* del mapa
 
 module rend_counter (
   input  logic clk,

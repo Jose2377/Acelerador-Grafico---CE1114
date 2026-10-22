@@ -28,6 +28,20 @@
 //
 // draw_trian reutiliza este mismo modulo para las tres aristas del
 // triangulo sin relleno.
+//
+// Entradas
+//   clk, rst_n           reloj de rasterizado y reinicio asincrono activo en bajo
+//   start                pulso que carga los argumentos y arranca la figura
+//   stall                el gestor de framebuffer no acepta: congela la maquina
+//   x0_in, y0_in         extremo inicial de la linea
+//   x1_in, y1_in         extremo final
+//   color_in             color de la linea en RGB565
+//
+// Salidas
+//   busy                 alto mientras la linea no ha terminado
+//   done                 pulso de un ciclo al terminar
+//   px_valid             hay un pixel presentado en px_x, px_y
+//   px_x, px_y, px_color pixel en curso del trazado y su color
 //=============================================================================
 module draw_line #(
   parameter int PIXEL_BITS = 16

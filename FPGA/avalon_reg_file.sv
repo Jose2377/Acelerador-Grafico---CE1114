@@ -54,6 +54,29 @@
 // catalogo: comand_w_ena tiene que durar exactamente un ciclo, porque el
 // ensamblador del nivel superior cuenta palabras con el. Un PIO deja un
 // registro en alto y encolaria la misma palabra seis veces.
+//
+// Entradas
+//   clk, rst_n        reloj y reinicio del dominio del sistema
+//   avs_address       direccion en bytes del esclavo Avalon-MM, 64 posiciones
+//   avs_read          lectura de un registro
+//   avs_write         escritura de un registro
+//   avs_writedata     dato que escribe el HPS
+//   busy, modo, fifo_level, fifo_full, fifo_empty, overflow
+//                     estado que publica el registro STATUS
+//   err_last, err_count
+//                     contenido del registro ERR_INFO
+//   perf_cycles, perf_commands, perf_pixels, perf_dropped
+//                     los cuatro registros de rendimiento
+//   seq_last, clip_count, burst_writes, burst_reads, pixels_written,
+//   out_of_range, vga_frames, vga_underrun, leds
+//                     registros auxiliares de instrumentacion, de solo lectura
+//
+// Salidas
+//   avs_readdata      dato devuelto al HPS en una lectura
+//   enable            bit enable del registro CONTROL
+//   reset_soft        bit de reinicio por software del registro CONTROL
+//   comand_w_ena      pulso de escritura en el puerto COMAND_FIFO_W
+//   comand_w_data     palabra del paquete de comando que se esta escribiendo
 //=============================================================================
 module avalon_reg_file #(
   parameter int FIFO_DEPTH = Acelerador_pkg::FIFO_DEPTH,

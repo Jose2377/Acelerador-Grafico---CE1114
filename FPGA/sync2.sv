@@ -19,6 +19,14 @@
 //
 // El atributo de Altera marca la cadena para que el analizador de tiempos la
 // reconozca y no intente cerrar camino entre los dos dominios.
+//
+// Entradas
+//   clk_dst    reloj del dominio de destino
+//   rst_n      reinicio asincrono activo en bajo, del dominio de destino
+//   data_in    senal de un bit procedente del dominio de origen
+//
+// Salidas
+//   data_out   la misma senal, ya estable y alineada a clk_dst, dos ciclos despues
 //=============================================================================
 module sync2 #(
   parameter bit VALOR_RESET = 1'b0

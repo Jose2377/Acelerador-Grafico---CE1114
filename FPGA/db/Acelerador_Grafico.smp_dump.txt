@@ -1,0 +1,127 @@
+
+State Machine - |DE1_SoC_top_level|Acelerador_Grafico_Top:u_acelerador|framebuffer_controller:u_fbc|wr_st
+Name wr_st.W_LIBRE wr_st.W_DATOS wr_st.W_PIDE 
+wr_st.W_LIBRE 0 0 0 
+wr_st.W_PIDE 1 0 1 
+wr_st.W_DATOS 1 1 0 
+
+State Machine - |DE1_SoC_top_level|Acelerador_Grafico_Top:u_acelerador|framebuffer_controller:u_fbc|rd_st
+Name rd_st.R_DATOS rd_st.R_PIDE rd_st.R_AGRUPA rd_st.R_LIBRE 
+rd_st.R_LIBRE 0 0 0 0 
+rd_st.R_AGRUPA 0 0 1 1 
+rd_st.R_PIDE 0 1 0 1 
+rd_st.R_DATOS 1 0 0 1 
+
+State Machine - |DE1_SoC_top_level|Acelerador_Grafico_Top:u_acelerador|vga_controller:u_vga|fst
+Name fst.F_LIBRE fst.F_ESPERA fst.F_PIDE 
+fst.F_LIBRE 0 0 0 
+fst.F_PIDE 1 0 1 
+fst.F_ESPERA 1 1 0 
+
+State Machine - |DE1_SoC_top_level|Acelerador_Grafico_Top:u_acelerador|processor_raster:u_raster|draw_trian:u_tria|st
+Name st.T_DONE st.T_FILL st.T_SETUP st.T_E2 st.T_E1 st.T_E0 st.T_IDLE 
+st.T_IDLE 0 0 0 0 0 0 0 
+st.T_E0 0 0 0 0 0 1 1 
+st.T_E1 0 0 0 0 1 0 1 
+st.T_E2 0 0 0 1 0 0 1 
+st.T_SETUP 0 0 1 0 0 0 1 
+st.T_FILL 0 1 0 0 0 0 1 
+st.T_DONE 1 0 0 0 0 0 1 
+
+State Machine - |DE1_SoC_top_level|Acelerador_Grafico_Top:u_acelerador|processor_raster:u_raster|draw_trian:u_tria|draw_line:u_gen|st
+Name st.L_DONE st.L_RUN st.L_SETUP st.L_IDLE 
+st.L_IDLE 0 0 0 0 
+st.L_SETUP 0 0 1 1 
+st.L_RUN 0 1 0 1 
+st.L_DONE 1 0 0 1 
+
+State Machine - |DE1_SoC_top_level|Acelerador_Grafico_Top:u_acelerador|processor_raster:u_raster|draw_circle:u_circ|st
+Name st.K_DONE st.K_FILL st.K_UPD st.K_OUT st.K_SETUP st.K_IDLE 
+st.K_IDLE 0 0 0 0 0 0 
+st.K_SETUP 0 0 0 0 1 1 
+st.K_OUT 0 0 0 1 0 1 
+st.K_UPD 0 0 1 0 0 1 
+st.K_FILL 0 1 0 0 0 1 
+st.K_DONE 1 0 0 0 0 1 
+
+State Machine - |DE1_SoC_top_level|Acelerador_Grafico_Top:u_acelerador|processor_raster:u_raster|draw_line:u_line|st
+Name st.L_DONE st.L_RUN st.L_SETUP st.L_IDLE 
+st.L_IDLE 0 0 0 0 
+st.L_SETUP 0 0 1 1 
+st.L_RUN 0 1 0 1 
+st.L_DONE 1 0 0 1 
+
+State Machine - |DE1_SoC_top_level|Acelerador_Grafico_Top:u_acelerador|processor_raster:u_raster|draw_rect:u_rect|st
+Name st.R_DONE st.R_RIGHT st.R_LEFT st.R_BOT st.R_TOP st.R_FILL st.R_IDLE 
+st.R_IDLE 0 0 0 0 0 0 0 
+st.R_FILL 0 0 0 0 0 1 1 
+st.R_TOP 0 0 0 0 1 0 1 
+st.R_BOT 0 0 0 1 0 0 1 
+st.R_LEFT 0 0 1 0 0 0 1 
+st.R_RIGHT 0 1 0 0 0 0 1 
+st.R_DONE 1 0 0 0 0 0 1 
+
+State Machine - |DE1_SoC_top_level|Acelerador_Grafico_Top:u_acelerador|processor_raster:u_raster|draw_pixel:u_pix|st
+Name st.P_IDLE st.P_DONE st.P_OUT 
+st.P_IDLE 0 0 0 
+st.P_OUT 1 0 1 
+st.P_DONE 1 1 0 
+
+State Machine - |DE1_SoC_top_level|Acelerador_Grafico_Top:u_acelerador|decoder_fsm:u_decoder|st
+Name st.MOE_WAIT st.MOE_ERROR st.MOE_INFO st.MOE_SWAP st.MOE_PROC st.MOE_IDLE st.MOE_INIT 
+st.MOE_INIT 0 0 0 0 0 0 0 
+st.MOE_IDLE 0 0 0 0 0 1 1 
+st.MOE_PROC 0 0 0 0 1 0 1 
+st.MOE_SWAP 0 0 0 1 0 0 1 
+st.MOE_INFO 0 0 1 0 0 0 1 
+st.MOE_ERROR 0 1 0 0 0 0 1 
+st.MOE_WAIT 1 0 0 0 0 0 1 
+
+State Machine - |DE1_SoC_top_level|soc_system:u_soc|soc_system_mm_interconnect_1:mm_interconnect_1|altera_merlin_burst_adapter:sdram_controller_0_s1_burst_adapter|altera_merlin_burst_adapter_13_1:altera_merlin_burst_adapter_13_1.burst_adapter|state
+Name state.ST_IDLE state.ST_UNCOMP_WR_SUBBURST state.ST_UNCOMP_TRANS state.ST_COMP_TRANS 
+state.ST_IDLE 0 0 0 0 
+state.ST_COMP_TRANS 1 0 0 1 
+state.ST_UNCOMP_TRANS 1 0 1 0 
+state.ST_UNCOMP_WR_SUBBURST 1 1 0 0 
+
+State Machine - |DE1_SoC_top_level|soc_system:u_soc|soc_system_mm_interconnect_0:mm_interconnect_0|altera_merlin_burst_adapter:mm_bridge_0_s0_burst_adapter|altera_merlin_burst_adapter_13_1:altera_merlin_burst_adapter_13_1.burst_adapter|state
+Name state.ST_IDLE state.ST_UNCOMP_WR_SUBBURST state.ST_UNCOMP_TRANS state.ST_COMP_TRANS 
+state.ST_IDLE 0 0 0 0 
+state.ST_COMP_TRANS 1 0 0 1 
+state.ST_UNCOMP_TRANS 1 0 1 0 
+state.ST_UNCOMP_WR_SUBBURST 1 1 0 0 
+
+State Machine - |DE1_SoC_top_level|soc_system:u_soc|soc_system_sdram_controller_0:sdram_controller_0|m_next
+Name m_next.010000000 m_next.000010000 m_next.000001000 m_next.000000001 
+m_next.000000001 0 0 0 0 
+m_next.000001000 0 0 1 1 
+m_next.000010000 0 1 0 1 
+m_next.010000000 1 0 0 1 
+
+State Machine - |DE1_SoC_top_level|soc_system:u_soc|soc_system_sdram_controller_0:sdram_controller_0|m_state
+Name m_state.100000000 m_state.010000000 m_state.001000000 m_state.000100000 m_state.000010000 m_state.000001000 m_state.000000100 m_state.000000010 m_state.000000001 
+m_state.000000001 0 0 0 0 0 0 0 0 0 
+m_state.000000010 0 0 0 0 0 0 0 1 1 
+m_state.000000100 0 0 0 0 0 0 1 0 1 
+m_state.000001000 0 0 0 0 0 1 0 0 1 
+m_state.000010000 0 0 0 0 1 0 0 0 1 
+m_state.000100000 0 0 0 1 0 0 0 0 1 
+m_state.001000000 0 0 1 0 0 0 0 0 1 
+m_state.010000000 0 1 0 0 0 0 0 0 1 
+m_state.100000000 1 0 0 0 0 0 0 0 1 
+
+State Machine - |DE1_SoC_top_level|soc_system:u_soc|soc_system_sdram_controller_0:sdram_controller_0|i_next
+Name i_next.111 i_next.101 i_next.010 i_next.000 
+i_next.000 0 0 0 0 
+i_next.010 0 0 1 1 
+i_next.101 0 1 0 1 
+i_next.111 1 0 0 1 
+
+State Machine - |DE1_SoC_top_level|soc_system:u_soc|soc_system_sdram_controller_0:sdram_controller_0|i_state
+Name i_state.111 i_state.101 i_state.011 i_state.010 i_state.001 i_state.000 
+i_state.000 0 0 0 0 0 0 
+i_state.001 0 0 0 0 1 1 
+i_state.010 0 0 0 1 0 1 
+i_state.011 0 0 1 0 0 1 
+i_state.101 0 1 0 0 0 1 
+i_state.111 1 0 0 0 0 1 

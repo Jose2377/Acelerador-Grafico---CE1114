@@ -38,6 +38,25 @@
 // pegada, de modo que un fallo intermitente no pase desapercibido. No se
 // vigila hasta que el barrido se estabiliza, porque en el arranque en frio
 // ninguna ranura esta llena todavia y seria un falso positivo.
+//
+// Entradas
+//   clk_pix, rst_n          reloj de pixel y reinicio asincrono activo en bajo
+//   front_buffer            buffer delantero ya sincronizado a este dominio
+//   frame_buffer_ready      el gestor de framebuffer acepta la peticion
+//   frame_buffer_data_in    pixel devuelto por el gestor
+//   frame_buffer_valid_in   ese pixel es valido en este ciclo
+//
+// Salidas
+//   frame_buffer_req        pide un pixel a la prebusqueda
+//   frame_buffer_addr       indice del pixel que pide
+//   frame_buffer_front      buffer del que debe leerse
+//   vga_r, vga_g, vga_b     color del pixel en curso, hacia el conversor de video
+//   vga_hs, vga_vs          sincronizacion horizontal y vertical
+//   vga_blank_n             bajo fuera de la region visible
+//   vga_sync_n              sincronizacion compuesta, fija en el conversor
+//   vsync_act               VSYNC activo en alto, para cruzar al dominio de rasterizado
+//   underrun                el barrido alcanzo una linea que aun no estaba llena
+//   frame_count             cuadros emitidos desde el reinicio
 //=============================================================================
 module vga_controller #(
   parameter int H_VISIBLE  = 64,
