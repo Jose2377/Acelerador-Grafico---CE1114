@@ -10,6 +10,7 @@ circ 160 380 60
 circ_fill 480 380 60
 color 255 255 0
 tria 60 240 200 240 130 330
+
 tria_fill 400 240 560 240 480 330
 swap
 inf

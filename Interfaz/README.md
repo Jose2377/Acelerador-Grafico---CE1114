@@ -4,7 +4,7 @@ Interfaz en Python 3 del proyecto *Integracion de unidad de aceleracion
 grafica para plataformas a la medida en FPGA (DE1-SoC)*.
 
 Esta entrega contiene **solo la interfaz**: estructura de modulos, CLI,
-constantes, tipos y configuracion. La logica del interprete, el
+constantes, tipos y configuracion. El interprete esta implementado; el
 codificador de paquetes, el transporte TCP y el rasterizador de
 referencia quedan como stubs marcados `PENDIENTE`.
 
@@ -20,12 +20,14 @@ Interfaz/
     comando.py         Comando, EstadoColor                     [listo]
     errores.py         ErrorComando                             [listo]
     config.py          carga del archivo de configuracion       [listo]
-    interprete.py      InterpreteComandos                       [PENDIENTE]
+    interprete.py      InterpreteComandos                       [listo]
     codificador.py     CodificadorPaquete (24 bytes, W0..W5)    [PENDIENTE]
     transporte.py      ClienteTransporte (socket TCP, IF-03)    [PENDIENTE]
     reporte.py         ReporteRendimiento (CSV acumulativo)     [parcial]
     raster_cpu.py      RasterizadorCPU (referencia)             [PENDIENTE]
   escenas/ejemplo.gfx  escena de ejemplo
+  escenas/con_errores.gfx  escena con errores para probar la validacion
+  tests/               pruebas unitarias del interprete
   reportes/            salida CSV y log de errores de sesion
 ```
 
@@ -105,6 +107,13 @@ Error EC-02: 'rect 40 40 280'
 Se rechazaron 2 de 18 comandos. No se transmitio ningun paquete.
 ```
 
+## Pruebas
+
+```
+python -m unittest discover tests
+```
+
 ## Siguiente paso
 
-Implementar `InterpreteComandos._analizar_linea` en `gfx/interprete.py`.
+Implementar `CodificadorPaquete.codificar` en `gfx/codificador.py`
+(paquete de 24 bytes, palabras W0 a W5).

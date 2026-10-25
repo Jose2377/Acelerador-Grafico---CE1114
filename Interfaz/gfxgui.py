@@ -39,10 +39,10 @@ class VentanaInterfaz(tk.Tk):
         self._construir_estado()
 
         self.protocol("WM_DELETE_WINDOW", self.al_cerrar)
-        self.bind("<Control-o>", lambda e: self.abrir())
+        self.bind("<Control-a>", lambda e: self.abrir())
         self.bind("<Control-s>", lambda e: self.guardar())
-        self.bind("<F5>", lambda e: self.validar())
-        self.bind("<F6>", lambda e: self.enviar())
+        self.bind("<Control-d>", lambda e: self.validar())
+        self.bind("<Control-f>", lambda e: self.enviar())
 
         if ruta_inicial and os.path.exists(ruta_inicial):
             self.cargar_archivo(ruta_inicial)
@@ -66,9 +66,9 @@ class VentanaInterfaz(tk.Tk):
         barra.add_cascade(label="Archivo", menu=m)
 
         m = tk.Menu(barra, tearoff=0)
-        m.add_command(label="Validar", accelerator="F5",
+        m.add_command(label="Validar", accelerator="Ctrl+D",
                       command=self.validar)
-        m.add_command(label="Enviar", accelerator="F6", command=self.enviar)
+        m.add_command(label="Enviar", accelerator="Ctrl+F", command=self.enviar)
         m.add_command(label="Ejecutar en CPU (referencia)",
                       command=self.ejecutar_cpu)
         m.add_separator()
@@ -89,8 +89,8 @@ class VentanaInterfaz(tk.Tk):
 
         for texto, accion in (("Abrir", self.abrir),
                               ("Guardar", self.guardar),
-                              ("Validar (F5)", self.validar),
-                              ("Enviar (F6)", self.enviar),
+                              ("Validar", self.validar),
+                              ("Enviar", self.enviar),
                               ("CPU", self.ejecutar_cpu),
                               ("INF", self.solicitar_inf)):
             tk.Button(f, text=texto, width=12,

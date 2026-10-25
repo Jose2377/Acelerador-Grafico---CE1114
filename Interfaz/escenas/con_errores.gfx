@@ -1,0 +1,12 @@
+# Escena con errores intencionales para probar la validacion.
+color 255 0 0
+clear
+rect 40 40 280            # EC-02: faltan argumentos
+circ 160 380 0            # EC-04: radio fuera de rango
+dibujar 10 10             # EC-01: operacion inexistente
+pixel 10.5 20             # EC-03: no entero
+line 0 0 40000 10         # EC-03: no cabe en 16 bits
+color 300 0 0             # EC-04: componente fuera de rango
+swap 1                    # EC-02: no admite argumentos
+rect_fill -50 -50 100 100 # valido: el recorte lo hace el hardware
+swap
