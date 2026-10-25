@@ -6,6 +6,9 @@ Usa el mismo nucleo que gfxcli.py; estilo deliberadamente basico.
 
 Uso:
   python3 gfxgui.py [escenas/ejemplo.gfx]
+
+Compilado: 
+  python -m PyInstaller --onefile gfxgui.py
 """
 
 import os
