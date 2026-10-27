@@ -58,6 +58,7 @@
 //   clk, rst_n              Reloj y reinicio del dominio de rasterizado y SDRAM, 100 MHz
 //   clk_pix, rst_pix_n      Reloj y reinicio del dominio de pixel, lo fija la temporizacion VGA
 //   enable, reset_soft      Bits del registro CONTROL (0x04)
+//   perf_window             Pulso de CONTROL (0x04, bit 2): abre una ventana de medicion nueva
 //   comand_w_ena            Pulso de escritura en CMD_FIFO_W (0x0C)
 //   comand_w_data           Palabra del paquete; las seis se escriben en orden W0 a W5
 //   sd_waitrequest          El medio de memoria no acepta la transaccion (solo con FB_ONCHIP en 0)
@@ -70,11 +71,14 @@
 //                           Con FB_ONCHIP en 1 solo reflejan la transaccion que atiende framebuffer_onchip
 //   vga_r, vga_g, vga_b, vga_hs, vga_vs, vga_blank_n, vga_sync_n
 //                           Salida de video hacia el conversor de la placa
-//   vga_underrun            El barrido se quedo sin datos (STATUS, bit 7)
+//   vga_underrun            El barrido se quedo sin datos (ERR_INFO, bit 4)
 //   vga_frames              Cuadros emitidos desde el reinicio (VGA_FRAMES, 0x38)
-//   px_valid, px_x, px_y, px_color, px_addr
-//                           Solicitud de pixel del rasterizador (IF-07), para observacion
-//   buffer_sel              Buffer delantero, 0 = A y 1 = B
+//   px_valid, px_x, px_y, px_len, px_color, px_addr
+//                           Solicitud de pixel del rasterizador (IF-07), para observacion.
+//                           px_len pixeles consecutivos desde (px_x, px_y), todos de px_color
+//   buffer_sel              Buffer delantero, 0 = A y 1 = B (STATUS, bit 7)
+//   evt_inf, evt_err        Pulsos de un ciclo: INF publico un informe / se registro un error.
+//                           Marcan las banderas de interrupcion de CONTROL
 //   busy, modo, fifo_level, fifo_full, fifo_empty, overflow
 //                           Registro STATUS (0x08)
 //   seq_last                SEQ_ID del ultimo comando aceptado (STATUS, bits 31:16)
@@ -92,6 +96,9 @@ module Acelerador_Grafico_Top #(
   parameter int PIXEL_BITS = Acelerador_pkg::PIXEL_BITS,
   parameter int FIFO_DEPTH = Acelerador_pkg::FIFO_DEPTH,
   parameter int SYS_CLK_HZ = Acelerador_pkg::SYS_CLK_HZ,
+  // Cuadros de video por cada cambio del LED de refresco (LEDR[0]).
+  // 30 a 60 Hz da un parpadeo de 1 Hz; los bancos de pruebas lo reducen.
+  parameter int CUADROS_LED = 30,
 
   // Temporizacion del barrido de video.
   // Los valores por defecto son los reducidos del paquete, que es lo que usan
@@ -127,6 +134,7 @@ module Acelerador_Grafico_Top #(
   // Registro CONTROL (0x04)
   input  logic               enable,
   input  logic               reset_soft,
+  input  logic               perf_window,
 
   // Registro CMD_FIFO_W (0x0C)
   // Las seis palabras del paquete, escritas en orden W0 a W5.
@@ -159,8 +167,11 @@ module Acelerador_Grafico_Top #(
   output logic [$clog2(SCREEN_W)-1:0] px_x,
   output logic [$clog2(SCREEN_H)-1:0] px_y,
   output logic [PIXEL_BITS-1:0]       px_color,
+  output logic [$clog2(Acelerador_pkg::BURST_LEN+1)-1:0] px_len,
   output logic [$clog2(SCREEN_W*SCREEN_H)-1:0] px_addr,
   output logic               buffer_sel,
+  output logic               evt_inf,
+  output logic               evt_err,
 
   // Registro STATUS (0x08)
   output logic               busy,
@@ -292,10 +303,10 @@ module Acelerador_Grafico_Top #(
     .x0(ras_x0), .y0(ras_y0), .x1(ras_x1), .y1(ras_y1),
     .x2(ras_x2), .y2(ras_y2), .radius(ras_radius),
     .color_r(ras_r), .color_g(ras_g), .color_b(ras_b),
-    .clr_cnt(perf_clear),
+    .clr_cnt(perf_clear || perf_window),
     .busy(ras_busy), .done(ras_done),
     .px_valid(px_valid), .px_x(px_x), .px_y(px_y),
-    .px_color(px_color), .px_addr(px_addr),
+    .px_color(px_color), .px_addr(px_addr), .px_len(px_len),
     .pix_count(pix_count), .clip_count(clip_count));
 
   // Medidor de rendimiento
@@ -305,19 +316,23 @@ module Acelerador_Grafico_Top #(
   // Eso hace comparables dos ventanas aunque entre ellas el sistema haya estado esperando a la red.
   
   logic [31:0] ciclos, comandos, pixeles, descartes;
-  logic        ventana_reset, px_tick;
+  logic        ventana_reset;
+  logic [3:0]  px_n;
 
-  assign ventana_reset = perf_clear || (modo == Acelerador_pkg::MOE_INIT);
+  // La ventana se reabre tras cada INF, al pedirlo el driver con
+  // perf_window al empezar un lote, y durante MOE-01.
+  assign ventana_reset = perf_clear || perf_window || (modo == Acelerador_pkg::MOE_INIT);
 
   // Un pixel cuenta cuando el gestor de framebuffer lo acepta, no cuando el rasterizador lo presenta.
   // Con contrapresion el mismo pixel se presenta varios ciclos seguidos.
-  assign px_tick = px_valid && px_ready;
+  // Con el relleno por tramos se aceptan hasta BURST_LEN pixeles de una vez.
+  assign px_n = (px_valid && px_ready) ? 4'(px_len) : 4'd0;
 
   rend_counter u_rend (
     .clk(clk), .rst_n(rst_n),
     .latch(perf_latch), .ventana_reset(ventana_reset),
     .rasterizando(busy && enable),
-    .comand_tick(comand_tick), .px_tick(px_tick), .drop_tick(fifo_drop),
+    .comand_tick(comand_tick), .px_n(px_n), .drop_tick(fifo_drop),
     .ciclos(ciclos), .comandos(comandos),
     .pixeles(pixeles), .descartes(descartes),
     .perf_cycles(perf_cycles), .perf_commands(perf_commands),
@@ -337,11 +352,17 @@ module Acelerador_Grafico_Top #(
 
   assign err_tick = (err_count != err_count_q);
 
-  led_status #(.SYS_CLK_HZ(SYS_CLK_HZ)) u_leds (
+  // Eventos para las banderas de interrupcion del banco de registros
+  assign evt_inf = perf_latch;
+  assign evt_err = err_tick;
+
+  // Reparto de la tabla de LED del diseno; vsync_sys alimenta el pulso de refresco.
+  led_status #(.SYS_CLK_HZ(SYS_CLK_HZ), .FIFO_DEPTH(FIFO_DEPTH),
+               .CUADROS_PARPADEO(CUADROS_LED)) u_leds (
     .clk(clk), .rst_n(rst_n),
-    .modo(modo), .busy(busy), .err_tick(err_tick),
-    .overflow(overflow), .fifo_full(fifo_full),
-    .buffer_sel(buffer_sel), .underrun(vga_underrun),
+    .modo(modo), .err_tick(err_tick),
+    .fifo_level(fifo_level), .fifo_full(fifo_full),
+    .buffer_sel(buffer_sel), .vsync(vsync_sys),
     .leds(leds));
 
   // Cruces entre los dos dominios de reloj
@@ -412,7 +433,7 @@ module Acelerador_Grafico_Top #(
     .FB_BASE_B(Acelerador_pkg::FB_BASE_B)
   ) u_fbc (
     .clk(clk), .rst_n(rst_n),
-    .px_valid(px_valid), .px_addr(px_addr), .px_color(px_color),
+    .px_valid(px_valid), .px_addr(px_addr), .px_len(px_len), .px_color(px_color),
     .px_ready(px_ready),
     .buffer_sel(buffer_sel), .vaciar(vaciar_combinador),
     .clk_pix(clk_pix), .rst_pix_n(rst_pix_n),

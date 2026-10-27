@@ -67,6 +67,8 @@ module tb_Acelerador_Grafico_Top;
 
   //----------------------------------------------------------- senales
   logic               enable, reset_soft;
+  logic               perf_window = 1'b0;
+  logic               evt_inf, evt_err;
   logic               comand_w_ena;
   logic        [31:0] comand_w_data;
 
@@ -91,6 +93,7 @@ module tb_Acelerador_Grafico_Top;
   logic [$clog2(H)-1:0] px_y;
   logic [PB-1:0]      px_color;
   logic [AW-1:0]      px_addr;
+  logic [3:0]         px_len;
   logic               buffer_sel;
   logic               busy;
   logic        [2:0]  modo;
@@ -108,12 +111,14 @@ module tb_Acelerador_Grafico_Top;
   localparam int LED_CLK_HZ   = 10_000;
   localparam int LED_DESTELLO = (LED_CLK_HZ / 1000) * 120;   // 1200 ciclos
   localparam int LED_LATIDO   = (LED_CLK_HZ / 1000) * 500;   // 5000 ciclos
+  localparam int LED_CUADROS  = 2;     // cuadros por cambio del LED de refresco
 
   Acelerador_Grafico_Top #(.SCREEN_W(W), .SCREEN_H(H), .PIXEL_BITS(PB),
-                           .FIFO_DEPTH(FD), .SYS_CLK_HZ(LED_CLK_HZ)) dut (
+                           .FIFO_DEPTH(FD), .SYS_CLK_HZ(LED_CLK_HZ),
+                           .CUADROS_LED(LED_CUADROS)) dut (
     .clk(clk), .rst_n(rst_n),
     .clk_pix(clk_pix), .rst_pix_n(rst_pix_n),
-    .enable(enable), .reset_soft(reset_soft),
+    .enable(enable), .reset_soft(reset_soft), .perf_window(perf_window),
     .comand_w_ena(comand_w_ena), .comand_w_data(comand_w_data),
     .sd_read(sd_read), .sd_write(sd_write), .sd_address(sd_address),
     .sd_burstcount(sd_burstcount), .sd_writedata(sd_writedata),
@@ -124,7 +129,8 @@ module tb_Acelerador_Grafico_Top;
     .vga_blank_n(vga_blank_n), .vga_sync_n(vga_sync_n),
     .vga_underrun(vga_underrun), .vga_frames(vga_frames),
     .px_valid(px_valid), .px_x(px_x), .px_y(px_y),
-    .px_color(px_color), .px_addr(px_addr), .buffer_sel(buffer_sel),
+    .px_color(px_color), .px_addr(px_addr), .px_len(px_len), .buffer_sel(buffer_sel),
+    .evt_inf(evt_inf), .evt_err(evt_err),
     .busy(busy), .modo(modo),
     .fifo_level(fifo_level), .fifo_full(fifo_full),
     .fifo_empty(fifo_empty), .overflow(overflow),
@@ -376,16 +382,31 @@ module tb_Acelerador_Grafico_Top;
   int   ciclos_tb = 0;
   always @(posedge clk) ciclos_tb <= ciclos_tb + 1;
   logic vio_moe06 = 1'b0;  // la maquina paso por MOE-06 alguna vez
+  int   repetidos = 0;     // pixeles escritos sobre otro ya marcado en fbw
+  int   err_tramo = 0;     // tramos con longitud invalida o que cruzan rafaga
 
   // Con contrapresion el mismo pixel se presenta varios ciclos seguidos
   // hasta que el gestor de framebuffer lo acepta. Lo que se cuenta es el
   // pixel aceptado, no el ciclo en que estuvo presentado.
   always @(posedge clk) begin
+    // Cada solicitud trae px_len pixeles consecutivos desde (px_x, px_y)
     if (px_valid && dut.px_ready) begin
-      fb[px_y][px_x]  <= px_color;
-      fbw[px_y][px_x] <= 1'b1;
-      emitidos        <= emitidos + 1;
+      int rep;
+      rep = 0;
+      for (int i = 0; i < px_len; i++) begin
+        if (fbw[px_y][px_x + i]) rep++;
+        // Bloqueante: el modelo solo se consulta en flancos de bajada
+        fb[px_y][px_x + i]  = px_color;
+        fbw[px_y][px_x + i] = 1'b1;
+      end
+      emitidos  <= emitidos + px_len;
+      repetidos <= repetidos + rep;
       if (px_addr !== AW'(px_y * W + px_x)) err_dir++;
+      if ((px_len == 0) || (px_len > Acelerador_pkg::BURST_LEN)) err_tramo++;
+      // Un tramo no puede salirse de la fila ni cruzar una frontera de rafaga
+      if ((int'(px_x) + px_len > W) ||
+          ((int'(px_addr) / Acelerador_pkg::BURST_LEN) !=
+           ((int'(px_addr) + px_len - 1) / Acelerador_pkg::BURST_LEN))) err_tramo++;
     end
     if (modo == M_ERROR) vio_moe06 <= 1'b1;
   end
@@ -698,14 +719,108 @@ module tb_Acelerador_Grafico_Top;
     chk_rango("area del triangulo (esperado ~210)", emitidos, 180, 240);
     volcar("triangulos");
 
+    // Regla de relleno (AD-4): triangulos que comparten arista no repiten
+    // pixeles ni dejan huecos. Un cuadrado de 20 x 20 partido por la
+    // diagonal tiene que cubrir exactamente [4,24) x [4,24): con la regla
+    // top-left las aristas derecha e inferior del cuadrado quedan fuera.
+    // El segundo triangulo se da en sentido contrario para que pase por el
+    // intercambio de vertices.
+    borrar_fb();
+    repetidos = 0;
+    begin : regla_relleno
+      int total;
+      cmd(OPC_TRIA_FILL,  4, 4,  24, 4,   4,24, 8'h00, 8'hFF, 8'h00, 0);
+      total = emitidos;
+      cmd(OPC_TRIA_FILL, 24, 4,   4,24,  24,24, 8'h00, 8'h00, 8'hFF, 0);
+      total += emitidos;
+      chk("diagonal compartida: pixeles de los dos triangulos", total, 400);
+      chk("diagonal compartida: ningun pixel repetido", repetidos, 0);
+      chk_px("esquina superior izquierda (4,4) dentro", 4, 4, 1'b1);
+      chk_px("esquina (23,23) dentro", 23, 23, 1'b1);
+      chk_px("arista derecha (24,10) fuera", 24, 10, 1'b0);
+      chk_px("arista inferior (10,24) fuera", 10, 24, 1'b0);
+
+      // Abanico de cuatro triangulos alrededor de un centro comun: cada
+      // arista interior la comparten dos triangulos, en las cuatro
+      // direcciones (horizontal, vertical y las dos diagonales).
+      repetidos = 0;
+      total = 0;
+      cmd(OPC_TRIA_FILL, 30,14,  50,14,  40,24, 8'hFF, 8'h00, 8'h00, 0); total += emitidos;
+      cmd(OPC_TRIA_FILL, 50,14,  50,34,  40,24, 8'hFF, 8'hFF, 8'h00, 0); total += emitidos;
+      cmd(OPC_TRIA_FILL, 50,34,  30,34,  40,24, 8'h00, 8'hFF, 8'hFF, 0); total += emitidos;
+      cmd(OPC_TRIA_FILL, 30,34,  30,14,  40,24, 8'hFF, 8'h00, 8'hFF, 0); total += emitidos;
+      chk("abanico de cuatro: pixeles en total", total, 400);
+      chk("abanico de cuatro: ningun pixel repetido", repetidos, 0);
+      chk_px("abanico: centro (40,24) dentro", 40, 24, 1'b1);
+    end
+    volcar("regla_relleno");
+
     //--------------------------------------------------------- 7. borrado
     $display("");
     $display("--- 7. Borrado de pantalla completa -----------------------");
     borrar_fb();
-    cmd(OPC_CLEAR, 0,0, 0,0, 0,0, 8'h00, 8'h00, 8'hFF, 0);
+    begin : clear_medido
+      int c0, bw0;
+      // La rafaga incompleta del comando anterior puede seguir esperando
+      // turno frente a las lecturas del barrido: no se cuenta como de CLEAR.
+      while ((dut.u_fbc.wr_cnt != 0) || (dut.u_fbc.wr_st != 0)) @(negedge clk);
+      c0  = ciclos_tb;
+      bw0 = burst_writes;
+      cmd(OPC_CLEAR, 0,0, 0,0, 0,0, 8'h00, 8'h00, 8'hFF, 0);
+      $display("  CLEAR de %0d pixeles en %0d ciclos", W*H, ciclos_tb - c0);
+      // Y la ultima rafaga del propio CLEAR puede salir despues de su done
+      while ((dut.u_fbc.wr_cnt != 0) || (dut.u_fbc.wr_st != 0)) @(negedge clk);
+      // Cada tramo es una rafaga entera: la memoria ve exactamente W*H/8
+      // escrituras, todas de BURST_LEN palabras.
+      chk("CLEAR en rafagas completas", int'(burst_writes) - bw0,
+          W*H / Acelerador_pkg::BURST_LEN);
+      // Con tramos de BURST_LEN el limite pasa a ser la memoria (una palabra
+      // por ciclo) compartida con las lecturas del barrido, que tienen
+      // prioridad. Pixel a pixel este mismo CLEAR tardaba ~8600 ciclos.
+      chk_rango("ciclos de CLEAR, relleno por rafagas", ciclos_tb - c0, W*H, 6200);
+    end
     chk("pixeles de CLEAR", emitidos, W*H);
     chk_col("fondo (32,24) en azul", 32, 24, COL_AZUL);
     chk_col("esquina (63,47) en azul", W-1, H-1, COL_AZUL);
+
+    // Relleno desalineado: los tramos de los extremos de cada fila son
+    // cortos y los del centro son rafagas enteras. Tiene que cubrir
+    // exactamente el rectangulo, sin huecos ni pixeles de mas.
+    borrar_fb();
+    begin : rect_desalineado
+      int c0, n;
+      c0 = ciclos_tb;
+      cmd(OPC_RECT_FILL, 3,5, 40,30, 0,0, 8'hFF, 8'h00, 8'h00, 0);
+      $display("  RECT_FILL de 38 x 26 en %0d ciclos", ciclos_tb - c0);
+      // Pixel a pixel tardaba ~2770 ciclos
+      chk_rango("ciclos de RECT_FILL 38 x 26", ciclos_tb - c0, 38*26, 2300);
+      n = 0;
+      for (int y = 0; y < H; y++)
+        for (int x = 0; x < W; x++)
+          if (fbw[y][x] !== ((x >= 3) && (x <= 40) && (y >= 5) && (y <= 30))) n++;
+      chk("relleno desalineado: pixeles fuera de lugar", n, 0);
+      chk("relleno desalineado: pixeles emitidos", emitidos, 38*26);
+    end
+
+    // Relleno que se sale por arriba y por la izquierda: el tramo se recorta
+    // entero y clip_count suma los pixeles descartados de cada tramo.
+    borrar_fb();
+    begin : rect_recortado
+      int clip0;
+      clip0 = clip_count;
+      cmd(OPC_RECT_FILL, -5,-3, 12,4, 0,0, 8'h00, 8'hFF, 8'h00, 0);
+      chk("rect recortado: pixeles visibles", emitidos, 13*5);
+      chk("rect recortado: pixeles descartados", int'(clip_count - clip0), 18*8 - 13*5);
+      chk_px("rect recortado: (0,0) dentro", 0, 0, 1'b1);
+      chk_px("rect recortado: (12,4) dentro", 12, 4, 1'b1);
+      chk_px("rect recortado: (13,0) fuera", 13, 0, 1'b0);
+      chk_px("rect recortado: (0,5) fuera", 0, 5, 1'b0);
+    end
+    // Y por la derecha y por abajo
+    borrar_fb();
+    cmd(OPC_RECT_FILL, W-3, H-2, W+9, H+4, 0,0, 8'h00, 8'hFF, 8'h00, 0);
+    chk("rect recortado abajo a la derecha: visibles", emitidos, 3*2);
+    chk_px("esquina (63,47) dentro", W-1, H-1, 1'b1);
 
     //------------------------------------------------- 8. orden de la cola
     // Un lote entero se escribe de corrido, sin esperar entre comandos: es
@@ -772,6 +887,39 @@ module tb_Acelerador_Grafico_Top;
     chk("radio nulo no dibuja", emitidos, 0);
     chk("ultimo error es EC-07", int'(err_last), 7);
 
+    // Radio mayor que 1023: el rasterizador solo usa 10 bits, de modo que
+    // sin la validacion 1024 y 2048 se truncarian a 0 y 1500 a 476. Se
+    // rechazan con EC-07 en lugar de dibujar otro circulo en silencio.
+    begin : radio_grande
+      int e0;
+      e0 = err_count;
+      cmd(OPC_CIRC,      30, 30, 0,0, 0,0, 8'hFF, 8'hFF, 8'hFF, 1024);
+      chk("radio 1024 no dibuja", emitidos, 0);
+      chk("radio 1024 es EC-07", int'(err_last), 7);
+      cmd(OPC_CIRC_FILL, 30, 30, 0,0, 0,0, 8'hFF, 8'hFF, 8'hFF, 1500);
+      chk("radio 1500 no dibuja (se truncaria a 476)", emitidos, 0);
+      cmd(OPC_CIRC,      30, 30, 0,0, 0,0, 8'hFF, 8'hFF, 8'hFF, 2048);
+      chk("radio 2048 no dibuja (se truncaria a 0)", emitidos, 0);
+      cmd(OPC_CIRC_FILL, 30, 30, 0,0, 0,0, 8'hFF, 8'hFF, 8'hFF, 16'hFFFF);
+      chk("radio 65535 no dibuja", emitidos, 0);
+      chk("cuatro radios grandes, cuatro errores", int'(err_count) - e0, 4);
+
+      // El extremo valido se acepta. El contorno de radio 1023 centrado en
+      // (30,30) cae entero fuera de la pantalla: no hay pixeles visibles,
+      // pero tampoco error, y el recorte los cuenta.
+      e0 = err_count;
+      begin
+        int clip0;
+        clip0 = clip_count;
+        cmd(OPC_CIRC, 30, 30, 0,0, 0,0, 8'hFF, 8'hFF, 8'hFF, 1023);
+        chk("radio 1023 se acepta", int'(err_count) - e0, 0);
+        chk("radio 1023 se rasteriza (todo recortado)", int'(clip_count - clip0 > 0), 1);
+      end
+      cmd(OPC_CIRC, 30, 30, 0,0, 0,0, 8'hFF, 8'hFF, 8'hFF, 1);
+      chk("radio 1 se acepta", int'(err_count) - e0, 0);
+      chk_rango("radio 1 dibuja", emitidos, 1, 9);
+    end
+
     // el sistema continua: el siguiente comando valido se ejecuta
     cmd(OPC_RECT_FILL, 2,2, 11,11, 0,0, 8'h00, 8'hFF, 8'h00, 0);
     chk("tras dos errores el sistema sigue", emitidos, 100);
@@ -836,6 +984,7 @@ module tb_Acelerador_Grafico_Top;
     chk("la escena completa se ejecuto en orden", int'(seq_last), 208);
     chk("sin descartes en la escena", int'(perf_dropped), 0);
     chk("discrepancias de px_addr", err_dir, 0);
+    chk("tramos invalidos o que cruzan rafaga", err_tramo, 0);
     volcar("escena_de_demostracion");
 
     //----------------------------------- 14. rampa de color RGB565
@@ -994,26 +1143,91 @@ module tb_Acelerador_Grafico_Top;
     // cierra la ventana no forma parte de lo medido.
     chk("comandos de la ventana, sin contar el INF", int'(perf_commands), 1);
 
-    // Indicador de estado: los tres bits bajos reproducen el modo.
-    chk("LED del modo coincide con el modo", int'(leds[2:0]), int'(modo));
-    chk("LED de ocupado en reposo", int'(leds[3]), 0);
-    chk("LED de buffer sigue a buffer_sel", int'(leds[6]), int'(buffer_sel));
+    // Indicador de estado, segun la tabla de LED del diseno:
+    //   [0] refresco  [1] error  [2] buffer  [3] latido
+    //   [6:4] barra de ocupacion de la cola  [9:7] modo
+    chk("LED 7-9: MOE-02 Espera es 001", int'(leds[9:7]), 3'b001);
+    chk("LED 4-6: cola vacia es 000", int'(leds[6:4]), 3'b000);
+    chk("LED 2 sigue a buffer_sel", int'(leds[2]), int'(buffer_sel));
 
     // El error dura un ciclo; el indicador tiene que alargarlo. Se provoca
     // uno y se comprueba que enciende, que sigue encendido mucho despues del
-    // ciclo en que ocurrio, y que acaba apagandose.
-    chk("LED de error apagado antes", int'(leds[4]), 0);
+    // ciclo en que ocurrio, y que acaba apagandose. MOE-06 tambien dura un
+    // ciclo y los LED de modo lo sostienen durante el mismo destello.
+    chk("LED 1 de error apagado antes", int'(leds[1]), 0);
     cmd(8'h0C, 0,0, 0,0, 0,0, 8'hFF, 8'hFF, 8'hFF, 0);   // opcode inexistente
-    chk("LED de error encendido tras el fallo", int'(leds[4]), 1);
+    chk("LED 1 de error encendido tras el fallo", int'(leds[1]), 1);
+    chk("LED 7-9 muestran MOE-06 como 111", int'(leds[9:7]), 3'b111);
+    chk("aunque la maquina ya volvio a la espera", int'(modo), int'(M_IDLE));
     repeat (LED_DESTELLO / 2) @(negedge clk);
-    chk("el destello sigue encendido a mitad", int'(leds[4]), 1);
+    chk("el destello sigue encendido a mitad", int'(leds[1]), 1);
     repeat (LED_DESTELLO) @(negedge clk);
-    chk("el destello se apaga al cumplirse", int'(leds[4]), 0);
+    chk("el destello se apaga al cumplirse", int'(leds[1]), 0);
+    chk("LED 7-9 vuelven a MOE-02", int'(leds[9:7]), 3'b001);
+
+    // Barra de ocupacion. Con enable en bajo la cola se llena sin vaciarse.
+    enable = 1'b0;
+    @(negedge clk);
+    enviar(OPC_NOP, 16'd900, 0,0, 0,0, 0,0, 8'h00, 8'h00, 8'h00, 0);
+    @(negedge clk);
+    chk("LED 4-6: un comando es 001", int'(leds[6:4]), 3'b001);
+    for (int i = 1; i < FD/2; i++)
+      enviar(OPC_NOP, 16'(900 + i), 0,0, 0,0, 0,0, 8'h00, 8'h00, 8'h00, 0);
+    @(negedge clk);
+    chk("LED 4-6: media cola es 011", int'(leds[6:4]), 3'b011);
+    for (int i = FD/2; i < FD; i++)
+      enviar(OPC_NOP, 16'(900 + i), 0,0, 0,0, 0,0, 8'h00, 8'h00, 8'h00, 0);
+    @(negedge clk);
+    chk("LED 4-6: cola llena es 111", int'(leds[6:4]), 3'b111);
+    enable = 1'b1;
+    esperar_fin();
+    chk("LED 4-6: la cola se vacio", int'(leds[6:4]), 3'b000);
+
+    // Pulso de refresco: cambia cada LED_CUADROS flancos de VSYNC
+    // Primero se espera un cambio para quedar alineado con el contador de
+    // cuadros; desde ahi el siguiente cambio llega justo LED_CUADROS
+    // flancos despues, ni uno antes.
+    begin : refresco
+      logic antes;
+      antes = leds[0];
+      while (leds[0] == antes) @(negedge clk);
+      antes = leds[0];
+      repeat (LED_CUADROS - 1) @(posedge dut.vsync_sys);
+      repeat (4) @(negedge clk);
+      chk("LED 0 no cambia antes de tiempo", int'(leds[0] == antes), 1);
+      @(posedge dut.vsync_sys);
+      repeat (4) @(negedge clk);
+      chk("LED 0 cambia tras LED_CUADROS cuadros", int'(leds[0] != antes), 1);
+    end
 
     // El latido distingue un sistema parado de uno en reposo.
-    latido_antes = leds[9];
+    latido_antes = leds[3];
     repeat (LED_LATIDO + 10) @(negedge clk);
-    chk("el latido cambio de estado", int'(leds[9] != latido_antes), 1);
+    chk("LED 3: el latido cambio de estado", int'(leds[3] != latido_antes), 1);
+
+    //------------------------------------- 18. CONTROL.perf_window
+    // El driver abre la ventana al empezar un lote: lo dibujado antes del
+    // pulso no aparece en el informe que publica el INF siguiente.
+    $display("");
+    $display("--- 18. Apertura de ventana con CONTROL.perf_window --------");
+    cmd(OPC_RECT_FILL, 0,0, 4,4, 0,0, 8'hFF, 8'h00, 8'h00, 0);   // 25 pixeles, fuera de la ventana
+    perf_window = 1'b1;
+    @(negedge clk);
+    perf_window = 1'b0;
+    chk("perf_window reinicia los pixeles", int'(dut.pixeles), 0);
+    chk("perf_window reinicia los comandos", int'(dut.comandos), 0);
+    cmd(OPC_RECT_FILL, 0,0, 9,9, 0,0, 8'h00, 8'hFF, 8'h00, 0);   // 100 pixeles, dentro
+    begin : evento_inf
+      int vio_inf;
+      vio_inf = 0;
+      fork
+        cmd(OPC_INF, 0,0, 0,0, 0,0, 8'h00, 8'h00, 8'h00, 0);
+        repeat (200) begin @(posedge clk); if (evt_inf) vio_inf = 1; end
+      join
+      chk("INF emite el evento de interrupcion", vio_inf, 1);
+    end
+    chk("la ventana solo cuenta lo posterior al pulso", int'(perf_pixels), 100);
+    chk("comandos de la ventana abierta por el driver", int'(perf_commands), 1);
 
     //------------------------------------------------------------ resumen
     $display("");

@@ -15,7 +15,8 @@
 // Relleno (fill = 1): Funciones de arista. 
 // Para cada arista del triangulo se define el producto cruzado que, evaluado en un punto, 
 // da el signo del lado en que ese punto cae. 
-// Si las tres funciones salen no negativas el punto esta dentro. 
+// El punto esta dentro si las tres funciones son positivas,
+// o si alguna vale cero y esa arista gana el pixel segun la regla de relleno. 
 // El recorrido va por el rectangulo que encierra al triangulo (la caja), 
 // y en cada paso las tres funciones se actualizan sumando su incremento constante: 
 // sx* al avanzar en x, sy* al bajar de fila. 
@@ -29,6 +30,18 @@
 // "las tres no negativas" en vez de distinguir casos por orientacion. 
 // Un area nula significa que los tres vertices son colineales: 
 // no hay area que rellenar y se salta a T_DONE.
+//
+// Regla de relleno top-left.
+// Un pixel que cae exactamente sobre una arista (E = 0) pertenece al triangulo solo si esa arista es superior o izquierda. 
+// Dos triangulos que comparten una arista la recorren en sentidos opuestos,
+// de modo que para uno es superior/izquierda y para el otro no:
+// cada pixel de la frontera lo pinta exactamente uno de los dos.
+// Con la orientacion normalizada (E > 0 dentro, eje y hacia abajo), una arista de direccion (dx, dy) es
+//   izquierda  si dy < 0
+//   superior   si dy = 0 y dx > 0
+// Las coordenadas son enteras y se muestrea en el pixel, 
+// de modo que E es entero y "E >= 0 o E > 0 segun la arista" basta,
+// sin sesgos fraccionarios.
 //
 // La caja se recorta contra la pantalla al calcularla, 
 // de modo que un triangulo que se sale no cuesta ciclos recorriendo filas invisibles.
@@ -74,13 +87,12 @@ module draw_trian #(
   // Estados de dibujo
   // Espera, Arista 1, Arista 2, Arista 3, Preparacion de relleno, Relleno, Finalizado.
   //
-  // La preparacion se reparte en cinco estados para que ningun ciclo encadene
-  // mas de una multiplicacion (ver la nota de temporizacion mas abajo):
-  //   T_AREA    productos del area orientada
-  //   T_ORIENT  signo del area e intercambio de vertices
-  //   T_BOX     caja envolvente recortada e incrementos
-  //   T_EVAL    productos de las tres funciones en la esquina de la caja
-  //   T_SUM     restas finales y carga de los acumuladores
+  // La preparacion se reparte en cinco estados para que ningun ciclo encadene mas de una multiplicacion:
+  //   T_AREA    Productos del area orientada
+  //   T_ORIENT  Signo del area e intercambio de vertices
+  //   T_BOX     Caja envolvente recortada e incrementos
+  //   T_EVAL    Productos de las tres funciones en la esquina de la caja
+  //   T_SUM     Restas finales y carga de los acumuladores
   typedef enum logic [3:0] {
     T_IDLE, T_AREA, T_ORIENT, T_BOX, T_EVAL, T_SUM,
     T_E0, T_E1, T_E2, T_FILL, T_DONE
@@ -109,6 +121,7 @@ module draw_trian #(
   // area_nula      Los tres vertices son colineales
   // p00 .. p21     Los dos productos de cada funcion de arista en la esquina
   logic                  fill_q, area_nula;
+  logic                  tl0, tl1, tl2;    // La arista es superior o izquierda
   logic signed [33:0]    pa, pb;
   logic signed [33:0]    p00, p01, p10, p11, p20, p21;
 
@@ -137,19 +150,12 @@ module draw_trian #(
     endcase
   end
 
-  //---------------------------------------------------------------------------
-  // Nota de temporizacion
-  // La primera version hacia toda la preparacion en un solo ciclo: area,
-  // intercambio de vertices, caja y las tres funciones de arista. Esa cadena
-  // (resta, multiplicacion, resta, comparacion, multiplexor, minimos y maximos,
-  // resta, multiplicacion, resta) media unos 28 ns y limitaba todo el dominio
-  // de 100 MHz a 35 MHz. Aqui cada estado hace como mucho una resta, una
-  // multiplicacion de 17 x 17 bits (un bloque DSP) o una resta de 35 bits.
+  // Distribucion de trabajo
+  // Aqui cada estado hace como mucho una resta, una multiplicacion de 17 x 17 bits (un bloque DSP) o una resta de 35 bits.
+  // Asegura que se complete el proceso en flancos de reloj y no los alargue
   //
-  // Las diferencias de coordenadas de 16 bits con signo caben en 17 bits, de
-  // modo que se declaran asi explicitamente para que el sintetizador infiera
-  // multiplicadores de 18 x 18 y no de 36 x 36.
-  //---------------------------------------------------------------------------
+  // Las diferencias de coordenadas de 16 bits con signo caben en 17 bits,
+  // de modo que se declaran asi explicitamente para que el sintetizador infiera multiplicadores de 18 x 18 y no de 36 x 36.
 
   // Diferencias que alimentan los multiplicadores. Todas salen de registros.
   logic signed [16:0] d_bxax, d_gyay, d_byay, d_gxax;            // area
@@ -208,13 +214,14 @@ module draw_trian #(
       sx0 <= '0; sx1 <= '0; sx2 <= '0; sy0 <= '0; sy1 <= '0; sy2 <= '0;
       col <= '0;
       fill_q <= 1'b0;  area_nula <= 1'b0;
+      tl0 <= 1'b0;  tl1 <= 1'b0;  tl2 <= 1'b0;
       pa <= '0; pb <= '0;
       p00 <= '0; p01 <= '0; p10 <= '0; p11 <= '0; p20 <= '0; p21 <= '0;
     end else if (!stall) begin // Si no esta en Stall
       lg_start <= 1'b0;
       case (st)
-        // Captura de los argumentos. Nada se calcula sobre las entradas, que
-        // llegan directamente de los registros de decoder_fsm.
+        // Captura de los argumentos. Nada se calcula sobre las entradas,
+		  // que llegan directamente de los registros de decoder_fsm.
         T_IDLE: if (start) begin
           ax <= x0;  ay <= y0;
           bx <= x1;  by <= y1;
@@ -271,6 +278,11 @@ module draw_trian #(
 				 sy1 <= $signed({{19{d_e1x[16]}}, d_e1x});
 				 sy2 <= $signed({{19{d_e2x[16]}}, d_e2x});
 
+				 // Regla de relleno: aristas superiores e izquierdas
+				 tl0 <= (d_e0y < 0) || ((d_e0y == 0) && (d_e0x > 0));
+				 tl1 <= (d_e1y < 0) || ((d_e1y == 0) && (d_e1x > 0));
+				 tl2 <= (d_e2y < 0) || ((d_e2y == 0) && (d_e2x > 0));
+
 				 st <= T_EVAL;
 			end
         // Funciones de arista en la esquina de la caja, primera mitad:
@@ -324,15 +336,20 @@ module draw_trian #(
   assign done = (st == T_DONE);
 
   // Salida. En el contorno se deja pasar lo que produce draw_line; en el
-  // relleno, el punto esta dentro cuando las tres funciones de arista son no
-  // negativas.
+  // relleno, el punto esta dentro cuando cada funcion de arista es positiva,
+  // o nula sobre una arista superior o izquierda (regla top-left).
+  logic dentro0, dentro1, dentro2;
+  assign dentro0 = tl0 ? (e0 >= 0) : (e0 > 0);
+  assign dentro1 = tl1 ? (e1 >= 0) : (e1 > 0);
+  assign dentro2 = tl2 ? (e2 >= 0) : (e2 > 0);
+
   always_comb begin
     px_valid = 1'b0;  px_x = '0;  px_y = '0;  px_color = col;
     if ((st == T_E0) || (st == T_E1) || (st == T_E2)) begin
       px_valid = lg_valid;  px_x = lg_px;  px_y = lg_py;
       px_color = lg_color;
     end else if (st == T_FILL) begin
-      px_valid = (e0 >= 0) && (e1 >= 0) && (e2 >= 0);
+      px_valid = dentro0 && dentro1 && dentro2;
       px_x     = cx;        px_y = cy;
     end
   end

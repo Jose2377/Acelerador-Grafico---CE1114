@@ -103,7 +103,7 @@ module draw_circle #(
   //   e1 = err + 2y + 3                      (y' = y + 1)
   //   e1 >  0: x' = x - 1, err' = err + 2y - 2x + 4
   //   e1 <= 0: x' = x,     err' = e1
-  // El fin del octante (x' < y') se resuelve igual, comparando x e y ya
+  // El fin del octante (x' < y') se resuelve igual, comparando "x", "e" y "ya"
   // registrados contra la constante que corresponde a cada caso.
   logic signed [21:0] upd_e1, upd_e2, upd_e3, upd_err;
   logic signed [15:0] upd_x, upd_y;
@@ -163,11 +163,7 @@ module draw_circle #(
         end
 
         // Actualiza el punto del octante.
-        // La version original evaluaba en cadena: comparar err, sumar 2y+1,
-        // volver a comparar, restar 2x+1 y comparar x con y, todo en un ciclo
-        // (unos 11 ns). Aqui los tres resultados posibles se calculan en
-        // paralelo desde registros (ver upd_* mas abajo) y solo se elige uno.
-        // El resultado es bit a bit el mismo que el de la cadena original.
+        // Los tres resultados posibles se calculan en paralelo desde registros y solo se elige uno.
         K_UPD: begin
           err <= upd_err;  x <= upd_x;  y <= upd_y;
           st  <= upd_fin ? K_DONE : K_OUT;

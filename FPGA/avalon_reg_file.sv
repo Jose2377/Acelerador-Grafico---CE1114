@@ -14,18 +14,24 @@
 // Mapa de registros (desplazamientos en bytes desde la base del puente)
 //
 //   0x00  ID          R   constante 0xACE1_1140, confirma que el puente vive
-//   0x04  CONTROL     RW  [0] enable     nivel, queda puesto
-//                         [1] soft_reset pulso de un ciclo, se autolimpia
+//   0x04  CONTROL     RW  [0] enable       nivel, queda puesto
+//                         [1] soft_reset   pulso de un ciclo, se autolimpia; se lee 0
+//                         [2] perf_window  pulso de un ciclo, se autolimpia; se lee 0.
+//                                          Abre una ventana de medicion nueva: el driver
+//                                          lo escribe al empezar un lote y INF la cierra
+//                         [3] irq_en       nivel, habilita la salida de interrupcion
+//                         [4] irq_inf      R/W1C, pendiente: un INF publico un informe
+//                         [5] irq_err      R/W1C, pendiente: se registro un error (EC-06 a EC-08)
 //   0x08  STATUS      R   [0]     busy
 //                         [3:1]   modo (MOE)
 //                         [4]     fifo_full
 //                         [5]     fifo_empty
 //                         [6]     overflow
-//                         [7]     vga_underrun
+//                         [7]     buffer_sel, buffer delantero (0 = A, 1 = B)
 //                         [15:8]  fifo_level, saturado en 255
 //                         [31:16] seq_last
 //   0x0C  CMD_FIFO_W  W   Una palabra del paquete; seis escrituras consecutivas (W0 a W5) encolan un comando
-//   0x10  ERR_INFO    R   [3:0] err_last, [31:16] err_count
+//   0x10  ERR_INFO    R   [3:0] err_last, [4] vga_underrun, [31:16] err_count
 //   0x14  PERF_CYCLES R
 //   0x18  PERF_CMDS   R
 //   0x1C  PERF_PIXELS R
@@ -37,6 +43,14 @@
 //   0x34  OUT_RANGE   R
 //   0x38  VGA_FRAMES  R
 //   0x3C  LEDS        R   Copia del indicador de estado, para depurar
+//
+// Interrupcion. irq = irq_en && (irq_inf || irq_err), en nivel.
+// Las dos banderas se marcan aunque irq_en este en bajo, 
+// de modo que el driver puede trabajar por sondeo leyendo CONTROL, 
+// y se limpian escribiendo un 1 en su bit (W1C). 
+// Escribir CONTROL con esos bits en 0 no toca las pendientes,
+// asi que el driver puede cambiar enable sin perder una interrupcion.
+// Si un evento llega en el mismo ciclo que su limpieza, gana el evento.
 //
 // Protocolo. Esclavo Avalon-MM de 32 bits, sin waitrequest (nunca bloquea) y con readLatency = 1: 
 // readdata es valido el ciclo siguiente a read.
@@ -57,7 +71,9 @@
 //   avs_write         Escritura de un registro
 //   avs_writedata     Dato que escribe el HPS
 
-//   busy, modo, fifo_level, fifo_full, fifo_empty, overflow           Estado que publica el registro STATUS
+//   busy, modo, fifo_level, fifo_full, fifo_empty, overflow,
+//   buffer_sel                                                        Estado que publica el registro STATUS
+//   evt_inf, evt_err                                                  Pulsos de evento para las banderas de interrupcion
 //   err_last, err_count                                               Contenido del registro ERR_INFO
 //   perf_cycles, perf_commands, perf_pixels, perf_dropped             Los cuatro registros de rendimiento
 //   seq_last, clip_count, burst_writes, burst_reads, pixels_written,  
@@ -67,6 +83,8 @@
 //   avs_readdata      Dato devuelto al HPS en una lectura
 //   enable            Bit enable del registro CONTROL
 //   reset_soft        Bit de reinicio por software del registro CONTROL
+//   perf_window       Pulso que abre una ventana de medicion nueva
+//   irq               Peticion de interrupcion hacia el HPS, en nivel
 //   comand_w_ena      Señal de escritura en el puerto COMAND_FIFO_W
 //   comand_w_data     Palabra del paquete de comando que se esta escribiendo
 //=============================================================================
@@ -89,6 +107,8 @@ module avalon_reg_file #(
   //------------------------------- Hacia Acelerador_Grafico_Top (salidas)
   output logic        enable,
   output logic        reset_soft,
+  output logic        perf_window,
+  output logic        irq,
   output logic        comand_w_ena,
   output logic [31:0] comand_w_data,
 
@@ -99,6 +119,9 @@ module avalon_reg_file #(
   input  logic              fifo_full,
   input  logic              fifo_empty,
   input  logic              overflow,
+  input  logic              buffer_sel,
+  input  logic              evt_inf,
+  input  logic              evt_err,
   input  logic [3:0]        err_last,
   input  logic [15:0]       err_count,
   input  logic [31:0]       perf_cycles,
@@ -143,18 +166,39 @@ module avalon_reg_file #(
   // enable es un nivel que persiste. soft_reset es un pulso de un ciclo:
   // El nivel superior lo usa para vaciar el ensamblador de paquete y avisar al decodificador,
   // y dejarlo en alto mantendria el sistema detenido.
+  // perf_window sigue la misma regla que soft_reset.
+  logic irq_en, irq_inf, irq_err;
+  logic w_control;
+
+  assign w_control = avs_write && (idx == R_CONTROL);
+
   always_ff @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
-      enable     <= 1'b0;
-      reset_soft <= 1'b0;
+      enable      <= 1'b0;
+      reset_soft  <= 1'b0;
+      perf_window <= 1'b0;
+      irq_en      <= 1'b0;
+      irq_inf     <= 1'b0;
+      irq_err     <= 1'b0;
     end else begin
-      reset_soft <= 1'b0;                      // Se autolimpia cada ciclo
-      if (avs_write && (idx == R_CONTROL)) begin
-        enable     <= avs_writedata[0];
-        reset_soft <= avs_writedata[1];
+      reset_soft  <= 1'b0;                     // Se autolimpian cada ciclo
+      perf_window <= 1'b0;
+      if (w_control) begin
+        enable      <= avs_writedata[0];
+        reset_soft  <= avs_writedata[1];
+        perf_window <= avs_writedata[2];
+        irq_en      <= avs_writedata[3];
       end
+
+      // Pendientes: el evento las marca, un 1 escrito en su bit las limpia
+      if (evt_inf)                              irq_inf <= 1'b1;
+      else if (w_control && avs_writedata[4])  irq_inf <= 1'b0;
+      if (evt_err)                              irq_err <= 1'b1;
+      else if (w_control && avs_writedata[5])  irq_err <= 1'b0;
     end
   end
+
+  assign irq = irq_en && (irq_inf || irq_err);
 
   // Palabra del paquete. 
   // Se pasa combinacional junto con el pulso para que el ensamblador del nivel superior
@@ -180,14 +224,14 @@ module avalon_reg_file #(
 
   assign status_word = {seq_last,                        // [31:16]
                         nivel_8,                         // [15:8]
-                        vga_underrun,                    // [7]
+                        buffer_sel,                      // [7]
                         overflow,                        // [6]
                         fifo_empty,                      // [5]
                         fifo_full,                       // [4]
                         modo,                            // [3:1]
                         busy};                           // [0]
 
-  assign err_word = {err_count, 12'd0, err_last};
+  assign err_word = {err_count, 11'd0, vga_underrun, err_last};
 
   always_ff @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
@@ -195,7 +239,8 @@ module avalon_reg_file #(
     end else if (avs_read) begin
       case (idx)
         R_ID          : avs_readdata <= ID_MAGIC;
-        R_CONTROL     : avs_readdata <= {30'd0, 1'b0, enable};
+        R_CONTROL     : avs_readdata <= {26'd0, irq_err, irq_inf, irq_en,
+                                         1'b0, 1'b0, enable};
         R_STATUS      : avs_readdata <= status_word;
         R_ERR_INFO    : avs_readdata <= err_word;
         R_PERF_CYCLES : avs_readdata <= perf_cycles;

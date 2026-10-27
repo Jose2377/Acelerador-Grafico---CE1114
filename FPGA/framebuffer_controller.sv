@@ -13,6 +13,10 @@
 // La memoria, en cambio, solo es eficiente en rafagas. De ahi las dos piezas centrales del modulo:
 //
 //   Combinador de escritura: acumula hasta BURST_LEN pixeles consecutivos en un buffer local y los manda de una vez. 
+//   Cada solicitud trae px_len pixeles consecutivos del mismo color (un tramo);
+//   las primitivas de un pixel mandan tramos de 1 y el rectangulo relleno y CLEAR mandan la rafaga entera de una vez.
+//   Un tramo nunca cruza una frontera de BURST_LEN, de modo que se acepta completo o no se acepta.
+//   Si el tramo cierra la rafaga, la escritura arranca en el ciclo siguiente sin pasar por un ciclo de espera. 
 //   Mientras el pixel que llega extienda la rafaga en curso se acepta; 
 //   cuando rompe la secuencia o se llega al limite, px_ready baja, 
 //   la rafaga sale y el rasterizador vuelve a presentar el pixel rechazado.
@@ -46,7 +50,8 @@
 // Entradas
 //   clk, rst_n              Reloj de rasterizado y SDRAM, y su reinicio
 //   px_valid                El rasterizador presenta un pixel
-//   px_addr                 Indice de ese pixel en la pantalla
+//   px_addr                 Indice de ese pixel en la pantalla (el primero del tramo)
+//   px_len                  Pixeles del tramo, de 1 a BURST_LEN, sin cruzar frontera de rafaga
 //   px_color                Su color en RGB565
 //   buffer_sel              Buffer delantero, 0 = A y 1 = B; se escribe en el contrario
 //   vaciar                  Cierra la rafaga incompleta cuando el rasterizador queda inactivo
@@ -90,6 +95,7 @@ module framebuffer_controller #(
   // Con px_ready en bajo el rasterizador se congela y mantiene el pixel hasta que se acepte.
   input  logic                                   px_valid,
   input  logic [$clog2(SCREEN_W*SCREEN_H)-1:0]   px_addr,      // Indice de pixel
+  input  logic [$clog2(BURST_LEN+1)-1:0]         px_len,       // Pixeles del tramo
   input  logic [PIXEL_BITS-1:0]                  px_color,
   output logic                                   px_ready,
 
@@ -304,11 +310,16 @@ module framebuffer_controller #(
   // Combinador de escritura
   logic wr_extiende, wr_frontera, wr_cabe, wr_en_region, wr_cierra;
 
-  // Restriccion de region: el indice tiene que caer dentro del buffer.
-  assign wr_en_region = (px_addr < PXAW'(FB_PIXELS));
+  // Restriccion de region: el tramo entero tiene que caer dentro del buffer.
+  // Se compara en un bit mas para que addr + len no desborde.
+  logic [PXAW:0] px_fin;              // Indice siguiente al ultimo pixel del tramo
+  logic          tramo_cierra;        // El tramo llega a la frontera de rafaga
+  assign px_fin       = {1'b0, px_addr} + (PXAW+1)'(px_len);
+  assign wr_en_region = (px_fin <= (PXAW+1)'(FB_PIXELS));
+  assign tramo_cierra = ((px_fin[PXAW-1:0] % PXAW'(BURST_LEN)) == '0);
 
   assign wr_frontera  = (((wr_base + PXAW'(wr_cnt)) % PXAW'(BURST_LEN)) == '0);
-  assign wr_cabe      = (wr_cnt < BCW'(BURST_LEN));
+  assign wr_cabe      = ((wr_cnt + px_len) <= BCW'(BURST_LEN));
   assign wr_extiende  = (wr_cnt != '0)
                      && (px_addr == wr_base + PXAW'(wr_cnt))
                      && wr_cabe && !wr_frontera;
@@ -348,26 +359,28 @@ module framebuffer_controller #(
 
           end else if (px_valid && px_ready) begin
             if (!wr_en_region) begin
-              out_of_range <= out_of_range + 32'd1;
-
-            end else if (wr_cnt == '0) begin
-              // Primera palabra de una rafaga nueva.
-              wr_base        <= px_addr;
-              wr_buf         <= ~buffer_sel;     // Siempre el buffer trasero
-              wr_datos[0]    <= px_color;
-              wr_cnt         <= BCW'(1);
-              pixels_written <= pixels_written + 32'd1;
-              if (((px_addr + PXAW'(1)) % PXAW'(BURST_LEN)) == '0)
-                vaciar_pend <= 1'b1;
+              out_of_range <= out_of_range + 32'(px_len);
 
             end else begin
-              // Extiende la rafaga en curso.
-              wr_datos[wr_cnt[IDXW-1:0]] <= px_color;
-              wr_cnt                     <= wr_cnt + 1'b1;
-              pixels_written             <= pixels_written + 32'd1;
-              if ((wr_cnt + 1'b1 == BCW'(BURST_LEN)) ||
-                  (((px_addr + PXAW'(1)) % PXAW'(BURST_LEN)) == '0))
+              // Abre una rafaga nueva o extiende la que esta en curso:
+				  // el tramo ocupa las posiciones wr_cnt .. wr_cnt + px_len - 1.
+              if (wr_cnt == '0) begin
+                wr_base <= px_addr;
+                wr_buf  <= ~buffer_sel;          // Siempre el buffer trasero
+              end
+              for (int i = 0; i < BURST_LEN; i++)
+                if ((BCW'(i) >= wr_cnt) && (BCW'(i) < wr_cnt + px_len))
+                  wr_datos[i] <= px_color;
+              wr_cnt         <= wr_cnt + px_len;
+              pixels_written <= pixels_written + 32'(px_len);
+
+              // La rafaga se cierra al llegar a la frontera o al limite.
+				  // Si el arbitro lo permite, la escritura arranca ya en el ciclo siguiente,
+				  // sin pasar por W_LIBRE con vaciar_pend.
+              if (tramo_cierra || (wr_cnt + px_len == BCW'(BURST_LEN))) begin
                 vaciar_pend <= 1'b1;
+                if (permiso_escritura) wr_st <= W_PIDE;
+              end
             end
           end
         end

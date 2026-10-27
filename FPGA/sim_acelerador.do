@@ -33,6 +33,7 @@
 #     do sim_acelerador.do
 #
 #   Para la escena del faro, cambiar TB mas abajo por tb_escena_faro.
+#   Para el banco de registros del HPS, por tb_avalon_reg_file.
 #
 # NOTA SOBRE LA RESOLUCION
 #
@@ -45,6 +46,7 @@
 
 set TB tb_Acelerador_Grafico_Top
 # set TB tb_escena_faro
+# set TB tb_avalon_reg_file
 
 #------------------------------------------------------------------ biblioteca
 if {[file isdirectory work]} {
@@ -80,6 +82,7 @@ set RTL {
   framebuffer_onchip.sv
   rend_counter.sv
   led_status.sv
+  avalon_reg_file.sv
   Acelerador_Grafico_Top.sv
 }
 

@@ -117,6 +117,7 @@ module tb_escena_faro;
   logic [$clog2(H)-1:0] px_y;
   logic [PB-1:0]      px_color;
   logic [AW-1:0]      px_addr;
+  logic [3:0]         px_len;
   logic               buffer_sel;
   logic               busy;
   logic        [2:0]  modo;
@@ -132,7 +133,7 @@ module tb_escena_faro;
                            .FIFO_DEPTH(FD), .FB_ONCHIP(1'b1)) dut (
     .clk(clk), .rst_n(rst_n),
     .clk_pix(clk_pix), .rst_pix_n(rst_pix_n),
-    .enable(enable), .reset_soft(reset_soft),
+    .enable(enable), .reset_soft(reset_soft), .perf_window(1'b0),
     .comand_w_ena(comand_w_ena), .comand_w_data(comand_w_data),
     .sd_read(sd_read), .sd_write(sd_write), .sd_address(sd_address),
     .sd_burstcount(sd_burstcount), .sd_writedata(sd_writedata),
@@ -143,7 +144,7 @@ module tb_escena_faro;
     .vga_blank_n(vga_blank_n), .vga_sync_n(vga_sync_n),
     .vga_underrun(vga_underrun), .vga_frames(vga_frames),
     .px_valid(px_valid), .px_x(px_x), .px_y(px_y),
-    .px_color(px_color), .px_addr(px_addr), .buffer_sel(buffer_sel),
+    .px_color(px_color), .px_addr(px_addr), .px_len(px_len), .buffer_sel(buffer_sel),
     .busy(busy), .modo(modo),
     .fifo_level(fifo_level), .fifo_full(fifo_full),
     .fifo_empty(fifo_empty), .overflow(overflow),
@@ -167,10 +168,14 @@ module tb_escena_faro;
   int            err_dir  = 0;          // discrepancias entre px_addr y y*W+x
 
   always @(posedge clk) begin
+    // Cada solicitud trae px_len pixeles consecutivos desde (px_x, px_y)
     if (px_valid && dut.px_ready) begin
-      fb[px_y][px_x]  <= px_color;
-      fbw[px_y][px_x] <= 1'b1;
-      emitidos        <= emitidos + 1;
+      for (int i = 0; i < px_len; i++) begin
+        // Bloqueante: el modelo solo se consulta en flancos de bajada
+        fb[px_y][px_x + i]  = px_color;
+        fbw[px_y][px_x + i] = 1'b1;
+      end
+      emitidos <= emitidos + px_len;
       if (px_addr !== AW'(px_y * W + px_x)) err_dir++;
     end
   end

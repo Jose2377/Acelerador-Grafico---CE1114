@@ -46,7 +46,8 @@
 //   busy                  Señal que muestra que hay una figura en curso
 //   done                  Señal de un ciclo al terminar la figura
 //   px_valid              Solicitud de pixel valida
-//   px_x, px_y            Coordenada del pixel, ya recortada
+//   px_x, px_y            Coordenada del pixel, ya recortada (el primero del tramo)
+//   px_len                Pixeles del tramo: hasta BURST_LEN en RECT_FILL y CLEAR, 1 en el resto
 //   px_color              Su color en RGB565
 //   px_addr               Su direccion lineal en el framebuffer
 //   pix_count, clip_count Pixeles aceptados y pixeles recortados
@@ -82,12 +83,15 @@ module processor_raster #(
   output logic [$clog2(SCREEN_W)-1:0] px_x,             // Coordenada x del pixel
   output logic [$clog2(SCREEN_H)-1:0] px_y,             // Coordenada y del pixel
   output logic [PIXEL_BITS-1:0]       px_color,         // Color del pixel
+  output logic [LW-1:0]               px_len,           // Pixeles del tramo
   output logic [$clog2(SCREEN_W*SCREEN_H)-1:0] px_addr, // Direccion de memoria del pixel
 
   // Instrumentacion
   output logic        [31:0] pix_count,                 // Pixeles aceptados
   output logic        [31:0] clip_count                 // Pixeles recortados
 );
+
+  localparam int LW = $clog2(Acelerador_pkg::BURST_LEN + 1);
 
   // Codigos de operacion
   localparam logic [3:0] OP_PIXEL     = Acelerador_pkg::OP_PIXEL;
@@ -158,6 +162,7 @@ module processor_raster #(
   logic signed [15:0] xp, xr, xl, xc, xt;
   logic signed [15:0] yp, yr, yl, yc, yt;
   logic [PIXEL_BITS-1:0] cp, cr, cl, cc, ct;
+  logic [LW-1:0]         lr;                // Longitud del tramo de draw_rect
 
   // Llamados de modulos de dibujo.
   draw_pixel #(.PIXEL_BITS(PIXEL_BITS)) u_pix (
@@ -170,7 +175,7 @@ module processor_raster #(
     .clk(clk), .rst_n(rst_n), .start(s_rect), .stall(stall), .fill(rfill),
     .x0(rx0), .y0(ry0), .x1(rx1), .y1(ry1), .color_in(color565),
     .busy(br), .done(dr), .px_valid(vr),
-    .px_x(xr), .px_y(yr), .px_color(cr));
+    .px_x(xr), .px_y(yr), .px_len(lr), .px_color(cr));
 
   draw_line #(.PIXEL_BITS(PIXEL_BITS)) u_line (
     .clk(clk), .rst_n(rst_n), .start(s_line), .stall(stall),
@@ -196,15 +201,18 @@ module processor_raster #(
   logic                  v_raw;
   logic signed [15:0]    x_raw, y_raw;
   logic [PIXEL_BITS-1:0] k_raw;
+  logic [LW-1:0]         l_raw;
 
   // Elige cual de los valores de modulos de dibujo se seleciona segun el comando actual.
+  // Solo draw_rect emite tramos; el resto, un pixel por solicitud
   always_comb begin
+    l_raw = LW'(1);
     case (op_q)
       OP_PIXEL:               begin v_raw = vp; x_raw = xp; y_raw = yp; k_raw = cp; end
       OP_LINE:                begin v_raw = vl; x_raw = xl; y_raw = yl; k_raw = cl; end
       OP_CIRC, OP_CIRC_FILL:  begin v_raw = vc; x_raw = xc; y_raw = yc; k_raw = cc; end
       OP_TRIA, OP_TRIA_FILL:  begin v_raw = vt; x_raw = xt; y_raw = yt; k_raw = ct; end
-      default:                begin v_raw = vr; x_raw = xr; y_raw = yr; k_raw = cr; end
+      default:                begin v_raw = vr; x_raw = xr; y_raw = yr; k_raw = cr; l_raw = lr; end
     endcase
   end
 
@@ -212,8 +220,8 @@ module processor_raster #(
   pixel_gen #(.SCREEN_W(SCREEN_W), .SCREEN_H(SCREEN_H),
               .PIXEL_BITS(PIXEL_BITS)) u_pxgen (
     .clk(clk), .rst_n(rst_n), .clr_cnt(clr_cnt), .px_ready(!stall),
-    .valid_in(v_raw), .x_in(x_raw), .y_in(y_raw), .color_in(k_raw),
-    .px_valid(px_valid), .px_x(px_x), .px_y(px_y),
+    .valid_in(v_raw), .x_in(x_raw), .y_in(y_raw), .len_in(l_raw), .color_in(k_raw),
+    .px_valid(px_valid), .px_x(px_x), .px_y(px_y), .px_len(px_len),
     .px_color(px_color), .px_addr(px_addr),
     .pix_count(pix_count), .clip_count(clip_count));
 

@@ -71,6 +71,14 @@ st.P_IDLE 0 0 0
 st.P_OUT 1 0 1 
 st.P_DONE 1 1 0 
 
+State Machine - |DE1_SoC_top_level|Acelerador_Grafico_Top:u_acelerador|decoder_fsm:u_decoder|ini_fase
+Name ini_fase.INI_BORRA_A ini_fase.INI_CAMBIA ini_fase.INI_BORRA_B ini_fase.INI_ESPERA ini_fase.INI_FIN 
+ini_fase.INI_ESPERA 0 0 0 0 0 
+ini_fase.INI_BORRA_B 0 0 1 1 0 
+ini_fase.INI_CAMBIA 0 1 0 1 0 
+ini_fase.INI_BORRA_A 1 0 0 1 0 
+ini_fase.INI_FIN 0 0 0 1 1 
+
 State Machine - |DE1_SoC_top_level|Acelerador_Grafico_Top:u_acelerador|decoder_fsm:u_decoder|st
 Name st.MOE_WAIT st.MOE_ERROR st.MOE_INFO st.MOE_SWAP st.MOE_PROC st.MOE_IDLE st.MOE_INIT 
 st.MOE_INIT 0 0 0 0 0 0 0 

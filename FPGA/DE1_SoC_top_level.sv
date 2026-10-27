@@ -227,7 +227,14 @@ module DE1_SoC_top_level (
   //===========================================================================
   // Senales entre el banco de registros y el acelerador
   //===========================================================================
-  logic              gfx_enable, gfx_reset_soft;
+  logic              gfx_enable, gfx_reset_soft, gfx_perf_window;
+  logic              gfx_buffer_sel, gfx_evt_inf, gfx_evt_err;
+  // Peticion de interrupcion del banco de registros. soc_system todavia no
+  // tiene habilitada la interfaz de interrupciones FPGA a HPS (f2h_irq), asi
+  // que por ahora el driver trabaja por sondeo de CONTROL[5:4]. Para usarla:
+  // habilitar "FPGA-to-HPS interrupts" en el HPS dentro de Platform Designer,
+  // exportar una linea, regenerar y conectar gfx_irq a ese puerto.
+  logic              gfx_irq;
   logic              gfx_cmd_w_ena;
   logic [31:0]       gfx_cmd_w_data;
 
@@ -360,6 +367,8 @@ module DE1_SoC_top_level (
 
     .enable         (gfx_enable),
     .reset_soft     (gfx_reset_soft),
+    .perf_window    (gfx_perf_window),
+    .irq            (gfx_irq),
     .comand_w_ena   (gfx_cmd_w_ena),
     .comand_w_data  (gfx_cmd_w_data),
 
@@ -369,6 +378,9 @@ module DE1_SoC_top_level (
     .fifo_full      (gfx_fifo_full),
     .fifo_empty     (gfx_fifo_empty),
     .overflow       (gfx_overflow),
+    .buffer_sel     (gfx_buffer_sel),
+    .evt_inf        (gfx_evt_inf),
+    .evt_err        (gfx_evt_err),
     .err_last       (gfx_err_last),
     .err_count      (gfx_err_count),
     .perf_cycles    (gfx_perf_cycles),
@@ -419,6 +431,7 @@ module DE1_SoC_top_level (
     // CONTROL (0x04) y CMD_FIFO_W (0x0C)
     .enable           (gfx_enable),
     .reset_soft       (gfx_reset_soft),
+    .perf_window      (gfx_perf_window),
     .comand_w_ena     (gfx_cmd_w_ena),
     .comand_w_data    (gfx_cmd_w_data),
 
@@ -450,7 +463,9 @@ module DE1_SoC_top_level (
     .px_y             (),
     .px_color         (),
     .px_addr          (),
-    .buffer_sel       (),
+    .buffer_sel       (gfx_buffer_sel),     // STATUS (0x08), bit 7
+    .evt_inf          (gfx_evt_inf),
+    .evt_err          (gfx_evt_err),
 
     // STATUS (0x08)
     .busy             (gfx_busy),

@@ -7,25 +7,23 @@
 // Es el cerebro del acelerador: saca comandos de la cola de uno en uno,
 // los valida, los traduce y gobierna los seis modos de operacion (MOE) que el registro STATUS publica al HPS.
 //
-// MOE-01 Inicio. Al salir del reinicio (o con reset_soft) la maquina
-// reinicializa contadores y registros, vacia la cola (el nivel superior
-// mantiene flush mientras modo sea MOE-01) y limpia los dos buffers del
-// framebuffer antes de aceptar comandos. La SDRAM arranca con datos
-// aleatorios; sin esta limpieza se veria basura hasta el primer CLEAR.
+// MOE-01 Inicio. Al salir del reinicio (o con reset_soft) la maquina reinicializa contadores y registros,
+// vacia la cola (el nivel superior mantiene flush mientras modo sea MOE-01) y
+// limpia los dos buffers del framebuffer antes de aceptar comandos.
+// La SDRAM arranca con datos aleatorios; sin esta limpieza se veria basura hasta el primer CLEAR.
 // La limpieza reutiliza el rasterizador con un CLEAR negro:
-//   INI_ESPERA   Espera a que el rasterizador este libre (un reset_soft puede
-//                llegar con una figura a medias) y lanza el CLEAR
+
+//   INI_ESPERA   Espera a que el rasterizador este libre (un reset_soft puede llegar con una figura a medias) y lanza el CLEAR
 //   INI_BORRA_B  CLEAR sobre el buffer trasero, B (buffer_sel = 0)
-//   INI_CAMBIA   Espera a que salga el ultimo pixel, pasa buffer_sel a 1 y
-//                lanza el segundo CLEAR, que cae ahora sobre A
+//   INI_CAMBIA   Espera a que salga el ultimo pixel, pasa buffer_sel a 1 y lanza el segundo CLEAR, que cae ahora sobre A
 //   INI_BORRA_A  CLEAR sobre A
-//   INI_FIN      Espera a que salga el ultimo pixel, devuelve buffer_sel a 0,
-//                reabre la ventana de medicion y pasa a MOE-02
-// Los intercambios de buffer dentro de MOE-01 no esperan VSYNC: los dos
-// buffers todavia no tienen contenido valido, asi que no hay imagen que
-// partir. El combinador de escritura fija el buffer destino al abrir cada
-// rafaga, de modo que basta con que el ultimo pixel haya salido de pixel_gen
-// (px_pend en bajo) para que el cambio no desvie ninguna escritura.
+//   INI_FIN      Espera a que salga el ultimo pixel, devuelve buffer_sel a 0, reabre la ventana de medicion y pasa a MOE-02
+
+// Los intercambios de buffer dentro de MOE-01 no esperan VSYNC:
+// los dos buffers todavia no tienen contenido valido,
+// asi que no hay imagen que partir. El combinador de escritura fija el buffer destino al abrir cada rafaga,
+// de modo que basta con que el ultimo pixel haya salido de pixel_gen (px_pend en bajo)
+// para que el cambio no desvie ninguna escritura.
 //
 // Ciclo de trabajo de un comando de dibujo:
 //   MOE_IDLE  Hay algo en la cola y enable esta alto: se pide un comando
@@ -42,7 +40,7 @@
 //
 // Errores que el hardware puede detectar por si mismo:
 //   EC-06  codigo de operacion desconocido
-//   EC-07  parametro geometrico invalido (radio nulo en los circulos)
+//   EC-07  parametro geometrico invalido: radio fuera de 1..1023 en los circulos
 //   EC-08  desbordamiento de la cola
 // Los tres llevan a MOE_ERROR, que dura un solo ciclo y solo sirve para que el modo sea observable. 
 // EC-01 a EC-04 los emite la capa de software y nunca llegan hasta aqui.
@@ -145,11 +143,18 @@ module decoder_fsm #(
   Acelerador_pkg::comand_t comand_in;
   assign comand_in = fifo_data_out;    // Comando de entrada
 
-  // Validar valores, principalmente del circulo
+  // Validar valores, principalmente del circulo.
+  // El radio valido es de 1 a RADIO_MAX. 
+  // El campo PARAM trae 16 bits y el rasterizador usa 10: 
+  // un radio mayor no se trunca en silencio (2048 se volveria 0, 1500 se volveria 476),
+  // se rechaza con EC-07 igual que el radio nulo.
+  localparam logic [15:0] RADIO_MAX = 16'd1023;
+
   function automatic logic parametros_validos(input Acelerador_pkg::comand_t c);
     case (c.opcode)
       Acelerador_pkg::OPC_CIRC,
-      Acelerador_pkg::OPC_CIRC_FILL: parametros_validos = (c.param != 16'd0);
+      Acelerador_pkg::OPC_CIRC_FILL: parametros_validos = (c.param != 16'd0)
+                                                       && (c.param <= RADIO_MAX);
       default:                       parametros_validos = 1'b1;
     endcase
   endfunction
@@ -240,8 +245,8 @@ module decoder_fsm #(
         case (st)
 
           // MOE-01 Inicio
-          // Reinicializa registros y limpia los dos buffers antes de aceptar
-          // comandos. La cola se vacia desde el nivel superior mientras dure.
+          // Reinicializa registros y limpia los dos buffers antes de aceptar comandos.
+			 // La cola se vacia desde el nivel superior mientras dure.
           Acelerador_pkg::MOE_INIT: begin
             comand_count <= '0;
             seq_last     <= '0;

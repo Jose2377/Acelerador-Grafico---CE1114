@@ -26,12 +26,14 @@
 //   clr_cnt              Reinicia los dos contadores de instrumentacion
 //   px_ready             El gestor de framebuffer acepta el pixel presentado
 //   valid_in             Hay un pixel en el flujo que llega de los modulos de dibujo
-//   x_in, y_in           Su coordenada con signo
+//   x_in, y_in           Su coordenada con signo (la del primer pixel del tramo)
+//   len_in               Pixeles del tramo; 1 salvo en el relleno de rectangulo
 //   color_in             Su color en RGB565
 //
 // Salidas
 //   px_valid             Solicitud de pixel valida
 //   px_x, px_y           Coordenada ya recortada a la region visible
+//   px_len               Pixeles visibles del tramo
 //   px_color             Color del pixel
 //   px_addr              Direccion lineal del pixel en el framebuffer
 //   pix_count            Pixeles aceptados por el gestor en la ventana
@@ -40,7 +42,8 @@
 module pixel_gen #(
   parameter int SCREEN_W   = 64,
   parameter int SCREEN_H   = 48,
-  parameter int PIXEL_BITS = 16
+  parameter int PIXEL_BITS = 16,
+  parameter int LW         = $clog2(Acelerador_pkg::BURST_LEN + 1)
 )(
   input  logic                    clk,                  // Reloj del sistema
   input  logic                    rst_n,                // Reset
@@ -50,6 +53,7 @@ module pixel_gen #(
   // Flujo
   input  logic                    valid_in,             // Hay un pixel en el flujo que llega de los modulos de dibujo
   input  logic signed [15:0]      x_in, y_in,           // Coordenadas del pixel
+  input  logic [LW-1:0]           len_in,               // Pixeles del tramo, en la misma fila
   input  logic [PIXEL_BITS-1:0]   color_in,             // Color del pixel
 
   // Solicitud
@@ -57,6 +61,7 @@ module pixel_gen #(
   output logic [$clog2(SCREEN_W)-1:0] px_x,             // Coordenada x recortada del pixel
   output logic [$clog2(SCREEN_H)-1:0] px_y,             // Coordenada y recortada del pixel
   output logic [PIXEL_BITS-1:0]   px_color,             // Color del pixel
+  output logic [LW-1:0]           px_len,               // Pixeles visibles del tramo, desde px_x
   output logic [$clog2(SCREEN_W*SCREEN_H)-1:0] px_addr, // Direccion lineal del pixel
 
   // Instrumentacion
@@ -64,11 +69,13 @@ module pixel_gen #(
   output logic [31:0]             clip_count            // Pixeles descartados por caer fuera de la pantalla
 );
 
-  logic fuera;
+  logic          fuera;
+  logic [LW-1:0] n_fuera;
 
-  // Recorte de pixeles contra la region visible
-  clip_scissor #(.SCREEN_W(SCREEN_W), .SCREEN_H(SCREEN_H)) u_clip (
-    .valid_in(valid_in), .x_in(x_in), .y_in(y_in),
+  // Recorte del tramo contra la region visible
+  clip_scissor #(.SCREEN_W(SCREEN_W), .SCREEN_H(SCREEN_H), .LW(LW)) u_clip (
+    .valid_in(valid_in), .x_in(x_in), .y_in(y_in), .len_in(len_in),
+    .len_out(px_len), .n_fuera(n_fuera),
     .valid_out(px_valid), .x_out(px_x), .y_out(px_y), .fuera(fuera));
 
   // Traductor de coordenada de pantalla a direccion lineal
@@ -86,8 +93,8 @@ module pixel_gen #(
       pix_count  <= '0;
       clip_count <= '0;
     end else begin
-      if (px_valid && px_ready) pix_count  <= pix_count  + 32'd1; // Cuenta pixeles dentro
-      if (fuera    && px_ready) clip_count <= clip_count + 32'd1; // Cuenta pixeles fuera
+      if (px_valid && px_ready) pix_count  <= pix_count  + 32'(px_len);  // Cuenta pixeles dentro
+      if (fuera    && px_ready) clip_count <= clip_count + 32'(n_fuera); // Cuenta pixeles fuera
     end
   end
 

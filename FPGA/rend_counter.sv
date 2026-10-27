@@ -21,7 +21,8 @@
 //   ventana_reset    Señal para abrir una ventana de medicion nueva
 //   rasterizando     hay un comando en vuelo; es lo que cuenta perf_cycles
 //   comand_tick      Señal que avisa que un comando mas fue completado
-//   px_tick          Señal que avisa que un pixel mas fue aceptado por el gestor de framebuffer
+//   px_n             Pixeles aceptados por el gestor de framebuffer en este ciclo
+//                    (hasta BURST_LEN cuando el rectangulo relleno entrega un tramo)
 //   drop_tick        Señal que avisa que un paquete mas fue descartado por la cola
 //
 // Salidas
@@ -43,7 +44,7 @@ module rend_counter (
   // Sucesos que se contabilizan
   input  logic        rasterizando,     // Hay un comando en vuelo
   input  logic        comand_tick,      // Un comando mas completado
-  input  logic        px_tick,          // Un pixel mas aceptado por el gestor
+  input  logic [3:0]  px_n,             // Pixeles aceptados por el gestor en este ciclo
   input  logic        drop_tick,        // Un paquete mas descartado por la cola
 
   // Valores en curso, para observacion
@@ -65,6 +66,13 @@ module rend_counter (
     if (!inc)             sumar = v;
     else if (&v)          sumar = v;        // Ya saturado
     else                  sumar = v + 32'd1;
+  endfunction
+
+  // Suma de varios a la vez, tambien saturada
+  function automatic logic [31:0] sumar_n(input logic [31:0] v, input logic [3:0] n);
+    logic [32:0] t;
+    t = {1'b0, v} + 33'(n);
+    sumar_n = t[32] ? 32'hFFFF_FFFF : t[31:0];
   endfunction
 
   always_ff @(posedge clk or negedge rst_n) begin
@@ -93,7 +101,7 @@ module rend_counter (
       end else begin // Caso contrario, suma valores
         ciclos    <= sumar(ciclos,    rasterizando);
         comandos  <= sumar(comandos,  comand_tick);
-        pixeles   <= sumar(pixeles,   px_tick);
+        pixeles   <= sumar_n(pixeles, px_n);
         descartes <= sumar(descartes, drop_tick);
       end
     end

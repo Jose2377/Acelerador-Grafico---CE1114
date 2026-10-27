@@ -23,6 +23,15 @@
 // un rectangulo de una sola fila (yb == ya) o de una sola columna (xb == xa)
 // salta directo a R_DONE en lugar de recorrer aristas que no existen.
 //
+// Relleno por tramos. 
+// En R_FILL (RECT_FILL y CLEAR) cada ciclo presenta un tramo horizontal de hasta SPAN pixeles del mismo color, 
+// cortado en la frontera de rafaga: va de cx hasta el final del grupo alineado de SPAN pixeles que contiene a cx, 
+// o hasta xb si llega antes. Como SCREEN_W es multiplo de SPAN, 
+// la alineacion en x coincide con la alineacion de la direccion lineal,
+// y cada tramo completo es una rafaga entera para el combinador de escritura
+// (perspectiva de algoritmos: ocho pixeles por ciclo).
+// El contorno sigue saliendo de a un pixel (px_len = 1).
+//
 // Entradas
 //   clk, rst_n           Reloj del sistema y reinicio
 //   start                Señal que carga los argumentos y arranca la figura
@@ -36,11 +45,14 @@
 //   busy                 Señal en alto mientras el rectangulo no ha terminado de dibujarse
 //   done                 Señal de un ciclo al terminar
 //   px_valid             Solicitud de pixel valida
-//   px_x, px_y,          Coordenada del pixel presentado
+//   px_x, px_y,          Coordenada del pixel presentado (el primero del tramo)
+//   px_len               Pixeles del tramo, de 1 a SPAN, todos en la misma fila
 //   px_color             Color de pixel
 //=============================================================================
 module draw_rect #(
-  parameter int PIXEL_BITS = 16
+  parameter int PIXEL_BITS = 16,
+  parameter int SPAN       = Acelerador_pkg::BURST_LEN,   // Pixeles por tramo de relleno
+  parameter int LW         = $clog2(SPAN + 1)
 )(
   input  logic                    clk,            // Reloj del sistema
   input  logic                    rst_n,          // Reset del sistema
@@ -53,6 +65,7 @@ module draw_rect #(
   output logic                    done,           // Señal de un ciclo al terminar
   output logic                    px_valid,       // Solicitud de pixel valida
   output logic signed [15:0]      px_x, px_y,     // Coordenada del pixel presentado
+  output logic [LW-1:0]           px_len,         // Pixeles del tramo presentado
   output logic [PIXEL_BITS-1:0]   px_color        // Color de pixel
 );
 
@@ -69,6 +82,11 @@ module draw_rect #(
   // (cx,cy) coordenadas actuales de dibujado
   logic signed [15:0] xa, xb, ya, yb, cx, cy;
   logic [PIXEL_BITS-1:0] col;
+
+  // Tramo de relleno: de cx al final de su grupo alineado, sin pasar de xb
+  logic signed [15:0] fin_grupo, fin_tramo;
+  assign fin_grupo = cx | 16'(SPAN - 1);
+  assign fin_tramo = (fin_grupo < xb) ? fin_grupo : xb;
 
   always_ff @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin // Reset
@@ -87,12 +105,12 @@ module draw_rect #(
           st <= fill ? R_FILL : R_TOP;
         end
 
-        R_FILL: begin // Relleno
-          if (cx == xb) begin
+        R_FILL: begin // Relleno, un tramo por ciclo
+          if (fin_tramo == xb) begin
             cx <= xa;
             if (cy == yb) st <= R_DONE;
             else          cy <= cy + 1;
-          end else cx <= cx + 1;
+          end else cx <= fin_tramo + 1;
         end
 
         R_TOP: begin // Arista superior
@@ -135,4 +153,12 @@ module draw_rect #(
   assign px_x     = cx;
   assign px_y     = cy;
   assign px_color = col;
+  assign px_len   = (st == R_FILL) ? LW'(fin_tramo - cx + 1) : LW'(1);
+
+`ifndef SYNTHESIS
+  initial begin
+    if ((SPAN < 1) || ((SPAN & (SPAN - 1)) != 0))
+      $error("draw_rect: SPAN (%0d) debe ser potencia de dos", SPAN);
+  end
+`endif
 endmodule
