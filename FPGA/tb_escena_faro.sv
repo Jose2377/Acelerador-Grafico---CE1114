@@ -62,6 +62,7 @@ module tb_escena_faro;
   localparam logic [7:0] OPC_INF       = Acelerador_pkg::OPC_INF;
 
   localparam logic [2:0] M_IDLE = Acelerador_pkg::MOE_IDLE;
+  localparam logic [2:0] M_INIT = Acelerador_pkg::MOE_INIT;
 
   localparam int W  = 64;
   localparam int H  = 48;
@@ -162,6 +163,7 @@ module tb_escena_faro;
   logic [PB-1:0] fb  [0:H-1][0:W-1];
   logic          fbw [0:H-1][0:W-1];
   int            emitidos = 0;
+  logic [31:0]   pw_arranque = '0;     // pixels_written al terminar MOE-01
   int            err_dir  = 0;          // discrepancias entre px_addr y y*W+x
 
   always @(posedge clk) begin
@@ -465,6 +467,14 @@ module tb_escena_faro;
     rst_pix_n = 1'b1;
     repeat (8) @(negedge clk);
 
+    // MOE-01 limpia los dos buffers y descarta lo que llegue a la cola
+    // mientras tanto: la escena se envia cuando el sistema ya esta en espera.
+    while (modo == M_INIT) @(negedge clk);
+    repeat (64) @(negedge clk);
+    borrar_fb();
+    emitidos = 0;
+    pw_arranque = pixels_written;          // pixeles escritos por MOE-01
+
     //------------------------------------------------- 1. dibujo de la escena
     $display("");
     $display("--- 1. Dibujo de la escena -------------------------------");
@@ -519,7 +529,7 @@ module tb_escena_faro;
     // aceptado por el gestor de framebuffer. Si discrepan, uno de los dos
     // esta contando ciclos de contrapresion en lugar de pixeles.
     chk("el medidor coincide con lo observado", perf_pixels,   emitidos);
-    chk("pixeles anotados por el gestor",     pixels_written,  emitidos);
+    chk("pixeles anotados por el gestor",     pixels_written - pw_arranque, emitidos);
     chk("ningun pixel fuera de pantalla",     clip_count,      0);
     chk("direccion lineal siempre correcta",  err_dir,         0);
     chk("sin escrituras fuera de region",     out_of_range,    0);

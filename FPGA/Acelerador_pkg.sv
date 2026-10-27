@@ -3,16 +3,23 @@
 // Acelerador_pkg.sv
 // Modulo   : Paquete de parametros, tipos y conversion de color compartidos
 //
-// Incremento actual (camino completo hasta la salida de video):
-//   - Region visible reducida de 64 x 48 pixeles
+// Constantes, tipos y funciones que comparten el acelerador, el
+// decodificador, el gestor de framebuffer y los bancos de pruebas.
+//
+// Los valores por defecto son los de simulacion:
+//   - Region visible reducida de 64 x 48 pixeles y temporizacion VGA
+//     reducida, para que ModelSim recorra el camino completo en poco tiempo
+//   - Cola de 16 comandos, para que el banco de pruebas pueda desbordarla
 //   - Pixel de 16 bits en formato RGB565 (PIXEL_BITS del Documento de Diseno)
-//   - Cola de comandos, decodificador, rasterizador, gestor de framebuffer con doble buffer y controlador VGA, todos presentes
-//   - El framebuffer vive en memoria interna de la FPGA (framebuffer_onchip);
-//     El controlador de SDRAM todavia no existe, pero el gestor ya habla el
-//     Avalon-MM de rafaga que ese modulo implementara, de modo que el cambio
-//     es el parametro FB_ONCHIP del nivel superior
-//   - sin HPS: los registros del mapa estan cableados a los puertos del
-//     nivel superior y es el banco de pruebas quien los acciona
+//   - Framebuffer en memoria interna de la FPGA (framebuffer_onchip), sin
+//     HPS: el banco de pruebas acciona directamente los puertos del nivel
+//     superior
+//
+// En la placa, DE1_SoC_top_level sobrescribe en su instancia la resolucion a
+// 640 x 480 con la tabla VGA_* de este paquete y la cola a 256 comandos, sin
+// tocar el paquete. Alli el framebuffer vive en la SDRAM externa (FB_ONCHIP
+// en cero), que atiende el controlador de SDRAM de Platform Designer, y los
+// registros los accede el HPS a traves de avalon_reg_file.
 //
 // Dos tablas de temporizacion y dos codificaciones de operacion conviven aqui
 // a proposito; cada una dice en su seccion a quien sirve.
@@ -20,9 +27,10 @@
 package Acelerador_pkg;
 
   //--------------------------------------------------------------- Geometria
-  // En el sistema completo SCREEN_W y SCREEN_H valen 640 y 480. Aqui se
-  // reducen para que el banco de pruebas quepa en la consola; ningun cuerpo
-  // de modulo depende del valor concreto.
+  // En la placa SCREEN_W y SCREEN_H valen 640 y 480 (DE1_SoC_top_level los
+  // toma de VGA_H_VISIBLE y VGA_V_VISIBLE). Aqui se reducen para que el banco
+  // de pruebas quepa en la consola; ningun cuerpo de modulo depende del valor
+  // concreto.
   parameter int SCREEN_W   = 64;
   parameter int SCREEN_H   = 48;
 
@@ -37,9 +45,9 @@ package Acelerador_pkg;
   parameter int PIXEL_BITS = 16;   // RGB565
 
   //------------------------------------------------------- Codigos de operacion
-  // Codificacion reducida de 4 bits del incremento actual. El paquete de 24
-  // bytes usa OPCODE de 8 bits (0x00 a 0x0B); el decodificador del sistema
-  // completo hace la traduccion entre ambas.
+  // Codificacion reducida de 4 bits que consume processor_raster. El paquete
+  // de 24 bytes usa OPCODE de 8 bits (0x00 a 0x0B); decoder_fsm hace la
+  // traduccion entre ambas con opcode_a_op.
   localparam logic [3:0] OP_PIXEL     = 4'd0;
   localparam logic [3:0] OP_LINE      = 4'd1;
   localparam logic [3:0] OP_RECT      = 4'd2;
@@ -70,15 +78,17 @@ package Acelerador_pkg;
   localparam logic [7:0] OPC_INF       = 8'h0B;
 
   //-------------------------------------------------------- Cola de comandos
-  // En el sistema completo la cola guarda 256 comandos. Aqui se reduce para
-  // que el banco de pruebas pueda llenarla y provocar el desbordamiento en
-  // un tiempo de simulacion razonable. Debe ser potencia de dos.
+  // En la placa la cola guarda 256 comandos (DE1_SoC_top_level lo fija en su
+  // instancia). Aqui se reduce para que el banco de pruebas pueda llenarla y
+  // provocar el desbordamiento en un tiempo de simulacion razonable. Debe ser
+  // potencia de dos.
   parameter int FIFO_DEPTH = 16;
 
   //------------------------------------------------------------ Relojes
   // Dos dominios. El de rasterizado y SDRAM va a 100 MHz; el de pixel lo
-  // fija la temporizacion VGA. En la placa los produce un ALTPLL a partir
-  // del oscilador de 50 MHz.
+  // fija la temporizacion VGA. En la placa los produce el pll_0 de
+  // soc_system a partir del oscilador de 50 MHz, junto con una tercera salida
+  // de 100 MHz desfasada que va solo al pin DRAM_CLK.
   //
   // SYS_CLK_HZ lo usa led_status para dimensionar sus cuentas atras (el
   // banco de pruebas le pasa un valor reducido para no simular doce
@@ -107,9 +117,10 @@ package Acelerador_pkg;
 
   //------------------------------------- Temporizacion VESA 640 x 480 a 60 Hz
   // 800 x 525 relojes de pixel por cuadro a 25,175 MHz dan 59,94 Hz. Los dos
-  // sincronismos son de polaridad negativa en este modo. Son los valores del
-  // sistema completo: cambiar SCREEN_W o SCREEN_H obliga a recalcular la
-  // temporizacion entera, por eso las dos tablas viven juntas.
+  // sincronismos son de polaridad negativa en este modo. Son los valores de
+  // la placa, que DE1_SoC_top_level pasa a su instancia: cambiar SCREEN_W o
+  // SCREEN_H obliga a recalcular la temporizacion entera, por eso las dos
+  // tablas viven juntas.
   parameter int VGA_H_VISIBLE = 640;
   parameter int VGA_H_FRONT   =  16;
   parameter int VGA_H_SYNC    =  96;
@@ -121,7 +132,7 @@ package Acelerador_pkg;
   parameter bit VGA_HS_POL    = 1'b0;   // nivel activo del pulso
   parameter bit VGA_VS_POL    = 1'b0;
 
-  //------------------------- Temporizacion reducida del incremento actual
+  //-------------------------------- Temporizacion reducida de simulacion
   // Proporcional a la anterior para la region de 64 x 48. Conserva la
   // estructura de porches, de modo que el banco de pruebas recorre el mismo
   // camino logico en una fraccion del tiempo de simulacion.
@@ -142,10 +153,12 @@ package Acelerador_pkg;
   // 32M x 16 en cuatro bancos: 13 bits de fila, 10 de columna, 2 de banco,
   // que suman los 25 de SD_ADDR_BITS y cubren las 33 554 432 palabras.
   //
-  // De los cinco, el unico que sale del paquete es SD_ADDR_BITS, que fija el
-  // ancho del bus de direccion del maestro de rafaga. Los otros describen el
-  // dispositivo para cuando exista sdram_controller; SD_DATA_BITS coincide
-  // con PIXEL_BITS por casualidad del formato de color, y los modulos usan
+  // De los cinco, el unico que usan los modulos es SD_ADDR_BITS, que fija el
+  // ancho del bus de direccion del maestro de rafaga. Los otros solo
+  // describen el dispositivo: la geometria real la configura el controlador
+  // de SDRAM de Platform Designer (sdram_controller_0 en soc_system), con las
+  // mismas 13 filas, 10 columnas y 4 bancos. SD_DATA_BITS coincide con
+  // PIXEL_BITS por casualidad del formato de color, y los modulos usan
   // PIXEL_BITS, que es lo que de verdad quieren decir.
   parameter int SD_ROW_BITS  = 13;
   parameter int SD_COL_BITS  = 10;
@@ -233,8 +246,7 @@ package Acelerador_pkg;
   // Interfaz uniforme entre los modulos de dibujo y el gestor de framebuffer.
   // Los modulos la exponen en puertos sueltos (px_valid, px_x, px_y,
   // px_color) para no obligar a importar el paquete en cada hoja de la
-  // jerarquia, y el gestor de framebuffer, ya incorporado, los recibe igual
-  // de sueltos.
+  // jerarquia, y el gestor de framebuffer los recibe igual de sueltos.
   //
   // Es decir que este tipo no esta en uso: queda como documentacion del
   // contenido de la interfaz IF-07 y como base si alguna vez conviene

@@ -52,6 +52,15 @@ set_clock_groups -asynchronous \
   -group [list $clk_pix [get_clocks {vga_clk_pin}]]
 
 #------------------------------------------------- SDRAM IS42S16320D (lado FPGA)
+# VIOLACION CONOCIDA (temporal). La lectura DRAM_DQ -> za_data del
+# controlador de Platform Designer no cierra a 100 MHz: el controlador captura
+# el dato CL+1 ciclos despues del READ, sin margen, y DRAM_CLK sale por la red
+# global hacia un pin comun con ~5 ns de retraso. El comando y la lectura se
+# reparten el mismo margen al mover la fase de outclk1; por debajo de ~2,75 ns
+# el chip toma el comando un ciclo tarde, asi que la fase se fijo en 2917 ps,
+# el minimo seguro. Queda un deficit de ~6,5 ns (esquina lenta) en la lectura.
+# Solucion definitiva: sdram_controller.sv propio con un ciclo extra de
+# latencia de lectura y DRAM_CLK reenviado por un registro DDIO.
 # Valores de la hoja de datos (grado -7, CL = 3) mas ~0,5 ns de pista:
 #   tAC  (acceso)       5,4 ns   ->  input  max  5,9
 #   tOH  (retencion)    2,7 ns   ->  input  min  3,0

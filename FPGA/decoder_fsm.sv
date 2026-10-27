@@ -7,6 +7,26 @@
 // Es el cerebro del acelerador: saca comandos de la cola de uno en uno,
 // los valida, los traduce y gobierna los seis modos de operacion (MOE) que el registro STATUS publica al HPS.
 //
+// MOE-01 Inicio. Al salir del reinicio (o con reset_soft) la maquina
+// reinicializa contadores y registros, vacia la cola (el nivel superior
+// mantiene flush mientras modo sea MOE-01) y limpia los dos buffers del
+// framebuffer antes de aceptar comandos. La SDRAM arranca con datos
+// aleatorios; sin esta limpieza se veria basura hasta el primer CLEAR.
+// La limpieza reutiliza el rasterizador con un CLEAR negro:
+//   INI_ESPERA   Espera a que el rasterizador este libre (un reset_soft puede
+//                llegar con una figura a medias) y lanza el CLEAR
+//   INI_BORRA_B  CLEAR sobre el buffer trasero, B (buffer_sel = 0)
+//   INI_CAMBIA   Espera a que salga el ultimo pixel, pasa buffer_sel a 1 y
+//                lanza el segundo CLEAR, que cae ahora sobre A
+//   INI_BORRA_A  CLEAR sobre A
+//   INI_FIN      Espera a que salga el ultimo pixel, devuelve buffer_sel a 0,
+//                reabre la ventana de medicion y pasa a MOE-02
+// Los intercambios de buffer dentro de MOE-01 no esperan VSYNC: los dos
+// buffers todavia no tienen contenido valido, asi que no hay imagen que
+// partir. El combinador de escritura fija el buffer destino al abrir cada
+// rafaga, de modo que basta con que el ultimo pixel haya salido de pixel_gen
+// (px_pend en bajo) para que el cambio no desvie ninguna escritura.
+//
 // Ciclo de trabajo de un comando de dibujo:
 //   MOE_IDLE  Hay algo en la cola y enable esta alto: se pide un comando
 //   MOE_PROC  Llega el dato (un ciclo despues de pedirlo), se valida y se presentan los argumentos al rasterizador
@@ -44,6 +64,7 @@
 //   Si esta vacia, el data, si el data es valido, y desborde
 //
 //   ras_busy, ras_done    Señal si el rasterizador esta ocupado o acaba de terminar
+//   px_pend               Hay un pixel del rasterizador esperando al gestor de framebuffer
 //   vsync                 Sincronismo vertical del controlador VGA
 //
 // Salidas
@@ -87,6 +108,7 @@ module decoder_fsm #(
   output logic [7:0]  ras_r, ras_g, ras_b, // Color del comando en RGB888
   input  logic        ras_busy,            // Señal si hay un comando ejecutandose
   input  logic        ras_done,            // Señal si el rasterizador termino
+  input  logic        px_pend,             // Pixel pendiente a la salida del rasterizador
 
   // Medicion
   input  logic        vsync,           // Controlador VGA
@@ -104,11 +126,19 @@ module decoder_fsm #(
   output logic [15:0] seq_last         // SEQ_ID del ultimo comando aceptado
 );
 
-  localparam int INIT_CICLOS = 4;      // Ciclos de inicio MOE-01
+  // Fases de MOE-01: limpieza de los dos buffers del framebuffer
+  typedef enum logic [2:0] {
+    INI_ESPERA  = 3'd0,                // Rasterizador libre, lanza el primer CLEAR
+    INI_BORRA_B = 3'd1,                // Limpiando el buffer B
+    INI_CAMBIA  = 3'd2,                // Cambia a buffer_sel = 1 y lanza el segundo CLEAR
+    INI_BORRA_A = 3'd3,                // Limpiando el buffer A
+    INI_FIN     = 3'd4                 // Devuelve buffer_sel a 0 y pasa a MOE-02
+  } ini_fase_e;
 
   Acelerador_pkg::sys_state_e st;      // Estado para maquina de estado
 
-  logic [2:0] init_cnt;                // Cuenta ciclos de inicio
+  ini_fase_e  ini_fase;                // Fase de la limpieza de MOE-01
+  logic       ras_libre;               // Rasterizador sin trabajo ni pixeles en vuelo
   logic       err_pend;                // Error detectado
   logic       vsync_q;                 // Para detectar el flanco
 
@@ -151,6 +181,9 @@ module decoder_fsm #(
 
   assign busy = (st != Acelerador_pkg::MOE_IDLE); // Si esta ocupado
 
+  // Sin comando en curso, sin done rezagado y sin pixel esperando al gestor
+  assign ras_libre = !ras_busy && !ras_done && !px_pend;
+
   // Registro de errores y contador
   always_ff @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin //Reset
@@ -171,7 +204,7 @@ module decoder_fsm #(
   always_ff @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin // Reset
       st         <= Acelerador_pkg::MOE_INIT;
-      init_cnt   <= '0;
+      ini_fase   <= INI_ESPERA;
       fifo_rd    <= 1'b0;
       ras_start  <= 1'b0;
       ras_op     <= '0;
@@ -200,23 +233,56 @@ module decoder_fsm #(
       if (fifo_drop) err_pend <= 1'b1;
 
       if (soft_reset) begin // Reset
-        st       <= Acelerador_pkg::MOE_INIT;
-        init_cnt <= '0;
+        st         <= Acelerador_pkg::MOE_INIT;
+        ini_fase   <= INI_ESPERA;
+        buffer_sel <= 1'b0;
       end else begin
         case (st)
 
           // MOE-01 Inicio
-          Acelerador_pkg::MOE_INIT: begin // Asigna variables iniciales
-            comand_count  <= '0;
-            buffer_sel <= 1'b0;
-            seq_last   <= '0;
-            err_pend   <= 1'b0;
-            if (init_cnt == INIT_CICLOS[2:0]) begin // Si ya inicio
-              init_cnt <= '0;
-              st       <= Acelerador_pkg::MOE_IDLE; 
-            end else begin // Cuenta ciclos de inicio
-              init_cnt <= init_cnt + 3'd1;
-            end
+          // Reinicializa registros y limpia los dos buffers antes de aceptar
+          // comandos. La cola se vacia desde el nivel superior mientras dure.
+          Acelerador_pkg::MOE_INIT: begin
+            comand_count <= '0;
+            seq_last     <= '0;
+            err_pend     <= 1'b0;
+
+            // El CLEAR de arranque es negro y a pantalla completa
+            ras_op <= Acelerador_pkg::OP_CLEAR;
+            ras_r  <= '0;  ras_g <= '0;  ras_b <= '0;
+
+            case (ini_fase)
+              INI_ESPERA: begin // Espera a que termine lo que hubiera en curso
+                buffer_sel <= 1'b0;
+                if (ras_libre) begin
+                  ras_start <= 1'b1;               // Primer CLEAR: buffer trasero B
+                  ini_fase  <= INI_BORRA_B;
+                end
+              end
+
+              INI_BORRA_B: if (ras_done) ini_fase <= INI_CAMBIA;
+
+              INI_CAMBIA: begin // El ultimo pixel ya salio hacia el gestor
+                if (!px_pend) begin
+                  buffer_sel <= 1'b1;              // A pasa a ser el trasero
+                  ras_start  <= 1'b1;              // Segundo CLEAR: buffer A
+                  ini_fase   <= INI_BORRA_A;
+                end
+              end
+
+              INI_BORRA_A: if (ras_done) ini_fase <= INI_FIN;
+
+              INI_FIN: begin
+                if (!px_pend) begin
+                  buffer_sel <= 1'b0;              // A delante, B detras, ambos negros
+                  perf_clear <= 1'b1;              // Los pixeles del arranque no cuentan
+                  ini_fase   <= INI_ESPERA;
+                  st         <= Acelerador_pkg::MOE_IDLE;
+                end
+              end
+
+              default: ini_fase <= INI_ESPERA;
+            endcase
           end
 
           // MOE-02 Espera

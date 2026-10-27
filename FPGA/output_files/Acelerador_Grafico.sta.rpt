@@ -1,5 +1,5 @@
 Timing Analyzer report for Acelerador_Grafico
-Mon Oct 26 21:14:58 2026
+Mon Oct 26 21:44:30 2026
 Quartus Prime Version 18.1.0 Build 625 09/12/2018 SJ Lite Edition
 
 
@@ -682,22 +682,22 @@ refer to the applicable agreement for further details.
 ; Number detected on machine ; 12          ;
 ; Maximum allowed            ; 12          ;
 ;                            ;             ;
-; Average used               ; 1.94        ;
+; Average used               ; 1.98        ;
 ; Maximum used               ; 12          ;
 ;                            ;             ;
 ; Usage by Processor         ; % Time Used ;
 ;     Processor 1            ; 100.0%      ;
-;     Processor 2            ;  10.4%      ;
-;     Processor 3            ;  10.3%      ;
-;     Processor 4            ;  10.2%      ;
-;     Processor 5            ;   7.9%      ;
-;     Processor 6            ;   7.9%      ;
-;     Processor 7            ;   7.9%      ;
-;     Processor 8            ;   7.9%      ;
-;     Processor 9            ;   7.9%      ;
-;     Processor 10           ;   7.9%      ;
-;     Processor 11           ;   7.9%      ;
-;     Processor 12           ;   7.9%      ;
+;     Processor 2            ;  10.5%      ;
+;     Processor 3            ;  10.4%      ;
+;     Processor 4            ;  10.3%      ;
+;     Processor 5            ;   8.4%      ;
+;     Processor 6            ;   8.4%      ;
+;     Processor 7            ;   8.4%      ;
+;     Processor 8            ;   8.4%      ;
+;     Processor 9            ;   8.4%      ;
+;     Processor 10           ;   8.4%      ;
+;     Processor 11           ;   8.4%      ;
+;     Processor 12           ;   8.4%      ;
 +----------------------------+-------------+
 
 
@@ -706,10 +706,10 @@ refer to the applicable agreement for further details.
 +---------------------------------------------------------------------------+--------+--------------------------+
 ; SDC File Path                                                             ; Status ; Read at                  ;
 +---------------------------------------------------------------------------+--------+--------------------------+
-; Platform_Designer/synthesis/submodules/altera_reset_controller.sdc        ; OK     ; Mon Oct 26 21:14:31 2026 ;
-; Platform_Designer/synthesis/submodules/hps_sdram_p0.sdc                   ; OK     ; Mon Oct 26 21:14:31 2026 ;
-; Platform_Designer/synthesis/submodules/soc_system_hps_0_hps_io_border.sdc ; OK     ; Mon Oct 26 21:14:31 2026 ;
-; Acelerador_Grafico.sdc                                                    ; OK     ; Mon Oct 26 21:14:31 2026 ;
+; Platform_Designer/synthesis/submodules/altera_reset_controller.sdc        ; OK     ; Mon Oct 26 21:44:05 2026 ;
+; Platform_Designer/synthesis/submodules/hps_sdram_p0.sdc                   ; OK     ; Mon Oct 26 21:44:05 2026 ;
+; Platform_Designer/synthesis/submodules/soc_system_hps_0_hps_io_border.sdc ; OK     ; Mon Oct 26 21:44:05 2026 ;
+; Acelerador_Grafico.sdc                                                    ; OK     ; Mon Oct 26 21:44:05 2026 ;
 +---------------------------------------------------------------------------+--------+--------------------------+
 
 
@@ -750,8 +750,8 @@ refer to the applicable agreement for further details.
 +-------------+-----------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------+------------------------------------------------+
 ; Fmax        ; Restricted Fmax ; Clock Name                                                                                                                                                                ; Note                                           ;
 +-------------+-----------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------+------------------------------------------------+
-; 89.9 MHz    ; 89.9 MHz        ; u_soc|pll_0|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                        ;                                                ;
-; 179.34 MHz  ; 179.34 MHz      ; u_soc|pll_0|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                        ;                                                ;
+; 97.72 MHz   ; 97.72 MHz       ; u_soc|pll_0|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                        ;                                                ;
+; 168.78 MHz  ; 168.78 MHz      ; u_soc|pll_0|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                        ;                                                ;
 ; 1184.83 MHz ; 717.36 MHz      ; soc_system:u_soc|soc_system_hps_0:hps_0|soc_system_hps_0_hps_io:hps_io|soc_system_hps_0_hps_io_border:border|hps_sdram:hps_sdram_inst|hps_sdram_pll:pll|afi_clk_write_clk ; limit due to minimum period restriction (tmin) ;
 +-------------+-----------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------+------------------------------------------------+
 This panel reports FMAX for every clock in the design, regardless of the user-specified clock periods.  FMAX is only computed for paths where the source and destination registers or ports are driven by the same clock.  Paths of different clocks, including generated clocks, are ignored.  For paths between a clock and its inversion, FMAX is computed as if the rising and falling edges are scaled along with FMAX, such that the duty cycle (in terms of a percentage) is maintained. Altera recommends that you always use clock constraints and other slack reports for sign-off analysis.
@@ -768,11 +768,11 @@ HTML report is unavailable in plain text report export.
 +---------------------------------------------------------------------------------------------------------------------------------------------------------------------------+--------+---------------+
 ; Clock                                                                                                                                                                     ; Slack  ; End Point TNS ;
 +---------------------------------------------------------------------------------------------------------------------------------------------------------------------------+--------+---------------+
-; u_soc|pll_0|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                        ; -7.297 ; -370.375      ;
-; sdram_clk_pin                                                                                                                                                             ; 1.018  ; 0.000         ;
+; u_soc|pll_0|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                        ; -7.307 ; -116.661      ;
+; sdram_clk_pin                                                                                                                                                             ; 1.035  ; 0.000         ;
 ; soc_system:u_soc|soc_system_hps_0:hps_0|soc_system_hps_0_hps_io:hps_io|soc_system_hps_0_hps_io_border:border|hps_sdram:hps_sdram_inst|hps_sdram_pll:pll|afi_clk_write_clk ; 1.730  ; 0.000         ;
-; u_soc|pll_0|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                        ; 6.085  ; 0.000         ;
-; vga_clk_pin                                                                                                                                                               ; 28.585 ; 0.000         ;
+; u_soc|pll_0|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                        ; 5.764  ; 0.000         ;
+; vga_clk_pin                                                                                                                                                               ; 27.425 ; 0.000         ;
 +---------------------------------------------------------------------------------------------------------------------------------------------------------------------------+--------+---------------+
 
 
@@ -782,10 +782,10 @@ HTML report is unavailable in plain text report export.
 ; Clock                                                                                                                                                                     ; Slack ; End Point TNS ;
 +---------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-------+---------------+
 ; soc_system:u_soc|soc_system_hps_0:hps_0|soc_system_hps_0_hps_io:hps_io|soc_system_hps_0_hps_io_border:border|hps_sdram:hps_sdram_inst|hps_sdram_pll:pll|afi_clk_write_clk ; 0.143 ; 0.000         ;
-; u_soc|pll_0|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                        ; 0.226 ; 0.000         ;
-; u_soc|pll_0|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                        ; 0.358 ; 0.000         ;
-; vga_clk_pin                                                                                                                                                               ; 2.183 ; 0.000         ;
-; sdram_clk_pin                                                                                                                                                             ; 2.723 ; 0.000         ;
+; u_soc|pll_0|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                        ; 0.229 ; 0.000         ;
+; u_soc|pll_0|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                        ; 0.365 ; 0.000         ;
+; vga_clk_pin                                                                                                                                                               ; 2.156 ; 0.000         ;
+; sdram_clk_pin                                                                                                                                                             ; 2.669 ; 0.000         ;
 +---------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-------+---------------+
 
 
@@ -795,8 +795,8 @@ HTML report is unavailable in plain text report export.
 ; Clock                                                                                                                                                                     ; Slack  ; End Point TNS ;
 +---------------------------------------------------------------------------------------------------------------------------------------------------------------------------+--------+---------------+
 ; soc_system:u_soc|soc_system_hps_0:hps_0|soc_system_hps_0_hps_io:hps_io|soc_system_hps_0_hps_io_border:border|hps_sdram:hps_sdram_inst|hps_sdram_pll:pll|afi_clk_write_clk ; 3.375  ; 0.000         ;
-; u_soc|pll_0|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                        ; 4.725  ; 0.000         ;
-; u_soc|pll_0|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                        ; 35.646 ; 0.000         ;
+; u_soc|pll_0|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                        ; 3.797  ; 0.000         ;
+; u_soc|pll_0|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                        ; 35.179 ; 0.000         ;
 +---------------------------------------------------------------------------------------------------------------------------------------------------------------------------+--------+---------------+
 
 
@@ -805,9 +805,9 @@ HTML report is unavailable in plain text report export.
 +---------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-------+---------------+
 ; Clock                                                                                                                                                                     ; Slack ; End Point TNS ;
 +---------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-------+---------------+
-; u_soc|pll_0|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                        ; 0.290 ; 0.000         ;
 ; soc_system:u_soc|soc_system_hps_0:hps_0|soc_system_hps_0_hps_io:hps_io|soc_system_hps_0_hps_io_border:border|hps_sdram:hps_sdram_inst|hps_sdram_pll:pll|afi_clk_write_clk ; 0.470 ; 0.000         ;
-; u_soc|pll_0|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                        ; 1.349 ; 0.000         ;
+; u_soc|pll_0|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                        ; 0.740 ; 0.000         ;
+; u_soc|pll_0|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                        ; 1.000 ; 0.000         ;
 +---------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-------+---------------+
 
 
@@ -819,10 +819,10 @@ HTML report is unavailable in plain text report export.
 ; soc_system:u_soc|soc_system_hps_0:hps_0|soc_system_hps_0_hps_io:hps_io|soc_system_hps_0_hps_io_border:border|hps_sdram:hps_sdram_inst|hps_sdram_pll:pll|pll_write_clk_dq_write_clk ; 0.608  ; 0.000         ;
 ; soc_system:u_soc|soc_system_hps_0:hps_0|soc_system_hps_0_hps_io:hps_io|soc_system_hps_0_hps_io_border:border|hps_sdram:hps_sdram_inst|hps_sdram_pll:pll|afi_clk_write_clk          ; 0.623  ; 0.000         ;
 ; u_soc|pll_0|altera_pll_i|general[0].gpll~FRACTIONAL_PLL|vcoph[0]                                                                                                                   ; 1.666  ; 0.000         ;
-; u_soc|pll_0|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                                 ; 3.757  ; 0.000         ;
+; u_soc|pll_0|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                                 ; 3.758  ; 0.000         ;
 ; u_soc|pll_0|altera_pll_i|general[1].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                                 ; 4.847  ; 0.000         ;
 ; CLOCK_50                                                                                                                                                                           ; 9.670  ; 0.000         ;
-; u_soc|pll_0|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                                 ; 18.776 ; 0.000         ;
+; u_soc|pll_0|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                                 ; 18.772 ; 0.000         ;
 +------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+--------+---------------+
 
 
@@ -833,7 +833,7 @@ The design MTBF is not calculated because there are no specified synchronizers i
 Number of Synchronizer Chains Found: 1
 Shortest Synchronizer Chain: 3 Registers
 Fraction of Chains for which MTBFs Could Not be Calculated: 1.000
-Worst Case Available Settling Time: 24.690 ns
+Worst Case Available Settling Time: 24.969 ns
 
 
 
@@ -12109,8 +12109,8 @@ HTML report is unavailable in plain text report export.
 +-------------+-----------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------+------------------------------------------------+
 ; Fmax        ; Restricted Fmax ; Clock Name                                                                                                                                                                ; Note                                           ;
 +-------------+-----------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------+------------------------------------------------+
-; 87.14 MHz   ; 87.14 MHz       ; u_soc|pll_0|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                        ;                                                ;
-; 187.62 MHz  ; 187.62 MHz      ; u_soc|pll_0|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                        ;                                                ;
+; 99.82 MHz   ; 99.82 MHz       ; u_soc|pll_0|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                        ;                                                ;
+; 176.58 MHz  ; 176.58 MHz      ; u_soc|pll_0|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                        ;                                                ;
 ; 1237.62 MHz ; 717.36 MHz      ; soc_system:u_soc|soc_system_hps_0:hps_0|soc_system_hps_0_hps_io:hps_io|soc_system_hps_0_hps_io_border:border|hps_sdram:hps_sdram_inst|hps_sdram_pll:pll|afi_clk_write_clk ; limit due to minimum period restriction (tmin) ;
 +-------------+-----------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------+------------------------------------------------+
 This panel reports FMAX for every clock in the design, regardless of the user-specified clock periods.  FMAX is only computed for paths where the source and destination registers or ports are driven by the same clock.  Paths of different clocks, including generated clocks, are ignored.  For paths between a clock and its inversion, FMAX is computed as if the rising and falling edges are scaled along with FMAX, such that the duty cycle (in terms of a percentage) is maintained. Altera recommends that you always use clock constraints and other slack reports for sign-off analysis.
@@ -12121,11 +12121,11 @@ This panel reports FMAX for every clock in the design, regardless of the user-sp
 +---------------------------------------------------------------------------------------------------------------------------------------------------------------------------+--------+---------------+
 ; Clock                                                                                                                                                                     ; Slack  ; End Point TNS ;
 +---------------------------------------------------------------------------------------------------------------------------------------------------------------------------+--------+---------------+
-; u_soc|pll_0|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                        ; -7.017 ; -257.130      ;
-; sdram_clk_pin                                                                                                                                                             ; 1.058  ; 0.000         ;
+; u_soc|pll_0|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                        ; -7.015 ; -110.793      ;
+; sdram_clk_pin                                                                                                                                                             ; 1.079  ; 0.000         ;
 ; soc_system:u_soc|soc_system_hps_0:hps_0|soc_system_hps_0_hps_io:hps_io|soc_system_hps_0_hps_io_border:border|hps_sdram:hps_sdram_inst|hps_sdram_pll:pll|afi_clk_write_clk ; 1.727  ; 0.000         ;
-; u_soc|pll_0|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                        ; 6.236  ; 0.000         ;
-; vga_clk_pin                                                                                                                                                               ; 28.975 ; 0.000         ;
+; u_soc|pll_0|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                        ; 5.962  ; 0.000         ;
+; vga_clk_pin                                                                                                                                                               ; 27.856 ; 0.000         ;
 +---------------------------------------------------------------------------------------------------------------------------------------------------------------------------+--------+---------------+
 
 
@@ -12135,10 +12135,10 @@ This panel reports FMAX for every clock in the design, regardless of the user-sp
 ; Clock                                                                                                                                                                     ; Slack ; End Point TNS ;
 +---------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-------+---------------+
 ; soc_system:u_soc|soc_system_hps_0:hps_0|soc_system_hps_0_hps_io:hps_io|soc_system_hps_0_hps_io_border:border|hps_sdram:hps_sdram_inst|hps_sdram_pll:pll|afi_clk_write_clk ; 0.162 ; 0.000         ;
-; u_soc|pll_0|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                        ; 0.217 ; 0.000         ;
-; u_soc|pll_0|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                        ; 0.345 ; 0.000         ;
-; vga_clk_pin                                                                                                                                                               ; 1.896 ; 0.000         ;
-; sdram_clk_pin                                                                                                                                                             ; 2.809 ; 0.000         ;
+; u_soc|pll_0|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                        ; 0.168 ; 0.000         ;
+; u_soc|pll_0|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                        ; 0.325 ; 0.000         ;
+; vga_clk_pin                                                                                                                                                               ; 1.826 ; 0.000         ;
+; sdram_clk_pin                                                                                                                                                             ; 2.776 ; 0.000         ;
 +---------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-------+---------------+
 
 
@@ -12148,8 +12148,8 @@ This panel reports FMAX for every clock in the design, regardless of the user-sp
 ; Clock                                                                                                                                                                     ; Slack  ; End Point TNS ;
 +---------------------------------------------------------------------------------------------------------------------------------------------------------------------------+--------+---------------+
 ; soc_system:u_soc|soc_system_hps_0:hps_0|soc_system_hps_0_hps_io:hps_io|soc_system_hps_0_hps_io_border:border|hps_sdram:hps_sdram_inst|hps_sdram_pll:pll|afi_clk_write_clk ; 3.468  ; 0.000         ;
-; u_soc|pll_0|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                        ; 4.819  ; 0.000         ;
-; u_soc|pll_0|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                        ; 35.692 ; 0.000         ;
+; u_soc|pll_0|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                        ; 4.091  ; 0.000         ;
+; u_soc|pll_0|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                        ; 35.263 ; 0.000         ;
 +---------------------------------------------------------------------------------------------------------------------------------------------------------------------------+--------+---------------+
 
 
@@ -12158,9 +12158,9 @@ This panel reports FMAX for every clock in the design, regardless of the user-sp
 +---------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-------+---------------+
 ; Clock                                                                                                                                                                     ; Slack ; End Point TNS ;
 +---------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-------+---------------+
-; u_soc|pll_0|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                        ; 0.180 ; 0.000         ;
 ; soc_system:u_soc|soc_system_hps_0:hps_0|soc_system_hps_0_hps_io:hps_io|soc_system_hps_0_hps_io_border:border|hps_sdram:hps_sdram_inst|hps_sdram_pll:pll|afi_clk_write_clk ; 0.460 ; 0.000         ;
-; u_soc|pll_0|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                        ; 1.265 ; 0.000         ;
+; u_soc|pll_0|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                        ; 0.639 ; 0.000         ;
+; u_soc|pll_0|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                        ; 0.910 ; 0.000         ;
 +---------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-------+---------------+
 
 
@@ -12175,7 +12175,7 @@ This panel reports FMAX for every clock in the design, regardless of the user-sp
 ; u_soc|pll_0|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                                 ; 3.736  ; 0.000         ;
 ; u_soc|pll_0|altera_pll_i|general[1].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                                 ; 4.813  ; 0.000         ;
 ; CLOCK_50                                                                                                                                                                           ; 9.673  ; 0.000         ;
-; u_soc|pll_0|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                                 ; 18.753 ; 0.000         ;
+; u_soc|pll_0|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                                 ; 18.755 ; 0.000         ;
 +------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+--------+---------------+
 
 
@@ -12186,7 +12186,7 @@ The design MTBF is not calculated because there are no specified synchronizers i
 Number of Synchronizer Chains Found: 1
 Shortest Synchronizer Chain: 3 Registers
 Fraction of Chains for which MTBFs Could Not be Calculated: 1.000
-Worst Case Available Settling Time: 24.827 ns
+Worst Case Available Settling Time: 25.086 ns
 
 
 
@@ -23462,11 +23462,11 @@ HTML report is unavailable in plain text report export.
 +---------------------------------------------------------------------------------------------------------------------------------------------------------------------------+--------+---------------+
 ; Clock                                                                                                                                                                     ; Slack  ; End Point TNS ;
 +---------------------------------------------------------------------------------------------------------------------------------------------------------------------------+--------+---------------+
-; u_soc|pll_0|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                        ; -4.724 ; -74.607       ;
-; sdram_clk_pin                                                                                                                                                             ; 1.427  ; 0.000         ;
+; u_soc|pll_0|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                        ; -4.737 ; -74.803       ;
+; sdram_clk_pin                                                                                                                                                             ; 1.438  ; 0.000         ;
 ; soc_system:u_soc|soc_system_hps_0:hps_0|soc_system_hps_0_hps_io:hps_io|soc_system_hps_0_hps_io_border:border|hps_sdram:hps_sdram_inst|hps_sdram_pll:pll|afi_clk_write_clk ; 2.110  ; 0.000         ;
-; u_soc|pll_0|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                        ; 7.327  ; 0.000         ;
-; vga_clk_pin                                                                                                                                                               ; 32.017 ; 0.000         ;
+; u_soc|pll_0|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                        ; 6.976  ; 0.000         ;
+; vga_clk_pin                                                                                                                                                               ; 30.942 ; 0.000         ;
 +---------------------------------------------------------------------------------------------------------------------------------------------------------------------------+--------+---------------+
 
 
@@ -23476,10 +23476,10 @@ HTML report is unavailable in plain text report export.
 ; Clock                                                                                                                                                                     ; Slack ; End Point TNS ;
 +---------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-------+---------------+
 ; soc_system:u_soc|soc_system_hps_0:hps_0|soc_system_hps_0_hps_io:hps_io|soc_system_hps_0_hps_io_border:border|hps_sdram:hps_sdram_inst|hps_sdram_pll:pll|afi_clk_write_clk ; 0.084 ; 0.000         ;
-; u_soc|pll_0|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                        ; 0.132 ; 0.000         ;
-; u_soc|pll_0|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                        ; 0.183 ; 0.000         ;
-; vga_clk_pin                                                                                                                                                               ; 1.032 ; 0.000         ;
-; sdram_clk_pin                                                                                                                                                             ; 3.871 ; 0.000         ;
+; u_soc|pll_0|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                        ; 0.137 ; 0.000         ;
+; u_soc|pll_0|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                        ; 0.181 ; 0.000         ;
+; vga_clk_pin                                                                                                                                                               ; 0.995 ; 0.000         ;
+; sdram_clk_pin                                                                                                                                                             ; 3.835 ; 0.000         ;
 +---------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-------+---------------+
 
 
@@ -23489,8 +23489,8 @@ HTML report is unavailable in plain text report export.
 ; Clock                                                                                                                                                                     ; Slack  ; End Point TNS ;
 +---------------------------------------------------------------------------------------------------------------------------------------------------------------------------+--------+---------------+
 ; soc_system:u_soc|soc_system_hps_0:hps_0|soc_system_hps_0_hps_io:hps_io|soc_system_hps_0_hps_io_border:border|hps_sdram:hps_sdram_inst|hps_sdram_pll:pll|afi_clk_write_clk ; 3.727  ; 0.000         ;
-; u_soc|pll_0|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                        ; 6.829  ; 0.000         ;
-; u_soc|pll_0|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                        ; 37.377 ; 0.000         ;
+; u_soc|pll_0|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                        ; 5.691  ; 0.000         ;
+; u_soc|pll_0|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                        ; 37.155 ; 0.000         ;
 +---------------------------------------------------------------------------------------------------------------------------------------------------------------------------+--------+---------------+
 
 
@@ -23499,9 +23499,9 @@ HTML report is unavailable in plain text report export.
 +---------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-------+---------------+
 ; Clock                                                                                                                                                                     ; Slack ; End Point TNS ;
 +---------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-------+---------------+
-; u_soc|pll_0|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                        ; 0.203 ; 0.000         ;
+; u_soc|pll_0|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                        ; 0.467 ; 0.000         ;
 ; soc_system:u_soc|soc_system_hps_0:hps_0|soc_system_hps_0_hps_io:hps_io|soc_system_hps_0_hps_io_border:border|hps_sdram:hps_sdram_inst|hps_sdram_pll:pll|afi_clk_write_clk ; 0.497 ; 0.000         ;
-; u_soc|pll_0|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                        ; 0.758 ; 0.000         ;
+; u_soc|pll_0|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                        ; 0.561 ; 0.000         ;
 +---------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-------+---------------+
 
 
@@ -23516,7 +23516,7 @@ HTML report is unavailable in plain text report export.
 ; u_soc|pll_0|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                                 ; 3.882  ; 0.000         ;
 ; u_soc|pll_0|altera_pll_i|general[1].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                                 ; 4.908  ; 0.000         ;
 ; CLOCK_50                                                                                                                                                                           ; 9.336  ; 0.000         ;
-; u_soc|pll_0|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                                 ; 18.889 ; 0.000         ;
+; u_soc|pll_0|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                                 ; 18.888 ; 0.000         ;
 +------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+--------+---------------+
 
 
@@ -23527,7 +23527,7 @@ The design MTBF is not calculated because there are no specified synchronizers i
 Number of Synchronizer Chains Found: 1
 Shortest Synchronizer Chain: 3 Registers
 Fraction of Chains for which MTBFs Could Not be Calculated: 1.000
-Worst Case Available Settling Time: 26.836 ns
+Worst Case Available Settling Time: 27.074 ns
 
 
 
@@ -26437,8 +26437,8 @@ Delay Model:
 ; 0.501 ; HPS_DDR3_DQ[23] ; soc_system:u_soc|soc_system_hps_0:hps_0|soc_system_hps_0_hps_io:hps_io|soc_system_hps_0_hps_io_border:border|hps_sdram:hps_sdram_inst|hps_sdram_p0:p0|hps_sdram_p0_acv_hard_memphy:umemphy|hps_sdram_p0_acv_hard_io_pads:uio_pads|hps_sdram_p0_altdqdqs:dq_ddio[2].ubidir_dq_dqs|altdq_dqs2_acv_connect_to_hard_phy_cyclonev:altdq_dqs2_inst|input_path_gen[7].aligned_input[1] ; HPS_DDR3_DQS_P[2]_IN ; HPS_DDR3_DQS_P[2]_IN ; -1.250       ; 2.022      ; 1.538      ;
 ; 0.501 ; HPS_DDR3_DQ[26] ; soc_system:u_soc|soc_system_hps_0:hps_0|soc_system_hps_0_hps_io:hps_io|soc_system_hps_0_hps_io_border:border|hps_sdram:hps_sdram_inst|hps_sdram_p0:p0|hps_sdram_p0_acv_hard_memphy:umemphy|hps_sdram_p0_acv_hard_io_pads:uio_pads|hps_sdram_p0_altdqdqs:dq_ddio[3].ubidir_dq_dqs|altdq_dqs2_acv_connect_to_hard_phy_cyclonev:altdq_dqs2_inst|input_path_gen[2].aligned_input[1] ; HPS_DDR3_DQS_P[3]_IN ; HPS_DDR3_DQS_P[3]_IN ; -1.250       ; 1.992      ; 1.508      ;
 ; 0.509 ; HPS_DDR3_DQ[21] ; soc_system:u_soc|soc_system_hps_0:hps_0|soc_system_hps_0_hps_io:hps_io|soc_system_hps_0_hps_io_border:border|hps_sdram:hps_sdram_inst|hps_sdram_p0:p0|hps_sdram_p0_acv_hard_memphy:umemphy|hps_sdram_p0_acv_hard_io_pads:uio_pads|hps_sdram_p0_altdqdqs:dq_ddio[2].ubidir_dq_dqs|altdq_dqs2_acv_connect_to_hard_phy_cyclonev:altdq_dqs2_inst|input_path_gen[5].aligned_input[1] ; HPS_DDR3_DQS_P[2]_IN ; HPS_DDR3_DQS_P[2]_IN ; -1.250       ; 2.022      ; 1.546      ;
-; 0.511 ; HPS_DDR3_DQ[2]  ; soc_system:u_soc|soc_system_hps_0:hps_0|soc_system_hps_0_hps_io:hps_io|soc_system_hps_0_hps_io_border:border|hps_sdram:hps_sdram_inst|hps_sdram_p0:p0|hps_sdram_p0_acv_hard_memphy:umemphy|hps_sdram_p0_acv_hard_io_pads:uio_pads|hps_sdram_p0_altdqdqs:dq_ddio[0].ubidir_dq_dqs|altdq_dqs2_acv_connect_to_hard_phy_cyclonev:altdq_dqs2_inst|input_path_gen[2].aligned_input[1] ; HPS_DDR3_DQS_P[0]_IN ; HPS_DDR3_DQS_P[0]_IN ; -1.250       ; 2.002      ; 1.528      ;
 ; 0.511 ; HPS_DDR3_DQ[7]  ; soc_system:u_soc|soc_system_hps_0:hps_0|soc_system_hps_0_hps_io:hps_io|soc_system_hps_0_hps_io_border:border|hps_sdram:hps_sdram_inst|hps_sdram_p0:p0|hps_sdram_p0_acv_hard_memphy:umemphy|hps_sdram_p0_acv_hard_io_pads:uio_pads|hps_sdram_p0_altdqdqs:dq_ddio[0].ubidir_dq_dqs|altdq_dqs2_acv_connect_to_hard_phy_cyclonev:altdq_dqs2_inst|input_path_gen[7].aligned_input[1] ; HPS_DDR3_DQS_P[0]_IN ; HPS_DDR3_DQS_P[0]_IN ; -1.250       ; 2.002      ; 1.528      ;
+; 0.511 ; HPS_DDR3_DQ[2]  ; soc_system:u_soc|soc_system_hps_0:hps_0|soc_system_hps_0_hps_io:hps_io|soc_system_hps_0_hps_io_border:border|hps_sdram:hps_sdram_inst|hps_sdram_p0:p0|hps_sdram_p0_acv_hard_memphy:umemphy|hps_sdram_p0_acv_hard_io_pads:uio_pads|hps_sdram_p0_altdqdqs:dq_ddio[0].ubidir_dq_dqs|altdq_dqs2_acv_connect_to_hard_phy_cyclonev:altdq_dqs2_inst|input_path_gen[2].aligned_input[1] ; HPS_DDR3_DQS_P[0]_IN ; HPS_DDR3_DQS_P[0]_IN ; -1.250       ; 2.002      ; 1.528      ;
 +-------+-----------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+----------------------+----------------------+--------------+------------+------------+
 
 
@@ -27137,92 +27137,6 @@ Path #9: Hold slack is 0.511
 +---------------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
 ; Property            ; Value                                                                                                                                                                                                                                                                                                                                                                           ;
 +---------------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-; From Node           ; HPS_DDR3_DQ[2]                                                                                                                                                                                                                                                                                                                                                                  ;
-; To Node             ; soc_system:u_soc|soc_system_hps_0:hps_0|soc_system_hps_0_hps_io:hps_io|soc_system_hps_0_hps_io_border:border|hps_sdram:hps_sdram_inst|hps_sdram_p0:p0|hps_sdram_p0_acv_hard_memphy:umemphy|hps_sdram_p0_acv_hard_io_pads:uio_pads|hps_sdram_p0_altdqdqs:dq_ddio[0].ubidir_dq_dqs|altdq_dqs2_acv_connect_to_hard_phy_cyclonev:altdq_dqs2_inst|input_path_gen[2].aligned_input[1] ;
-; Launch Clock        ; HPS_DDR3_DQS_P[0]_IN                                                                                                                                                                                                                                                                                                                                                            ;
-; Latch Clock         ; HPS_DDR3_DQS_P[0]_IN (INVERTED)                                                                                                                                                                                                                                                                                                                                                 ;
-; Min Delay Exception ; -1.250                                                                                                                                                                                                                                                                                                                                                                          ;
-; Data Arrival Time   ; 1.263                                                                                                                                                                                                                                                                                                                                                                           ;
-; Data Required Time  ; 0.752                                                                                                                                                                                                                                                                                                                                                                           ;
-; Slack               ; 0.511                                                                                                                                                                                                                                                                                                                                                                           ;
-+---------------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-
-+------------------------------------------------------------------------------------------------+
-; Statistics                                                                                     ;
-+------------------------------------+--------+-------+-------------+------------+-------+-------+
-; Property                           ; Value  ; Count ; Total Delay ; % of Total ; Min   ; Max   ;
-+------------------------------------+--------+-------+-------------+------------+-------+-------+
-; Hold Relationship (from Min Delay) ; -1.250 ;       ;             ;            ;       ;       ;
-; Clock Skew                         ; 2.002  ;       ;             ;            ;       ;       ;
-; Data Delay                         ; 1.528  ;       ;             ;            ;       ;       ;
-; Number of Logic Levels             ;        ; 2     ;             ;            ;       ;       ;
-; Physical Delays                    ;        ;       ;             ;            ;       ;       ;
-;  Arrival Path                      ;        ;       ;             ;            ;       ;       ;
-;   Clock                            ;        ;       ;             ;            ;       ;       ;
-;    Clock Network (Lumped)          ;        ; 1     ; 0.000       ;            ; 0.000 ; 0.000 ;
-;   Data                             ;        ;       ;             ;            ;       ;       ;
-;    IC                              ;        ; 3     ; 0.000       ; 0          ; 0.000 ; 0.000 ;
-;    Cell                            ;        ; 3     ; 1.528       ; 100        ; 0.000 ; 1.021 ;
-;  Required Path                     ;        ;       ;             ;            ;       ;       ;
-;   Clock                            ;        ;       ;             ;            ;       ;       ;
-;    IC                              ;        ; 4     ; 0.252       ; 13         ; 0.000 ; 0.252 ;
-;    Cell                            ;        ; 4     ; 1.750       ; 87         ; 0.000 ; 1.147 ;
-+------------------------------------+--------+-------+-------------+------------+-------+-------+
-Note: Negative delays are omitted from totals when calculating percentages
-
-+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-; Data Arrival Path                                                                                                                                                                                                                                                                                                                                                                                                                                  ;
-+----------+---------+----+------+--------+------------------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-; Total    ; Incr    ; RF ; Type ; Fanout ; Location               ; Element                                                                                                                                                                                                                                                                                                                                                                         ;
-+----------+---------+----+------+--------+------------------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-; 0.000    ; 0.000   ;    ;      ;        ;                        ; launch edge time                                                                                                                                                                                                                                                                                                                                                                ;
-; 0.000    ; 0.000   ;    ;      ;        ;                        ; clock path                                                                                                                                                                                                                                                                                                                                                                      ;
-;   0.000  ;   0.000 ; R  ;      ;        ;                        ; clock network delay                                                                                                                                                                                                                                                                                                                                                             ;
-; -0.265   ; -0.265  ; F  ; iExt ; 1      ; PIN_H30                ; HPS_DDR3_DQ[2]                                                                                                                                                                                                                                                                                                                                                                  ;
-; 1.263    ; 1.528   ;    ;      ;        ;                        ; data path                                                                                                                                                                                                                                                                                                                                                                       ;
-;   -0.265 ;   0.000 ; FF ; IC   ; 1      ; IOIBUF_X89_Y66_N38     ; u_soc|hps_0|hps_io|border|hps_sdram_inst|p0|umemphy|uio_pads|dq_ddio[0].ubidir_dq_dqs|altdq_dqs2_inst|pad_gen[2].data_in|i                                                                                                                                                                                                                                                      ;
-;   0.242  ;   0.507 ; FF ; CELL ; 1      ; IOIBUF_X89_Y66_N38     ; u_soc|hps_0|hps_io|border|hps_sdram_inst|p0|umemphy|uio_pads|dq_ddio[0].ubidir_dq_dqs|altdq_dqs2_inst|pad_gen[2].data_in|o                                                                                                                                                                                                                                                      ;
-;   0.242  ;   0.000 ; FF ; IC   ; 1      ; DELAYCHAIN_X89_Y66_N50 ; u_soc|hps_0|hps_io|border|hps_sdram_inst|p0|umemphy|uio_pads|dq_ddio[0].ubidir_dq_dqs|altdq_dqs2_inst|pad_gen[2].in_delay_1|datain                                                                                                                                                                                                                                              ;
-;   0.242  ;   0.000 ; FR ; CELL ; 1      ; DELAYCHAIN_X89_Y66_N50 ; u_soc|hps_0|hps_io|border|hps_sdram_inst|p0|umemphy|uio_pads|dq_ddio[0].ubidir_dq_dqs|altdq_dqs2_inst|pad_gen[2].in_delay_1|dataout                                                                                                                                                                                                                                             ;
-;   0.242  ;   0.000 ; RR ; IC   ; 2      ; DDIOINCELL_X89_Y66_N51 ; u_soc|hps_0|hps_io|border|hps_sdram_inst|p0|umemphy|uio_pads|dq_ddio[0].ubidir_dq_dqs|altdq_dqs2_inst|input_path_gen[2].capture_reg|datain                                                                                                                                                                                                                                      ;
-;   1.263  ;   1.021 ; RR ; CELL ; 1      ; DDIOINCELL_X89_Y66_N51 ; soc_system:u_soc|soc_system_hps_0:hps_0|soc_system_hps_0_hps_io:hps_io|soc_system_hps_0_hps_io_border:border|hps_sdram:hps_sdram_inst|hps_sdram_p0:p0|hps_sdram_p0_acv_hard_memphy:umemphy|hps_sdram_p0_acv_hard_io_pads:uio_pads|hps_sdram_p0_altdqdqs:dq_ddio[0].ubidir_dq_dqs|altdq_dqs2_acv_connect_to_hard_phy_cyclonev:altdq_dqs2_inst|input_path_gen[2].aligned_input[1] ;
-+----------+---------+----+------+--------+------------------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-
-+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-; Data Required Path                                                                                                                                                                                                                                                                                                                                                                                                                                    ;
-+----------+---------+----+------+--------+---------------------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-; Total    ; Incr    ; RF ; Type ; Fanout ; Location                  ; Element                                                                                                                                                                                                                                                                                                                                                                         ;
-+----------+---------+----+------+--------+---------------------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-; -1.250   ; -1.250  ;    ;      ;        ;                           ; latch edge time                                                                                                                                                                                                                                                                                                                                                                 ;
-; 0.752    ; 2.002   ;    ;      ;        ;                           ; clock path                                                                                                                                                                                                                                                                                                                                                                      ;
-;   -1.250 ;   0.000 ;    ;      ;        ;                           ; source latency                                                                                                                                                                                                                                                                                                                                                                  ;
-;   -1.250 ;   0.000 ;    ;      ; 1      ; PIN_N18                   ; HPS_DDR3_DQS_P[0]                                                                                                                                                                                                                                                                                                                                                               ;
-;   -1.250 ;   0.000 ; FF ; IC   ; 1      ; IOIBUF_X89_Y65_N4         ; u_soc|hps_0|hps_io|border|hps_sdram_inst|p0|umemphy|uio_pads|dq_ddio[0].ubidir_dq_dqs|altdq_dqs2_inst|strobe_in|i                                                                                                                                                                                                                                                               ;
-;   -0.647 ;   0.603 ; FF ; CELL ; 1      ; IOIBUF_X89_Y65_N4         ; u_soc|hps_0|hps_io|border|hps_sdram_inst|p0|umemphy|uio_pads|dq_ddio[0].ubidir_dq_dqs|altdq_dqs2_inst|strobe_in|o                                                                                                                                                                                                                                                               ;
-;   -0.647 ;   0.000 ; FF ; IC   ; 2      ; DQSDELAYCHAIN_X89_Y63_N21 ; u_soc|hps_0|hps_io|border|hps_sdram_inst|p0|umemphy|uio_pads|dq_ddio[0].ubidir_dq_dqs|altdq_dqs2_inst|dqs_delay_chain|dqsin                                                                                                                                                                                                                                                     ;
-;   -0.647 ;   0.000 ; FF ; CELL ; 1      ; DQSDELAYCHAIN_X89_Y63_N21 ; u_soc|hps_0|hps_io|border|hps_sdram_inst|p0|umemphy|uio_pads|dq_ddio[0].ubidir_dq_dqs|altdq_dqs2_inst|dqs_delay_chain|dqsbusout                                                                                                                                                                                                                                                 ;
-;   -0.647 ;   0.000 ; FF ; IC   ; 1      ; DELAYCHAIN_X89_Y63_N22    ; u_soc|hps_0|hps_io|border|hps_sdram_inst|p0|umemphy|uio_pads|dq_ddio[0].ubidir_dq_dqs|altdq_dqs2_inst|dqs_in_delay_1|datain                                                                                                                                                                                                                                                     ;
-;   -0.647 ;   0.000 ; FF ; CELL ; 16     ; DELAYCHAIN_X89_Y63_N22    ; u_soc|hps_0|hps_io|border|hps_sdram_inst|p0|umemphy|uio_pads|dq_ddio[0].ubidir_dq_dqs|altdq_dqs2_inst|dqs_in_delay_1|dataout                                                                                                                                                                                                                                                    ;
-;   -0.395 ;   0.252 ; FF ; IC   ; 2      ; DDIOINCELL_X89_Y66_N51    ; u_soc|hps_0|hps_io|border|hps_sdram_inst|p0|umemphy|uio_pads|dq_ddio[0].ubidir_dq_dqs|altdq_dqs2_inst|input_path_gen[2].capture_reg|clk                                                                                                                                                                                                                                         ;
-;   0.752  ;   1.147 ; FR ; CELL ; 1      ; DDIOINCELL_X89_Y66_N51    ; soc_system:u_soc|soc_system_hps_0:hps_0|soc_system_hps_0_hps_io:hps_io|soc_system_hps_0_hps_io_border:border|hps_sdram:hps_sdram_inst|hps_sdram_p0:p0|hps_sdram_p0_acv_hard_memphy:umemphy|hps_sdram_p0_acv_hard_io_pads:uio_pads|hps_sdram_p0_altdqdqs:dq_ddio[0].ubidir_dq_dqs|altdq_dqs2_acv_connect_to_hard_phy_cyclonev:altdq_dqs2_inst|input_path_gen[2].aligned_input[1] ;
-; 0.752    ; 0.000   ;    ;      ;        ;                           ; clock uncertainty                                                                                                                                                                                                                                                                                                                                                               ;
-; 0.752    ; 0.000   ;    ; uTh  ; 1      ; DDIOINCELL_X89_Y66_N51    ; soc_system:u_soc|soc_system_hps_0:hps_0|soc_system_hps_0_hps_io:hps_io|soc_system_hps_0_hps_io_border:border|hps_sdram:hps_sdram_inst|hps_sdram_p0:p0|hps_sdram_p0_acv_hard_memphy:umemphy|hps_sdram_p0_acv_hard_io_pads:uio_pads|hps_sdram_p0_altdqdqs:dq_ddio[0].ubidir_dq_dqs|altdq_dqs2_acv_connect_to_hard_phy_cyclonev:altdq_dqs2_inst|input_path_gen[2].aligned_input[1] ;
-+----------+---------+----+------+--------+---------------------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-
-----------------------------
-; Extra Fitter Information ;
-----------------------------
-HTML report is unavailable in plain text report export.
-
-
-
-Path #10: Hold slack is 0.511 
-===============================================================================
-+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-; Path Summary                                                                                                                                                                                                                                                                                                                                                                                          ;
-+---------------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-; Property            ; Value                                                                                                                                                                                                                                                                                                                                                                           ;
-+---------------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
 ; From Node           ; HPS_DDR3_DQ[7]                                                                                                                                                                                                                                                                                                                                                                  ;
 ; To Node             ; soc_system:u_soc|soc_system_hps_0:hps_0|soc_system_hps_0_hps_io:hps_io|soc_system_hps_0_hps_io_border:border|hps_sdram:hps_sdram_inst|hps_sdram_p0:p0|hps_sdram_p0_acv_hard_memphy:umemphy|hps_sdram_p0_acv_hard_io_pads:uio_pads|hps_sdram_p0_altdqdqs:dq_ddio[0].ubidir_dq_dqs|altdq_dqs2_acv_connect_to_hard_phy_cyclonev:altdq_dqs2_inst|input_path_gen[7].aligned_input[1] ;
 ; Launch Clock        ; HPS_DDR3_DQS_P[0]_IN                                                                                                                                                                                                                                                                                                                                                            ;
@@ -27293,6 +27207,92 @@ Note: Negative delays are omitted from totals when calculating percentages
 ;   0.752  ;   1.147 ; FR ; CELL ; 1      ; DDIOINCELL_X89_Y63_N108   ; soc_system:u_soc|soc_system_hps_0:hps_0|soc_system_hps_0_hps_io:hps_io|soc_system_hps_0_hps_io_border:border|hps_sdram:hps_sdram_inst|hps_sdram_p0:p0|hps_sdram_p0_acv_hard_memphy:umemphy|hps_sdram_p0_acv_hard_io_pads:uio_pads|hps_sdram_p0_altdqdqs:dq_ddio[0].ubidir_dq_dqs|altdq_dqs2_acv_connect_to_hard_phy_cyclonev:altdq_dqs2_inst|input_path_gen[7].aligned_input[1] ;
 ; 0.752    ; 0.000   ;    ;      ;        ;                           ; clock uncertainty                                                                                                                                                                                                                                                                                                                                                               ;
 ; 0.752    ; 0.000   ;    ; uTh  ; 1      ; DDIOINCELL_X89_Y63_N108   ; soc_system:u_soc|soc_system_hps_0:hps_0|soc_system_hps_0_hps_io:hps_io|soc_system_hps_0_hps_io_border:border|hps_sdram:hps_sdram_inst|hps_sdram_p0:p0|hps_sdram_p0_acv_hard_memphy:umemphy|hps_sdram_p0_acv_hard_io_pads:uio_pads|hps_sdram_p0_altdqdqs:dq_ddio[0].ubidir_dq_dqs|altdq_dqs2_acv_connect_to_hard_phy_cyclonev:altdq_dqs2_inst|input_path_gen[7].aligned_input[1] ;
++----------+---------+----+------+--------+---------------------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+
+----------------------------
+; Extra Fitter Information ;
+----------------------------
+HTML report is unavailable in plain text report export.
+
+
+
+Path #10: Hold slack is 0.511 
+===============================================================================
++-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+; Path Summary                                                                                                                                                                                                                                                                                                                                                                                          ;
++---------------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+; Property            ; Value                                                                                                                                                                                                                                                                                                                                                                           ;
++---------------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+; From Node           ; HPS_DDR3_DQ[2]                                                                                                                                                                                                                                                                                                                                                                  ;
+; To Node             ; soc_system:u_soc|soc_system_hps_0:hps_0|soc_system_hps_0_hps_io:hps_io|soc_system_hps_0_hps_io_border:border|hps_sdram:hps_sdram_inst|hps_sdram_p0:p0|hps_sdram_p0_acv_hard_memphy:umemphy|hps_sdram_p0_acv_hard_io_pads:uio_pads|hps_sdram_p0_altdqdqs:dq_ddio[0].ubidir_dq_dqs|altdq_dqs2_acv_connect_to_hard_phy_cyclonev:altdq_dqs2_inst|input_path_gen[2].aligned_input[1] ;
+; Launch Clock        ; HPS_DDR3_DQS_P[0]_IN                                                                                                                                                                                                                                                                                                                                                            ;
+; Latch Clock         ; HPS_DDR3_DQS_P[0]_IN (INVERTED)                                                                                                                                                                                                                                                                                                                                                 ;
+; Min Delay Exception ; -1.250                                                                                                                                                                                                                                                                                                                                                                          ;
+; Data Arrival Time   ; 1.263                                                                                                                                                                                                                                                                                                                                                                           ;
+; Data Required Time  ; 0.752                                                                                                                                                                                                                                                                                                                                                                           ;
+; Slack               ; 0.511                                                                                                                                                                                                                                                                                                                                                                           ;
++---------------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+
++------------------------------------------------------------------------------------------------+
+; Statistics                                                                                     ;
++------------------------------------+--------+-------+-------------+------------+-------+-------+
+; Property                           ; Value  ; Count ; Total Delay ; % of Total ; Min   ; Max   ;
++------------------------------------+--------+-------+-------------+------------+-------+-------+
+; Hold Relationship (from Min Delay) ; -1.250 ;       ;             ;            ;       ;       ;
+; Clock Skew                         ; 2.002  ;       ;             ;            ;       ;       ;
+; Data Delay                         ; 1.528  ;       ;             ;            ;       ;       ;
+; Number of Logic Levels             ;        ; 2     ;             ;            ;       ;       ;
+; Physical Delays                    ;        ;       ;             ;            ;       ;       ;
+;  Arrival Path                      ;        ;       ;             ;            ;       ;       ;
+;   Clock                            ;        ;       ;             ;            ;       ;       ;
+;    Clock Network (Lumped)          ;        ; 1     ; 0.000       ;            ; 0.000 ; 0.000 ;
+;   Data                             ;        ;       ;             ;            ;       ;       ;
+;    IC                              ;        ; 3     ; 0.000       ; 0          ; 0.000 ; 0.000 ;
+;    Cell                            ;        ; 3     ; 1.528       ; 100        ; 0.000 ; 1.021 ;
+;  Required Path                     ;        ;       ;             ;            ;       ;       ;
+;   Clock                            ;        ;       ;             ;            ;       ;       ;
+;    IC                              ;        ; 4     ; 0.252       ; 13         ; 0.000 ; 0.252 ;
+;    Cell                            ;        ; 4     ; 1.750       ; 87         ; 0.000 ; 1.147 ;
++------------------------------------+--------+-------+-------------+------------+-------+-------+
+Note: Negative delays are omitted from totals when calculating percentages
+
++----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+; Data Arrival Path                                                                                                                                                                                                                                                                                                                                                                                                                                  ;
++----------+---------+----+------+--------+------------------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+; Total    ; Incr    ; RF ; Type ; Fanout ; Location               ; Element                                                                                                                                                                                                                                                                                                                                                                         ;
++----------+---------+----+------+--------+------------------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+; 0.000    ; 0.000   ;    ;      ;        ;                        ; launch edge time                                                                                                                                                                                                                                                                                                                                                                ;
+; 0.000    ; 0.000   ;    ;      ;        ;                        ; clock path                                                                                                                                                                                                                                                                                                                                                                      ;
+;   0.000  ;   0.000 ; R  ;      ;        ;                        ; clock network delay                                                                                                                                                                                                                                                                                                                                                             ;
+; -0.265   ; -0.265  ; F  ; iExt ; 1      ; PIN_H30                ; HPS_DDR3_DQ[2]                                                                                                                                                                                                                                                                                                                                                                  ;
+; 1.263    ; 1.528   ;    ;      ;        ;                        ; data path                                                                                                                                                                                                                                                                                                                                                                       ;
+;   -0.265 ;   0.000 ; FF ; IC   ; 1      ; IOIBUF_X89_Y66_N38     ; u_soc|hps_0|hps_io|border|hps_sdram_inst|p0|umemphy|uio_pads|dq_ddio[0].ubidir_dq_dqs|altdq_dqs2_inst|pad_gen[2].data_in|i                                                                                                                                                                                                                                                      ;
+;   0.242  ;   0.507 ; FF ; CELL ; 1      ; IOIBUF_X89_Y66_N38     ; u_soc|hps_0|hps_io|border|hps_sdram_inst|p0|umemphy|uio_pads|dq_ddio[0].ubidir_dq_dqs|altdq_dqs2_inst|pad_gen[2].data_in|o                                                                                                                                                                                                                                                      ;
+;   0.242  ;   0.000 ; FF ; IC   ; 1      ; DELAYCHAIN_X89_Y66_N50 ; u_soc|hps_0|hps_io|border|hps_sdram_inst|p0|umemphy|uio_pads|dq_ddio[0].ubidir_dq_dqs|altdq_dqs2_inst|pad_gen[2].in_delay_1|datain                                                                                                                                                                                                                                              ;
+;   0.242  ;   0.000 ; FR ; CELL ; 1      ; DELAYCHAIN_X89_Y66_N50 ; u_soc|hps_0|hps_io|border|hps_sdram_inst|p0|umemphy|uio_pads|dq_ddio[0].ubidir_dq_dqs|altdq_dqs2_inst|pad_gen[2].in_delay_1|dataout                                                                                                                                                                                                                                             ;
+;   0.242  ;   0.000 ; RR ; IC   ; 2      ; DDIOINCELL_X89_Y66_N51 ; u_soc|hps_0|hps_io|border|hps_sdram_inst|p0|umemphy|uio_pads|dq_ddio[0].ubidir_dq_dqs|altdq_dqs2_inst|input_path_gen[2].capture_reg|datain                                                                                                                                                                                                                                      ;
+;   1.263  ;   1.021 ; RR ; CELL ; 1      ; DDIOINCELL_X89_Y66_N51 ; soc_system:u_soc|soc_system_hps_0:hps_0|soc_system_hps_0_hps_io:hps_io|soc_system_hps_0_hps_io_border:border|hps_sdram:hps_sdram_inst|hps_sdram_p0:p0|hps_sdram_p0_acv_hard_memphy:umemphy|hps_sdram_p0_acv_hard_io_pads:uio_pads|hps_sdram_p0_altdqdqs:dq_ddio[0].ubidir_dq_dqs|altdq_dqs2_acv_connect_to_hard_phy_cyclonev:altdq_dqs2_inst|input_path_gen[2].aligned_input[1] ;
++----------+---------+----+------+--------+------------------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+
++-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+; Data Required Path                                                                                                                                                                                                                                                                                                                                                                                                                                    ;
++----------+---------+----+------+--------+---------------------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+; Total    ; Incr    ; RF ; Type ; Fanout ; Location                  ; Element                                                                                                                                                                                                                                                                                                                                                                         ;
++----------+---------+----+------+--------+---------------------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+; -1.250   ; -1.250  ;    ;      ;        ;                           ; latch edge time                                                                                                                                                                                                                                                                                                                                                                 ;
+; 0.752    ; 2.002   ;    ;      ;        ;                           ; clock path                                                                                                                                                                                                                                                                                                                                                                      ;
+;   -1.250 ;   0.000 ;    ;      ;        ;                           ; source latency                                                                                                                                                                                                                                                                                                                                                                  ;
+;   -1.250 ;   0.000 ;    ;      ; 1      ; PIN_N18                   ; HPS_DDR3_DQS_P[0]                                                                                                                                                                                                                                                                                                                                                               ;
+;   -1.250 ;   0.000 ; FF ; IC   ; 1      ; IOIBUF_X89_Y65_N4         ; u_soc|hps_0|hps_io|border|hps_sdram_inst|p0|umemphy|uio_pads|dq_ddio[0].ubidir_dq_dqs|altdq_dqs2_inst|strobe_in|i                                                                                                                                                                                                                                                               ;
+;   -0.647 ;   0.603 ; FF ; CELL ; 1      ; IOIBUF_X89_Y65_N4         ; u_soc|hps_0|hps_io|border|hps_sdram_inst|p0|umemphy|uio_pads|dq_ddio[0].ubidir_dq_dqs|altdq_dqs2_inst|strobe_in|o                                                                                                                                                                                                                                                               ;
+;   -0.647 ;   0.000 ; FF ; IC   ; 2      ; DQSDELAYCHAIN_X89_Y63_N21 ; u_soc|hps_0|hps_io|border|hps_sdram_inst|p0|umemphy|uio_pads|dq_ddio[0].ubidir_dq_dqs|altdq_dqs2_inst|dqs_delay_chain|dqsin                                                                                                                                                                                                                                                     ;
+;   -0.647 ;   0.000 ; FF ; CELL ; 1      ; DQSDELAYCHAIN_X89_Y63_N21 ; u_soc|hps_0|hps_io|border|hps_sdram_inst|p0|umemphy|uio_pads|dq_ddio[0].ubidir_dq_dqs|altdq_dqs2_inst|dqs_delay_chain|dqsbusout                                                                                                                                                                                                                                                 ;
+;   -0.647 ;   0.000 ; FF ; IC   ; 1      ; DELAYCHAIN_X89_Y63_N22    ; u_soc|hps_0|hps_io|border|hps_sdram_inst|p0|umemphy|uio_pads|dq_ddio[0].ubidir_dq_dqs|altdq_dqs2_inst|dqs_in_delay_1|datain                                                                                                                                                                                                                                                     ;
+;   -0.647 ;   0.000 ; FF ; CELL ; 16     ; DELAYCHAIN_X89_Y63_N22    ; u_soc|hps_0|hps_io|border|hps_sdram_inst|p0|umemphy|uio_pads|dq_ddio[0].ubidir_dq_dqs|altdq_dqs2_inst|dqs_in_delay_1|dataout                                                                                                                                                                                                                                                    ;
+;   -0.395 ;   0.252 ; FF ; IC   ; 2      ; DDIOINCELL_X89_Y66_N51    ; u_soc|hps_0|hps_io|border|hps_sdram_inst|p0|umemphy|uio_pads|dq_ddio[0].ubidir_dq_dqs|altdq_dqs2_inst|input_path_gen[2].capture_reg|clk                                                                                                                                                                                                                                         ;
+;   0.752  ;   1.147 ; FR ; CELL ; 1      ; DDIOINCELL_X89_Y66_N51    ; soc_system:u_soc|soc_system_hps_0:hps_0|soc_system_hps_0_hps_io:hps_io|soc_system_hps_0_hps_io_border:border|hps_sdram:hps_sdram_inst|hps_sdram_p0:p0|hps_sdram_p0_acv_hard_memphy:umemphy|hps_sdram_p0_acv_hard_io_pads:uio_pads|hps_sdram_p0_altdqdqs:dq_ddio[0].ubidir_dq_dqs|altdq_dqs2_acv_connect_to_hard_phy_cyclonev:altdq_dqs2_inst|input_path_gen[2].aligned_input[1] ;
+; 0.752    ; 0.000   ;    ;      ;        ;                           ; clock uncertainty                                                                                                                                                                                                                                                                                                                                                               ;
+; 0.752    ; 0.000   ;    ; uTh  ; 1      ; DDIOINCELL_X89_Y66_N51    ; soc_system:u_soc|soc_system_hps_0:hps_0|soc_system_hps_0_hps_io:hps_io|soc_system_hps_0_hps_io_border:border|hps_sdram:hps_sdram_inst|hps_sdram_p0:p0|hps_sdram_p0_acv_hard_memphy:umemphy|hps_sdram_p0_acv_hard_io_pads:uio_pads|hps_sdram_p0_altdqdqs:dq_ddio[0].ubidir_dq_dqs|altdq_dqs2_acv_connect_to_hard_phy_cyclonev:altdq_dqs2_inst|input_path_gen[2].aligned_input[1] ;
 +----------+---------+----+------+--------+---------------------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
 
 ----------------------------
@@ -34803,11 +34803,11 @@ HTML report is unavailable in plain text report export.
 +---------------------------------------------------------------------------------------------------------------------------------------------------------------------------+--------+---------------+
 ; Clock                                                                                                                                                                     ; Slack  ; End Point TNS ;
 +---------------------------------------------------------------------------------------------------------------------------------------------------------------------------+--------+---------------+
-; u_soc|pll_0|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                        ; -4.530 ; -71.691       ;
-; sdram_clk_pin                                                                                                                                                             ; 1.500  ; 0.000         ;
+; u_soc|pll_0|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                        ; -4.544 ; -71.878       ;
+; sdram_clk_pin                                                                                                                                                             ; 1.510  ; 0.000         ;
 ; soc_system:u_soc|soc_system_hps_0:hps_0|soc_system_hps_0_hps_io:hps_io|soc_system_hps_0_hps_io_border:border|hps_sdram:hps_sdram_inst|hps_sdram_pll:pll|afi_clk_write_clk ; 2.110  ; 0.000         ;
-; u_soc|pll_0|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                        ; 7.648  ; 0.000         ;
-; vga_clk_pin                                                                                                                                                               ; 32.919 ; 0.000         ;
+; u_soc|pll_0|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                        ; 7.356  ; 0.000         ;
+; vga_clk_pin                                                                                                                                                               ; 31.985 ; 0.000         ;
 +---------------------------------------------------------------------------------------------------------------------------------------------------------------------------+--------+---------------+
 
 
@@ -34817,10 +34817,10 @@ HTML report is unavailable in plain text report export.
 ; Clock                                                                                                                                                                     ; Slack ; End Point TNS ;
 +---------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-------+---------------+
 ; soc_system:u_soc|soc_system_hps_0:hps_0|soc_system_hps_0_hps_io:hps_io|soc_system_hps_0_hps_io_border:border|hps_sdram:hps_sdram_inst|hps_sdram_pll:pll|afi_clk_write_clk ; 0.077 ; 0.000         ;
-; u_soc|pll_0|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                        ; 0.123 ; 0.000         ;
-; u_soc|pll_0|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                        ; 0.159 ; 0.000         ;
-; vga_clk_pin                                                                                                                                                               ; 0.658 ; 0.000         ;
-; sdram_clk_pin                                                                                                                                                             ; 3.838 ; 0.000         ;
+; u_soc|pll_0|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                        ; 0.125 ; 0.000         ;
+; u_soc|pll_0|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                        ; 0.171 ; 0.000         ;
+; vga_clk_pin                                                                                                                                                               ; 0.612 ; 0.000         ;
+; sdram_clk_pin                                                                                                                                                             ; 3.818 ; 0.000         ;
 +---------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-------+---------------+
 
 
@@ -34830,8 +34830,8 @@ HTML report is unavailable in plain text report export.
 ; Clock                                                                                                                                                                     ; Slack  ; End Point TNS ;
 +---------------------------------------------------------------------------------------------------------------------------------------------------------------------------+--------+---------------+
 ; soc_system:u_soc|soc_system_hps_0:hps_0|soc_system_hps_0_hps_io:hps_io|soc_system_hps_0_hps_io_border:border|hps_sdram:hps_sdram_inst|hps_sdram_pll:pll|afi_clk_write_clk ; 3.825  ; 0.000         ;
-; u_soc|pll_0|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                        ; 7.149  ; 0.000         ;
-; u_soc|pll_0|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                        ; 37.639 ; 0.000         ;
+; u_soc|pll_0|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                        ; 6.258  ; 0.000         ;
+; u_soc|pll_0|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                        ; 37.433 ; 0.000         ;
 +---------------------------------------------------------------------------------------------------------------------------------------------------------------------------+--------+---------------+
 
 
@@ -34840,9 +34840,9 @@ HTML report is unavailable in plain text report export.
 +---------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-------+---------------+
 ; Clock                                                                                                                                                                     ; Slack ; End Point TNS ;
 +---------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-------+---------------+
-; u_soc|pll_0|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                        ; 0.113 ; 0.000         ;
+; u_soc|pll_0|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                        ; 0.400 ; 0.000         ;
 ; soc_system:u_soc|soc_system_hps_0:hps_0|soc_system_hps_0_hps_io:hps_io|soc_system_hps_0_hps_io_border:border|hps_sdram:hps_sdram_inst|hps_sdram_pll:pll|afi_clk_write_clk ; 0.473 ; 0.000         ;
-; u_soc|pll_0|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                        ; 0.679 ; 0.000         ;
+; u_soc|pll_0|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                        ; 0.489 ; 0.000         ;
 +---------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-------+---------------+
 
 
@@ -34857,7 +34857,7 @@ HTML report is unavailable in plain text report export.
 ; u_soc|pll_0|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                                 ; 3.881  ; 0.000         ;
 ; u_soc|pll_0|altera_pll_i|general[1].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                                 ; 4.903  ; 0.000         ;
 ; CLOCK_50                                                                                                                                                                           ; 9.286  ; 0.000         ;
-; u_soc|pll_0|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                                 ; 18.887 ; 0.000         ;
+; u_soc|pll_0|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                                 ; 18.888 ; 0.000         ;
 +------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+--------+---------------+
 
 
@@ -34868,7 +34868,7 @@ The design MTBF is not calculated because there are no specified synchronizers i
 Number of Synchronizer Chains Found: 1
 Shortest Synchronizer Chain: 3 Registers
 Fraction of Chains for which MTBFs Could Not be Calculated: 1.000
-Worst Case Available Settling Time: 27.108 ns
+Worst Case Available Settling Time: 27.306 ns
 
 
 
@@ -46144,23 +46144,23 @@ HTML report is unavailable in plain text report export.
 +-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+----------+-------+----------+---------+---------------------+
 ; Clock                                                                                                                                                                               ; Setup    ; Hold  ; Recovery ; Removal ; Minimum Pulse Width ;
 +-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+----------+-------+----------+---------+---------------------+
-; Worst-case Slack                                                                                                                                                                    ; -7.297   ; 0.077 ; 3.375    ; 0.113   ; 0.608               ;
+; Worst-case Slack                                                                                                                                                                    ; -7.307   ; 0.077 ; 3.375    ; 0.400   ; 0.608               ;
 ;  CLOCK_50                                                                                                                                                                           ; N/A      ; N/A   ; N/A      ; N/A     ; 9.286               ;
-;  sdram_clk_pin                                                                                                                                                                      ; 1.018    ; 2.723 ; N/A      ; N/A     ; N/A                 ;
+;  sdram_clk_pin                                                                                                                                                                      ; 1.035    ; 2.669 ; N/A      ; N/A     ; N/A                 ;
 ;  soc_system:u_soc|soc_system_hps_0:hps_0|soc_system_hps_0_hps_io:hps_io|soc_system_hps_0_hps_io_border:border|hps_sdram:hps_sdram_inst|hps_sdram_pll:pll|afi_clk_write_clk          ; 1.727    ; 0.077 ; 3.375    ; 0.460   ; 0.623               ;
 ;  soc_system:u_soc|soc_system_hps_0:hps_0|soc_system_hps_0_hps_io:hps_io|soc_system_hps_0_hps_io_border:border|hps_sdram:hps_sdram_inst|hps_sdram_pll:pll|pll_write_clk_dq_write_clk ; N/A      ; N/A   ; N/A      ; N/A     ; 0.608               ;
 ;  u_soc|pll_0|altera_pll_i|general[0].gpll~FRACTIONAL_PLL|vcoph[0]                                                                                                                   ; N/A      ; N/A   ; N/A      ; N/A     ; 1.666               ;
-;  u_soc|pll_0|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                                 ; -7.297   ; 0.123 ; 4.725    ; 0.113   ; 3.736               ;
+;  u_soc|pll_0|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                                 ; -7.307   ; 0.125 ; 3.797    ; 0.400   ; 3.736               ;
 ;  u_soc|pll_0|altera_pll_i|general[1].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                                 ; N/A      ; N/A   ; N/A      ; N/A     ; 4.813               ;
-;  u_soc|pll_0|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                                 ; 6.085    ; 0.159 ; 35.646   ; 0.679   ; 18.753              ;
-;  vga_clk_pin                                                                                                                                                                        ; 28.585   ; 0.658 ; N/A      ; N/A     ; N/A                 ;
-; Design-wide TNS                                                                                                                                                                     ; -370.375 ; 0.0   ; 0.0      ; 0.0     ; 0.0                 ;
+;  u_soc|pll_0|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                                 ; 5.764    ; 0.171 ; 35.179   ; 0.489   ; 18.755              ;
+;  vga_clk_pin                                                                                                                                                                        ; 27.425   ; 0.612 ; N/A      ; N/A     ; N/A                 ;
+; Design-wide TNS                                                                                                                                                                     ; -116.661 ; 0.0   ; 0.0      ; 0.0     ; 0.0                 ;
 ;  CLOCK_50                                                                                                                                                                           ; N/A      ; N/A   ; N/A      ; N/A     ; 0.000               ;
 ;  sdram_clk_pin                                                                                                                                                                      ; 0.000    ; 0.000 ; N/A      ; N/A     ; N/A                 ;
 ;  soc_system:u_soc|soc_system_hps_0:hps_0|soc_system_hps_0_hps_io:hps_io|soc_system_hps_0_hps_io_border:border|hps_sdram:hps_sdram_inst|hps_sdram_pll:pll|afi_clk_write_clk          ; 0.000    ; 0.000 ; 0.000    ; 0.000   ; 0.000               ;
 ;  soc_system:u_soc|soc_system_hps_0:hps_0|soc_system_hps_0_hps_io:hps_io|soc_system_hps_0_hps_io_border:border|hps_sdram:hps_sdram_inst|hps_sdram_pll:pll|pll_write_clk_dq_write_clk ; N/A      ; N/A   ; N/A      ; N/A     ; 0.000               ;
 ;  u_soc|pll_0|altera_pll_i|general[0].gpll~FRACTIONAL_PLL|vcoph[0]                                                                                                                   ; N/A      ; N/A   ; N/A      ; N/A     ; 0.000               ;
-;  u_soc|pll_0|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                                 ; -370.375 ; 0.000 ; 0.000    ; 0.000   ; 0.000               ;
+;  u_soc|pll_0|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                                 ; -116.661 ; 0.000 ; 0.000    ; 0.000   ; 0.000               ;
 ;  u_soc|pll_0|altera_pll_i|general[1].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                                 ; N/A      ; N/A   ; N/A      ; N/A     ; 0.000               ;
 ;  u_soc|pll_0|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                                 ; 0.000    ; 0.000 ; 0.000    ; 0.000   ; 0.000               ;
 ;  vga_clk_pin                                                                                                                                                                        ; 0.000    ; 0.000 ; N/A      ; N/A     ; N/A                 ;
@@ -47144,10 +47144,10 @@ HTML report is unavailable in plain text report export.
 ; soc_system:u_soc|soc_system_hps_0:hps_0|soc_system_hps_0_hps_io:hps_io|soc_system_hps_0_hps_io_border:border|hps_sdram:hps_sdram_inst|hps_sdram_pll:pll|afi_clk_write_clk          ; soc_system:u_soc|soc_system_hps_0:hps_0|soc_system_hps_0_hps_io:hps_io|soc_system_hps_0_hps_io_border:border|hps_sdram:hps_sdram_inst|hps_sdram_pll:pll|afi_clk_write_clk          ; 402      ; 0        ; 50       ; 0        ;
 ; soc_system:u_soc|soc_system_hps_0:hps_0|soc_system_hps_0_hps_io:hps_io|soc_system_hps_0_hps_io_border:border|hps_sdram:hps_sdram_inst|hps_sdram_pll:pll|afi_clk_write_clk          ; soc_system:u_soc|soc_system_hps_0:hps_0|soc_system_hps_0_hps_io:hps_io|soc_system_hps_0_hps_io_border:border|hps_sdram:hps_sdram_inst|hps_sdram_pll:pll|pll_write_clk_dq_write_clk ; 72       ; 0        ; 0        ; 0        ;
 ; sdram_clk_pin                                                                                                                                                                      ; u_soc|pll_0|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                                 ; 16       ; 0        ; 0        ; 0        ;
-; u_soc|pll_0|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                                 ; u_soc|pll_0|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                                 ; 83751981 ; 0        ; 0        ; 0        ;
+; u_soc|pll_0|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                                 ; u_soc|pll_0|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                                 ; 73869461 ; 0        ; 0        ; 0        ;
 ; u_soc|pll_0|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                                 ; u_soc|pll_0|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                                 ; 733      ; 0        ; 0        ; 0        ;
 ; u_soc|pll_0|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                                 ; u_soc|pll_0|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                                 ; 27       ; 0        ; 0        ; 0        ;
-; u_soc|pll_0|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                                 ; u_soc|pll_0|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                                 ; 5925     ; 0        ; 0        ; 0        ;
+; u_soc|pll_0|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                                 ; u_soc|pll_0|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                                 ; 5647     ; 0        ; 0        ; 0        ;
 ; u_soc|pll_0|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                                 ; vga_clk_pin                                                                                                                                                                        ; 75       ; 0        ; 0        ; 0        ;
 +------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+----------+----------+----------+----------+
 Entries labeled "false path" only account for clock-to-clock false paths and not path-based false paths. As a result, actual path counts may be lower than reported.
@@ -47187,10 +47187,10 @@ Entries labeled "false path" only account for clock-to-clock false paths and not
 ; soc_system:u_soc|soc_system_hps_0:hps_0|soc_system_hps_0_hps_io:hps_io|soc_system_hps_0_hps_io_border:border|hps_sdram:hps_sdram_inst|hps_sdram_pll:pll|afi_clk_write_clk          ; soc_system:u_soc|soc_system_hps_0:hps_0|soc_system_hps_0_hps_io:hps_io|soc_system_hps_0_hps_io_border:border|hps_sdram:hps_sdram_inst|hps_sdram_pll:pll|afi_clk_write_clk          ; 402      ; 0        ; 50       ; 0        ;
 ; soc_system:u_soc|soc_system_hps_0:hps_0|soc_system_hps_0_hps_io:hps_io|soc_system_hps_0_hps_io_border:border|hps_sdram:hps_sdram_inst|hps_sdram_pll:pll|afi_clk_write_clk          ; soc_system:u_soc|soc_system_hps_0:hps_0|soc_system_hps_0_hps_io:hps_io|soc_system_hps_0_hps_io_border:border|hps_sdram:hps_sdram_inst|hps_sdram_pll:pll|pll_write_clk_dq_write_clk ; 72       ; 0        ; 0        ; 0        ;
 ; sdram_clk_pin                                                                                                                                                                      ; u_soc|pll_0|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                                 ; 16       ; 0        ; 0        ; 0        ;
-; u_soc|pll_0|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                                 ; u_soc|pll_0|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                                 ; 83751981 ; 0        ; 0        ; 0        ;
+; u_soc|pll_0|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                                 ; u_soc|pll_0|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                                 ; 73869461 ; 0        ; 0        ; 0        ;
 ; u_soc|pll_0|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                                 ; u_soc|pll_0|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                                 ; 733      ; 0        ; 0        ; 0        ;
 ; u_soc|pll_0|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                                 ; u_soc|pll_0|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                                 ; 27       ; 0        ; 0        ; 0        ;
-; u_soc|pll_0|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                                 ; u_soc|pll_0|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                                 ; 5925     ; 0        ; 0        ; 0        ;
+; u_soc|pll_0|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                                 ; u_soc|pll_0|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                                 ; 5647     ; 0        ; 0        ; 0        ;
 ; u_soc|pll_0|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                                 ; vga_clk_pin                                                                                                                                                                        ; 75       ; 0        ; 0        ; 0        ;
 +------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+----------+----------+----------+----------+
 Entries labeled "false path" only account for clock-to-clock false paths and not path-based false paths. As a result, actual path counts may be lower than reported.
@@ -47210,8 +47210,8 @@ Entries labeled "false path" only account for clock-to-clock false paths and not
 ; soc_system:u_soc|soc_system_hps_0:hps_0|soc_system_hps_0_hps_io:hps_io|soc_system_hps_0_hps_io_border:border|hps_sdram:hps_sdram_inst|hps_sdram_pll:pll|afi_clk_write_clk ; HPS_DDR3_DQS_P[3]_IN                                                                                                                                                      ; 0        ; 0        ; inactive ; 0        ;
 ; soc_system:u_soc|soc_system_hps_0:hps_0|soc_system_hps_0_hps_io:hps_io|soc_system_hps_0_hps_io_border:border|hps_sdram:hps_sdram_inst|hps_sdram_pll:pll|afi_clk_write_clk ; HPS_DDR3_DQS_P[3]_OUT                                                                                                                                                     ; 0        ; 0        ; inactive ; 0        ;
 ; soc_system:u_soc|soc_system_hps_0:hps_0|soc_system_hps_0_hps_io:hps_io|soc_system_hps_0_hps_io_border:border|hps_sdram:hps_sdram_inst|hps_sdram_pll:pll|afi_clk_write_clk ; soc_system:u_soc|soc_system_hps_0:hps_0|soc_system_hps_0_hps_io:hps_io|soc_system_hps_0_hps_io_border:border|hps_sdram:hps_sdram_inst|hps_sdram_pll:pll|afi_clk_write_clk ; 42       ; 0        ; 0        ; 0        ;
-; u_soc|pll_0|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                        ; u_soc|pll_0|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                        ; 32736    ; 0        ; 0        ; 0        ;
-; u_soc|pll_0|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                        ; u_soc|pll_0|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                        ; 1870     ; 0        ; 0        ; 0        ;
+; u_soc|pll_0|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                        ; u_soc|pll_0|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                        ; 32744    ; 0        ; 0        ; 0        ;
+; u_soc|pll_0|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                        ; u_soc|pll_0|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                        ; 1760     ; 0        ; 0        ; 0        ;
 +---------------------------------------------------------------------------------------------------------------------------------------------------------------------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------+----------+----------+----------+----------+
 Entries labeled "false path" only account for clock-to-clock false paths and not path-based false paths. As a result, actual path counts may be lower than reported.
 
@@ -47230,8 +47230,8 @@ Entries labeled "false path" only account for clock-to-clock false paths and not
 ; soc_system:u_soc|soc_system_hps_0:hps_0|soc_system_hps_0_hps_io:hps_io|soc_system_hps_0_hps_io_border:border|hps_sdram:hps_sdram_inst|hps_sdram_pll:pll|afi_clk_write_clk ; HPS_DDR3_DQS_P[3]_IN                                                                                                                                                      ; 0        ; 0        ; inactive ; 0        ;
 ; soc_system:u_soc|soc_system_hps_0:hps_0|soc_system_hps_0_hps_io:hps_io|soc_system_hps_0_hps_io_border:border|hps_sdram:hps_sdram_inst|hps_sdram_pll:pll|afi_clk_write_clk ; HPS_DDR3_DQS_P[3]_OUT                                                                                                                                                     ; 0        ; 0        ; inactive ; 0        ;
 ; soc_system:u_soc|soc_system_hps_0:hps_0|soc_system_hps_0_hps_io:hps_io|soc_system_hps_0_hps_io_border:border|hps_sdram:hps_sdram_inst|hps_sdram_pll:pll|afi_clk_write_clk ; soc_system:u_soc|soc_system_hps_0:hps_0|soc_system_hps_0_hps_io:hps_io|soc_system_hps_0_hps_io_border:border|hps_sdram:hps_sdram_inst|hps_sdram_pll:pll|afi_clk_write_clk ; 42       ; 0        ; 0        ; 0        ;
-; u_soc|pll_0|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                        ; u_soc|pll_0|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                        ; 32736    ; 0        ; 0        ; 0        ;
-; u_soc|pll_0|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                        ; u_soc|pll_0|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                        ; 1870     ; 0        ; 0        ; 0        ;
+; u_soc|pll_0|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                        ; u_soc|pll_0|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                        ; 32744    ; 0        ; 0        ; 0        ;
+; u_soc|pll_0|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                        ; u_soc|pll_0|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk                                                                                                        ; 1760     ; 0        ; 0        ; 0        ;
 +---------------------------------------------------------------------------------------------------------------------------------------------------------------------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------+----------+----------+----------+----------+
 Entries labeled "false path" only account for clock-to-clock false paths and not path-based false paths. As a result, actual path counts may be lower than reported.
 
@@ -47391,7 +47391,7 @@ No non-DPA dedicated SERDES Receiver circuitry present in device or used in desi
 Info: *******************************************************************
 Info: Running Quartus Prime Timing Analyzer
     Info: Version 18.1.0 Build 625 09/12/2018 SJ Lite Edition
-    Info: Processing started: Mon Oct 26 21:14:25 2026
+    Info: Processing started: Mon Oct 26 21:43:59 2026
 Info: Command: quartus_sta Acelerador_Grafico -c Acelerador_Grafico
 Info: qsta_default_script.tcl version: #1
 Warning (18236): Number of processors has not been specified which may cause overloading on shared machines.  Set the global assignment NUM_PARALLEL_PROCESSORS in your QSF to an appropriate value for best performance.
@@ -47602,50 +47602,50 @@ Info: Found TIMING_ANALYZER_REPORT_SCRIPT_INCLUDE_DEFAULT_ANALYSIS = ON
 Info: Analyzing Slow 1100mV 85C Model
 Critical Warning (332148): Timing requirements not met
     Info (11105): For recommendations on closing timing, run Report Timing Closure Recommendations in the Timing Analyzer.
-Info (332146): Worst-case setup slack is -7.297
+Info (332146): Worst-case setup slack is -7.307
     Info (332119):     Slack       End Point TNS Clock 
     Info (332119): ========= =================== =====================
-    Info (332119):    -7.297            -370.375 u_soc|pll_0|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk 
-    Info (332119):     1.018               0.000 sdram_clk_pin 
+    Info (332119):    -7.307            -116.661 u_soc|pll_0|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk 
+    Info (332119):     1.035               0.000 sdram_clk_pin 
     Info (332119):     1.730               0.000 soc_system:u_soc|soc_system_hps_0:hps_0|soc_system_hps_0_hps_io:hps_io|soc_system_hps_0_hps_io_border:border|hps_sdram:hps_sdram_inst|hps_sdram_pll:pll|afi_clk_write_clk 
-    Info (332119):     6.085               0.000 u_soc|pll_0|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk 
-    Info (332119):    28.585               0.000 vga_clk_pin 
+    Info (332119):     5.764               0.000 u_soc|pll_0|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk 
+    Info (332119):    27.425               0.000 vga_clk_pin 
 Info (332146): Worst-case hold slack is 0.143
     Info (332119):     Slack       End Point TNS Clock 
     Info (332119): ========= =================== =====================
     Info (332119):     0.143               0.000 soc_system:u_soc|soc_system_hps_0:hps_0|soc_system_hps_0_hps_io:hps_io|soc_system_hps_0_hps_io_border:border|hps_sdram:hps_sdram_inst|hps_sdram_pll:pll|afi_clk_write_clk 
-    Info (332119):     0.226               0.000 u_soc|pll_0|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk 
-    Info (332119):     0.358               0.000 u_soc|pll_0|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk 
-    Info (332119):     2.183               0.000 vga_clk_pin 
-    Info (332119):     2.723               0.000 sdram_clk_pin 
+    Info (332119):     0.229               0.000 u_soc|pll_0|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk 
+    Info (332119):     0.365               0.000 u_soc|pll_0|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk 
+    Info (332119):     2.156               0.000 vga_clk_pin 
+    Info (332119):     2.669               0.000 sdram_clk_pin 
 Info (332146): Worst-case recovery slack is 3.375
     Info (332119):     Slack       End Point TNS Clock 
     Info (332119): ========= =================== =====================
     Info (332119):     3.375               0.000 soc_system:u_soc|soc_system_hps_0:hps_0|soc_system_hps_0_hps_io:hps_io|soc_system_hps_0_hps_io_border:border|hps_sdram:hps_sdram_inst|hps_sdram_pll:pll|afi_clk_write_clk 
-    Info (332119):     4.725               0.000 u_soc|pll_0|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk 
-    Info (332119):    35.646               0.000 u_soc|pll_0|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk 
-Info (332146): Worst-case removal slack is 0.290
+    Info (332119):     3.797               0.000 u_soc|pll_0|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk 
+    Info (332119):    35.179               0.000 u_soc|pll_0|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk 
+Info (332146): Worst-case removal slack is 0.470
     Info (332119):     Slack       End Point TNS Clock 
     Info (332119): ========= =================== =====================
-    Info (332119):     0.290               0.000 u_soc|pll_0|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk 
     Info (332119):     0.470               0.000 soc_system:u_soc|soc_system_hps_0:hps_0|soc_system_hps_0_hps_io:hps_io|soc_system_hps_0_hps_io_border:border|hps_sdram:hps_sdram_inst|hps_sdram_pll:pll|afi_clk_write_clk 
-    Info (332119):     1.349               0.000 u_soc|pll_0|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk 
+    Info (332119):     0.740               0.000 u_soc|pll_0|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk 
+    Info (332119):     1.000               0.000 u_soc|pll_0|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk 
 Info (332146): Worst-case minimum pulse width slack is 0.608
     Info (332119):     Slack       End Point TNS Clock 
     Info (332119): ========= =================== =====================
     Info (332119):     0.608               0.000 soc_system:u_soc|soc_system_hps_0:hps_0|soc_system_hps_0_hps_io:hps_io|soc_system_hps_0_hps_io_border:border|hps_sdram:hps_sdram_inst|hps_sdram_pll:pll|pll_write_clk_dq_write_clk 
     Info (332119):     0.623               0.000 soc_system:u_soc|soc_system_hps_0:hps_0|soc_system_hps_0_hps_io:hps_io|soc_system_hps_0_hps_io_border:border|hps_sdram:hps_sdram_inst|hps_sdram_pll:pll|afi_clk_write_clk 
     Info (332119):     1.666               0.000 u_soc|pll_0|altera_pll_i|general[0].gpll~FRACTIONAL_PLL|vcoph[0] 
-    Info (332119):     3.757               0.000 u_soc|pll_0|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk 
+    Info (332119):     3.758               0.000 u_soc|pll_0|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk 
     Info (332119):     4.847               0.000 u_soc|pll_0|altera_pll_i|general[1].gpll~PLL_OUTPUT_COUNTER|divclk 
     Info (332119):     9.670               0.000 CLOCK_50 
-    Info (332119):    18.776               0.000 u_soc|pll_0|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk 
+    Info (332119):    18.772               0.000 u_soc|pll_0|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk 
 Info (332114): Report Metastability: Found 1 synchronizer chains.
     Info (332114): The design MTBF is not calculated because there are no specified synchronizers in the design.
     Info (332114): Number of Synchronizer Chains Found: 1
     Info (332114): Shortest Synchronizer Chain: 3 Registers
     Info (332114): Fraction of Chains for which MTBFs Could Not be Calculated: 1.000
-    Info (332114): Worst Case Available Settling Time: 24.690 ns
+    Info (332114): Worst Case Available Settling Time: 24.969 ns
     Info (332114): 
 Info: Initializing DDR database for CORE hps_sdram_p0
 Info: Finding port-to-pin mapping for CORE: hps_sdram_p0 INSTANCE: u_soc|hps_0|hps_io|border|hps_sdram_inst
@@ -47779,34 +47779,34 @@ Info (332171): The following clock uncertainty values are less than the recommen
     Info (332172): Hold clock transfer from soc_system:u_soc|soc_system_hps_0:hps_0|soc_system_hps_0_hps_io:hps_io|soc_system_hps_0_hps_io_border:border|hps_sdram:hps_sdram_inst|hps_sdram_pll:pll|pll_write_clk_dq_write_clk (Fall) to HPS_DDR3_DQS_N[3]_OUT (Rise) has uncertainty 0.000 that is less than the recommended uncertainty 0.210
 Critical Warning (332148): Timing requirements not met
     Info (11105): For recommendations on closing timing, run Report Timing Closure Recommendations in the Timing Analyzer.
-Info (332146): Worst-case setup slack is -7.017
+Info (332146): Worst-case setup slack is -7.015
     Info (332119):     Slack       End Point TNS Clock 
     Info (332119): ========= =================== =====================
-    Info (332119):    -7.017            -257.130 u_soc|pll_0|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk 
-    Info (332119):     1.058               0.000 sdram_clk_pin 
+    Info (332119):    -7.015            -110.793 u_soc|pll_0|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk 
+    Info (332119):     1.079               0.000 sdram_clk_pin 
     Info (332119):     1.727               0.000 soc_system:u_soc|soc_system_hps_0:hps_0|soc_system_hps_0_hps_io:hps_io|soc_system_hps_0_hps_io_border:border|hps_sdram:hps_sdram_inst|hps_sdram_pll:pll|afi_clk_write_clk 
-    Info (332119):     6.236               0.000 u_soc|pll_0|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk 
-    Info (332119):    28.975               0.000 vga_clk_pin 
+    Info (332119):     5.962               0.000 u_soc|pll_0|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk 
+    Info (332119):    27.856               0.000 vga_clk_pin 
 Info (332146): Worst-case hold slack is 0.162
     Info (332119):     Slack       End Point TNS Clock 
     Info (332119): ========= =================== =====================
     Info (332119):     0.162               0.000 soc_system:u_soc|soc_system_hps_0:hps_0|soc_system_hps_0_hps_io:hps_io|soc_system_hps_0_hps_io_border:border|hps_sdram:hps_sdram_inst|hps_sdram_pll:pll|afi_clk_write_clk 
-    Info (332119):     0.217               0.000 u_soc|pll_0|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk 
-    Info (332119):     0.345               0.000 u_soc|pll_0|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk 
-    Info (332119):     1.896               0.000 vga_clk_pin 
-    Info (332119):     2.809               0.000 sdram_clk_pin 
+    Info (332119):     0.168               0.000 u_soc|pll_0|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk 
+    Info (332119):     0.325               0.000 u_soc|pll_0|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk 
+    Info (332119):     1.826               0.000 vga_clk_pin 
+    Info (332119):     2.776               0.000 sdram_clk_pin 
 Info (332146): Worst-case recovery slack is 3.468
     Info (332119):     Slack       End Point TNS Clock 
     Info (332119): ========= =================== =====================
     Info (332119):     3.468               0.000 soc_system:u_soc|soc_system_hps_0:hps_0|soc_system_hps_0_hps_io:hps_io|soc_system_hps_0_hps_io_border:border|hps_sdram:hps_sdram_inst|hps_sdram_pll:pll|afi_clk_write_clk 
-    Info (332119):     4.819               0.000 u_soc|pll_0|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk 
-    Info (332119):    35.692               0.000 u_soc|pll_0|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk 
-Info (332146): Worst-case removal slack is 0.180
+    Info (332119):     4.091               0.000 u_soc|pll_0|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk 
+    Info (332119):    35.263               0.000 u_soc|pll_0|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk 
+Info (332146): Worst-case removal slack is 0.460
     Info (332119):     Slack       End Point TNS Clock 
     Info (332119): ========= =================== =====================
-    Info (332119):     0.180               0.000 u_soc|pll_0|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk 
     Info (332119):     0.460               0.000 soc_system:u_soc|soc_system_hps_0:hps_0|soc_system_hps_0_hps_io:hps_io|soc_system_hps_0_hps_io_border:border|hps_sdram:hps_sdram_inst|hps_sdram_pll:pll|afi_clk_write_clk 
-    Info (332119):     1.265               0.000 u_soc|pll_0|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk 
+    Info (332119):     0.639               0.000 u_soc|pll_0|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk 
+    Info (332119):     0.910               0.000 u_soc|pll_0|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk 
 Info (332146): Worst-case minimum pulse width slack is 0.613
     Info (332119):     Slack       End Point TNS Clock 
     Info (332119): ========= =================== =====================
@@ -47816,13 +47816,13 @@ Info (332146): Worst-case minimum pulse width slack is 0.613
     Info (332119):     3.736               0.000 u_soc|pll_0|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk 
     Info (332119):     4.813               0.000 u_soc|pll_0|altera_pll_i|general[1].gpll~PLL_OUTPUT_COUNTER|divclk 
     Info (332119):     9.673               0.000 CLOCK_50 
-    Info (332119):    18.753               0.000 u_soc|pll_0|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk 
+    Info (332119):    18.755               0.000 u_soc|pll_0|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk 
 Info (332114): Report Metastability: Found 1 synchronizer chains.
     Info (332114): The design MTBF is not calculated because there are no specified synchronizers in the design.
     Info (332114): Number of Synchronizer Chains Found: 1
     Info (332114): Shortest Synchronizer Chain: 3 Registers
     Info (332114): Fraction of Chains for which MTBFs Could Not be Calculated: 1.000
-    Info (332114): Worst Case Available Settling Time: 24.827 ns
+    Info (332114): Worst Case Available Settling Time: 25.086 ns
     Info (332114): 
 Info: Initializing DDR database for CORE hps_sdram_p0
 Info: Finding port-to-pin mapping for CORE: hps_sdram_p0 INSTANCE: u_soc|hps_0|hps_io|border|hps_sdram_inst
@@ -47956,34 +47956,34 @@ Info (332171): The following clock uncertainty values are less than the recommen
     Info (332172): Hold clock transfer from soc_system:u_soc|soc_system_hps_0:hps_0|soc_system_hps_0_hps_io:hps_io|soc_system_hps_0_hps_io_border:border|hps_sdram:hps_sdram_inst|hps_sdram_pll:pll|pll_write_clk_dq_write_clk (Fall) to HPS_DDR3_DQS_N[3]_OUT (Rise) has uncertainty 0.000 that is less than the recommended uncertainty 0.210
 Critical Warning (332148): Timing requirements not met
     Info (11105): For recommendations on closing timing, run Report Timing Closure Recommendations in the Timing Analyzer.
-Info (332146): Worst-case setup slack is -4.724
+Info (332146): Worst-case setup slack is -4.737
     Info (332119):     Slack       End Point TNS Clock 
     Info (332119): ========= =================== =====================
-    Info (332119):    -4.724             -74.607 u_soc|pll_0|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk 
-    Info (332119):     1.427               0.000 sdram_clk_pin 
+    Info (332119):    -4.737             -74.803 u_soc|pll_0|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk 
+    Info (332119):     1.438               0.000 sdram_clk_pin 
     Info (332119):     2.110               0.000 soc_system:u_soc|soc_system_hps_0:hps_0|soc_system_hps_0_hps_io:hps_io|soc_system_hps_0_hps_io_border:border|hps_sdram:hps_sdram_inst|hps_sdram_pll:pll|afi_clk_write_clk 
-    Info (332119):     7.327               0.000 u_soc|pll_0|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk 
-    Info (332119):    32.017               0.000 vga_clk_pin 
+    Info (332119):     6.976               0.000 u_soc|pll_0|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk 
+    Info (332119):    30.942               0.000 vga_clk_pin 
 Info (332146): Worst-case hold slack is 0.084
     Info (332119):     Slack       End Point TNS Clock 
     Info (332119): ========= =================== =====================
     Info (332119):     0.084               0.000 soc_system:u_soc|soc_system_hps_0:hps_0|soc_system_hps_0_hps_io:hps_io|soc_system_hps_0_hps_io_border:border|hps_sdram:hps_sdram_inst|hps_sdram_pll:pll|afi_clk_write_clk 
-    Info (332119):     0.132               0.000 u_soc|pll_0|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk 
-    Info (332119):     0.183               0.000 u_soc|pll_0|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk 
-    Info (332119):     1.032               0.000 vga_clk_pin 
-    Info (332119):     3.871               0.000 sdram_clk_pin 
+    Info (332119):     0.137               0.000 u_soc|pll_0|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk 
+    Info (332119):     0.181               0.000 u_soc|pll_0|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk 
+    Info (332119):     0.995               0.000 vga_clk_pin 
+    Info (332119):     3.835               0.000 sdram_clk_pin 
 Info (332146): Worst-case recovery slack is 3.727
     Info (332119):     Slack       End Point TNS Clock 
     Info (332119): ========= =================== =====================
     Info (332119):     3.727               0.000 soc_system:u_soc|soc_system_hps_0:hps_0|soc_system_hps_0_hps_io:hps_io|soc_system_hps_0_hps_io_border:border|hps_sdram:hps_sdram_inst|hps_sdram_pll:pll|afi_clk_write_clk 
-    Info (332119):     6.829               0.000 u_soc|pll_0|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk 
-    Info (332119):    37.377               0.000 u_soc|pll_0|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk 
-Info (332146): Worst-case removal slack is 0.203
+    Info (332119):     5.691               0.000 u_soc|pll_0|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk 
+    Info (332119):    37.155               0.000 u_soc|pll_0|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk 
+Info (332146): Worst-case removal slack is 0.467
     Info (332119):     Slack       End Point TNS Clock 
     Info (332119): ========= =================== =====================
-    Info (332119):     0.203               0.000 u_soc|pll_0|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk 
+    Info (332119):     0.467               0.000 u_soc|pll_0|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk 
     Info (332119):     0.497               0.000 soc_system:u_soc|soc_system_hps_0:hps_0|soc_system_hps_0_hps_io:hps_io|soc_system_hps_0_hps_io_border:border|hps_sdram:hps_sdram_inst|hps_sdram_pll:pll|afi_clk_write_clk 
-    Info (332119):     0.758               0.000 u_soc|pll_0|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk 
+    Info (332119):     0.561               0.000 u_soc|pll_0|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk 
 Info (332146): Worst-case minimum pulse width slack is 0.883
     Info (332119):     Slack       End Point TNS Clock 
     Info (332119): ========= =================== =====================
@@ -47993,13 +47993,13 @@ Info (332146): Worst-case minimum pulse width slack is 0.883
     Info (332119):     3.882               0.000 u_soc|pll_0|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk 
     Info (332119):     4.908               0.000 u_soc|pll_0|altera_pll_i|general[1].gpll~PLL_OUTPUT_COUNTER|divclk 
     Info (332119):     9.336               0.000 CLOCK_50 
-    Info (332119):    18.889               0.000 u_soc|pll_0|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk 
+    Info (332119):    18.888               0.000 u_soc|pll_0|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk 
 Info (332114): Report Metastability: Found 1 synchronizer chains.
     Info (332114): The design MTBF is not calculated because there are no specified synchronizers in the design.
     Info (332114): Number of Synchronizer Chains Found: 1
     Info (332114): Shortest Synchronizer Chain: 3 Registers
     Info (332114): Fraction of Chains for which MTBFs Could Not be Calculated: 1.000
-    Info (332114): Worst Case Available Settling Time: 26.836 ns
+    Info (332114): Worst Case Available Settling Time: 27.074 ns
     Info (332114): 
 Info: Initializing DDR database for CORE hps_sdram_p0
 Info: Finding port-to-pin mapping for CORE: hps_sdram_p0 INSTANCE: u_soc|hps_0|hps_io|border|hps_sdram_inst
@@ -48131,34 +48131,34 @@ Info (332171): The following clock uncertainty values are less than the recommen
     Info (332172): Hold clock transfer from soc_system:u_soc|soc_system_hps_0:hps_0|soc_system_hps_0_hps_io:hps_io|soc_system_hps_0_hps_io_border:border|hps_sdram:hps_sdram_inst|hps_sdram_pll:pll|pll_write_clk_dq_write_clk (Fall) to HPS_DDR3_DQS_N[3]_OUT (Rise) has uncertainty 0.000 that is less than the recommended uncertainty 0.210
 Critical Warning (332148): Timing requirements not met
     Info (11105): For recommendations on closing timing, run Report Timing Closure Recommendations in the Timing Analyzer.
-Info (332146): Worst-case setup slack is -4.530
+Info (332146): Worst-case setup slack is -4.544
     Info (332119):     Slack       End Point TNS Clock 
     Info (332119): ========= =================== =====================
-    Info (332119):    -4.530             -71.691 u_soc|pll_0|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk 
-    Info (332119):     1.500               0.000 sdram_clk_pin 
+    Info (332119):    -4.544             -71.878 u_soc|pll_0|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk 
+    Info (332119):     1.510               0.000 sdram_clk_pin 
     Info (332119):     2.110               0.000 soc_system:u_soc|soc_system_hps_0:hps_0|soc_system_hps_0_hps_io:hps_io|soc_system_hps_0_hps_io_border:border|hps_sdram:hps_sdram_inst|hps_sdram_pll:pll|afi_clk_write_clk 
-    Info (332119):     7.648               0.000 u_soc|pll_0|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk 
-    Info (332119):    32.919               0.000 vga_clk_pin 
+    Info (332119):     7.356               0.000 u_soc|pll_0|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk 
+    Info (332119):    31.985               0.000 vga_clk_pin 
 Info (332146): Worst-case hold slack is 0.077
     Info (332119):     Slack       End Point TNS Clock 
     Info (332119): ========= =================== =====================
     Info (332119):     0.077               0.000 soc_system:u_soc|soc_system_hps_0:hps_0|soc_system_hps_0_hps_io:hps_io|soc_system_hps_0_hps_io_border:border|hps_sdram:hps_sdram_inst|hps_sdram_pll:pll|afi_clk_write_clk 
-    Info (332119):     0.123               0.000 u_soc|pll_0|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk 
-    Info (332119):     0.159               0.000 u_soc|pll_0|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk 
-    Info (332119):     0.658               0.000 vga_clk_pin 
-    Info (332119):     3.838               0.000 sdram_clk_pin 
+    Info (332119):     0.125               0.000 u_soc|pll_0|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk 
+    Info (332119):     0.171               0.000 u_soc|pll_0|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk 
+    Info (332119):     0.612               0.000 vga_clk_pin 
+    Info (332119):     3.818               0.000 sdram_clk_pin 
 Info (332146): Worst-case recovery slack is 3.825
     Info (332119):     Slack       End Point TNS Clock 
     Info (332119): ========= =================== =====================
     Info (332119):     3.825               0.000 soc_system:u_soc|soc_system_hps_0:hps_0|soc_system_hps_0_hps_io:hps_io|soc_system_hps_0_hps_io_border:border|hps_sdram:hps_sdram_inst|hps_sdram_pll:pll|afi_clk_write_clk 
-    Info (332119):     7.149               0.000 u_soc|pll_0|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk 
-    Info (332119):    37.639               0.000 u_soc|pll_0|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk 
-Info (332146): Worst-case removal slack is 0.113
+    Info (332119):     6.258               0.000 u_soc|pll_0|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk 
+    Info (332119):    37.433               0.000 u_soc|pll_0|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk 
+Info (332146): Worst-case removal slack is 0.400
     Info (332119):     Slack       End Point TNS Clock 
     Info (332119): ========= =================== =====================
-    Info (332119):     0.113               0.000 u_soc|pll_0|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk 
+    Info (332119):     0.400               0.000 u_soc|pll_0|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk 
     Info (332119):     0.473               0.000 soc_system:u_soc|soc_system_hps_0:hps_0|soc_system_hps_0_hps_io:hps_io|soc_system_hps_0_hps_io_border:border|hps_sdram:hps_sdram_inst|hps_sdram_pll:pll|afi_clk_write_clk 
-    Info (332119):     0.679               0.000 u_soc|pll_0|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk 
+    Info (332119):     0.489               0.000 u_soc|pll_0|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk 
 Info (332146): Worst-case minimum pulse width slack is 0.887
     Info (332119):     Slack       End Point TNS Clock 
     Info (332119): ========= =================== =====================
@@ -48168,13 +48168,13 @@ Info (332146): Worst-case minimum pulse width slack is 0.887
     Info (332119):     3.881               0.000 u_soc|pll_0|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk 
     Info (332119):     4.903               0.000 u_soc|pll_0|altera_pll_i|general[1].gpll~PLL_OUTPUT_COUNTER|divclk 
     Info (332119):     9.286               0.000 CLOCK_50 
-    Info (332119):    18.887               0.000 u_soc|pll_0|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk 
+    Info (332119):    18.888               0.000 u_soc|pll_0|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk 
 Info (332114): Report Metastability: Found 1 synchronizer chains.
     Info (332114): The design MTBF is not calculated because there are no specified synchronizers in the design.
     Info (332114): Number of Synchronizer Chains Found: 1
     Info (332114): Shortest Synchronizer Chain: 3 Registers
     Info (332114): Fraction of Chains for which MTBFs Could Not be Calculated: 1.000
-    Info (332114): Worst Case Available Settling Time: 27.108 ns
+    Info (332114): Worst Case Available Settling Time: 27.306 ns
     Info (332114): 
 Info: Initializing DDR database for CORE hps_sdram_p0
 Info: Finding port-to-pin mapping for CORE: hps_sdram_p0 INSTANCE: u_soc|hps_0|hps_io|border|hps_sdram_inst
@@ -48215,9 +48215,9 @@ Info: Write (Fast 1100mV 0C Model)                          |  0.321  0.321
 Info (332102): Design is not fully constrained for setup requirements
 Info (332102): Design is not fully constrained for hold requirements
 Info: Quartus Prime Timing Analyzer was successful. 0 errors, 67 warnings
-    Info: Peak virtual memory: 5927 megabytes
-    Info: Processing ended: Mon Oct 26 21:14:58 2026
-    Info: Elapsed time: 00:00:33
-    Info: Total CPU time (on all processors): 00:00:54
+    Info: Peak virtual memory: 5923 megabytes
+    Info: Processing ended: Mon Oct 26 21:44:29 2026
+    Info: Elapsed time: 00:00:30
+    Info: Total CPU time (on all processors): 00:00:51
 
 

@@ -556,6 +556,12 @@ module tb_Acelerador_Grafico_Top;
     $display("==========================================================");
 
     repeat (4) @(negedge clk);
+    // La SDRAM de la placa arranca con contenido aleatorio. El framebuffer
+    // interno se inicializa a cero en simulacion, asi que se llena de basura
+    // antes de soltar el reinicio para que MOE-01 tenga algo que limpiar.
+    for (int i = 0; i < dut.g_fb_interno.u_fbmem.MEM_WORDS; i++)
+      dut.g_fb_interno.u_fbmem.mem[i] = PB'($urandom);
+
     rst_n     = 1'b1;
     rst_pix_n = 1'b1;
     repeat (4) @(negedge clk);
@@ -563,9 +569,26 @@ module tb_Acelerador_Grafico_Top;
     //--------------------------------------------- 0. arranque (MOE-01)
     $display("");
     $display("--- 0. Inicializacion y estado de arranque ----------------");
-    // MOE-01 dura unos pocos ciclos y deja el sistema en espera.
+    // MOE-01 limpia los dos buffers antes de pasar a la espera.
+    chk("modo al salir del reinicio es MOE-01", int'(modo), int'(M_INIT));
     while (modo == M_INIT) @(negedge clk);
     chk("modo tras la inicializacion", int'(modo), int'(M_IDLE));
+    chk("MOE-01 escribe los dos buffers completos", emitidos, 2*W*H);
+    begin : limpieza_arranque
+      int sucios_a, sucios_b;
+      sucios_a = 0;  sucios_b = 0;
+      repeat (64) @(negedge clk);          // la ultima rafaga llega a memoria
+      for (int i = 0; i < W*H; i++) begin
+        if (sdram_px(1'b0, i) !== '0) sucios_a++;
+        if (sdram_px(1'b1, i) !== '0) sucios_b++;
+      end
+      chk("buffer A limpio tras MOE-01", sucios_a, 0);
+      chk("buffer B limpio tras MOE-01", sucios_b, 0);
+    end
+    chk("ocupado en bajo tras MOE-01", int'(busy), 0);
+    // Lo que escribio el arranque no forma parte de ninguna prueba
+    borrar_fb();
+    emitidos = 0;
     chk("cola vacia al arrancar", int'(fifo_empty), 1);
     chk("nivel de la cola al arrancar", int'(fifo_level), 0);
     chk("sin errores al arrancar", int'(err_count), 0);
@@ -945,6 +968,10 @@ module tb_Acelerador_Grafico_Top;
     volcar_captura("salida_vga");
 
     //-------------------------- 17. Medidor de rendimiento e indicador
+    // La captura de la seccion 16 termina sobre un flanco del reloj de pixel.
+    // Sin realinear al flanco de bajada de clk, la primera palabra del
+    // paquete siguiente puede no ver ningun flanco de subida y perderse.
+    @(negedge clk);
     $display("");
     $display("--- 17. Medidor de rendimiento e indicador de estado ------");
 
