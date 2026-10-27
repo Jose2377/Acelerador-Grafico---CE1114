@@ -19,14 +19,18 @@ fst.F_PIDE 1 0 1
 fst.F_ESPERA 1 1 0 
 
 State Machine - |DE1_SoC_top_level|Acelerador_Grafico_Top:u_acelerador|processor_raster:u_raster|draw_trian:u_tria|st
-Name st.T_DONE st.T_FILL st.T_SETUP st.T_E2 st.T_E1 st.T_E0 st.T_IDLE 
-st.T_IDLE 0 0 0 0 0 0 0 
-st.T_E0 0 0 0 0 0 1 1 
-st.T_E1 0 0 0 0 1 0 1 
-st.T_E2 0 0 0 1 0 0 1 
-st.T_SETUP 0 0 1 0 0 0 1 
-st.T_FILL 0 1 0 0 0 0 1 
-st.T_DONE 1 0 0 0 0 0 1 
+Name st.T_DONE st.T_FILL st.T_E2 st.T_E1 st.T_E0 st.T_SUM st.T_EVAL st.T_BOX st.T_ORIENT st.T_AREA st.T_IDLE 
+st.T_IDLE 0 0 0 0 0 0 0 0 0 0 0 
+st.T_AREA 0 0 0 0 0 0 0 0 0 1 1 
+st.T_ORIENT 0 0 0 0 0 0 0 0 1 0 1 
+st.T_BOX 0 0 0 0 0 0 0 1 0 0 1 
+st.T_EVAL 0 0 0 0 0 0 1 0 0 0 1 
+st.T_SUM 0 0 0 0 0 1 0 0 0 0 1 
+st.T_E0 0 0 0 0 1 0 0 0 0 0 1 
+st.T_E1 0 0 0 1 0 0 0 0 0 0 1 
+st.T_E2 0 0 1 0 0 0 0 0 0 0 1 
+st.T_FILL 0 1 0 0 0 0 0 0 0 0 1 
+st.T_DONE 1 0 0 0 0 0 0 0 0 0 1 
 
 State Machine - |DE1_SoC_top_level|Acelerador_Grafico_Top:u_acelerador|processor_raster:u_raster|draw_trian:u_tria|draw_line:u_gen|st
 Name st.L_DONE st.L_RUN st.L_SETUP st.L_IDLE 

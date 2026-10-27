@@ -73,8 +73,17 @@ module draw_trian #(
 
   // Estados de dibujo
   // Espera, Arista 1, Arista 2, Arista 3, Preparacion de relleno, Relleno, Finalizado.
-  typedef enum logic [2:0] {
-    T_IDLE, T_E0, T_E1, T_E2, T_SETUP, T_FILL, T_DONE
+  //
+  // La preparacion se reparte en cinco estados para que ningun ciclo encadene
+  // mas de una multiplicacion (ver la nota de temporizacion mas abajo):
+  //   T_AREA    productos del area orientada
+  //   T_ORIENT  signo del area e intercambio de vertices
+  //   T_BOX     caja envolvente recortada e incrementos
+  //   T_EVAL    productos de las tres funciones en la esquina de la caja
+  //   T_SUM     restas finales y carga de los acumuladores
+  typedef enum logic [3:0] {
+    T_IDLE, T_AREA, T_ORIENT, T_BOX, T_EVAL, T_SUM,
+    T_E0, T_E1, T_E2, T_FILL, T_DONE
   } tst_e;
   tst_e st;
 
@@ -93,6 +102,15 @@ module draw_trian #(
   logic signed [35:0] e0, e1, e2, e0r, e1r, e2r;
   logic signed [35:0] sx0, sx1, sx2, sy0, sy1, sy2;
   logic [PIXEL_BITS-1:0] col;
+
+  // Registros intermedios de la preparacion
+  // fill_q         Copia de fill tomada al arrancar
+  // pa, pb         Los dos productos del area orientada (17 x 17 bits)
+  // area_nula      Los tres vertices son colineales
+  // p00 .. p21     Los dos productos de cada funcion de arista en la esquina
+  logic                  fill_q, area_nula;
+  logic signed [33:0]    pa, pb;
+  logic signed [33:0]    p00, p01, p10, p11, p20, p21;
 
   // lg_start                    Inicia el dibujo de una arista
   // lg_done                     Indica que la arista terminó
@@ -119,14 +137,69 @@ module draw_trian #(
     endcase
   end
 
-  always_ff @(posedge clk or negedge rst_n) begin : p_tri
-    // area                Area orientada calculada a partir de los tres vértices
-    // ev0, ev1, ev2       Valores iniciales de las funciones de arista
-    // v1x, v1y, v2x, v2y  Coordenadas de los vértices B y C después de ordenar su orientación
-    // mnx, mxx, mny, mxy  Límites de la caja antes de guardarlos en registros
-    logic signed [35:0] area, ev0, ev1, ev2;
-    logic signed [15:0] v1x, v1y, v2x, v2y, mnx, mxx, mny, mxy;
+  //---------------------------------------------------------------------------
+  // Nota de temporizacion
+  // La primera version hacia toda la preparacion en un solo ciclo: area,
+  // intercambio de vertices, caja y las tres funciones de arista. Esa cadena
+  // (resta, multiplicacion, resta, comparacion, multiplexor, minimos y maximos,
+  // resta, multiplicacion, resta) media unos 28 ns y limitaba todo el dominio
+  // de 100 MHz a 35 MHz. Aqui cada estado hace como mucho una resta, una
+  // multiplicacion de 17 x 17 bits (un bloque DSP) o una resta de 35 bits.
+  //
+  // Las diferencias de coordenadas de 16 bits con signo caben en 17 bits, de
+  // modo que se declaran asi explicitamente para que el sintetizador infiera
+  // multiplicadores de 18 x 18 y no de 36 x 36.
+  //---------------------------------------------------------------------------
 
+  // Diferencias que alimentan los multiplicadores. Todas salen de registros.
+  logic signed [16:0] d_bxax, d_gyay, d_byay, d_gxax;            // area
+  logic signed [16:0] d_e0x, d_e0y, d_e1x, d_e1y, d_e2x, d_e2y;  // aristas
+  logic signed [16:0] d_my0, d_mx0, d_my1, d_mx1, d_my2, d_mx2;  // esquina
+
+  assign d_bxax = 17'(bx) - 17'(ax);
+  assign d_gyay = 17'(gy) - 17'(ay);
+  assign d_byay = 17'(by) - 17'(ay);
+  assign d_gxax = 17'(gx) - 17'(ax);
+
+  // Arista 0: A -> B, arista 1: B -> C, arista 2: C -> A
+  assign d_e0x = 17'(bx) - 17'(ax);   assign d_e0y = 17'(by) - 17'(ay);
+  assign d_e1x = 17'(gx) - 17'(bx);   assign d_e1y = 17'(gy) - 17'(by);
+  assign d_e2x = 17'(ax) - 17'(gx);   assign d_e2y = 17'(ay) - 17'(gy);
+
+  // Esquina superior izquierda de la caja respecto al origen de cada arista
+  assign d_my0 = 17'(by0) - 17'(ay);  assign d_mx0 = 17'(bx0) - 17'(ax);
+  assign d_my1 = 17'(by0) - 17'(by);  assign d_mx1 = 17'(bx0) - 17'(bx);
+  assign d_my2 = 17'(by0) - 17'(gy);  assign d_mx2 = 17'(bx0) - 17'(gx);
+
+  // Caja envolvente recortada a la pantalla, sobre los vertices ya registrados
+  function automatic logic signed [15:0] min3(input logic signed [15:0] a, b, c);
+    logic signed [15:0] m;
+    m = (a < b) ? a : b;
+    min3 = (m < c) ? m : c;
+  endfunction
+
+  function automatic logic signed [15:0] max3(input logic signed [15:0] a, b, c);
+    logic signed [15:0] m;
+    m = (a > b) ? a : b;
+    max3 = (m > c) ? m : c;
+  endfunction
+
+  // Limites con signo: comparar contra una constante sin signo convertiria
+  // la comparacion en sin signo y una coordenada negativa pareceria enorme.
+  localparam logic signed [15:0] XMAX = 16'(SCREEN_W - 1);
+  localparam logic signed [15:0] YMAX = 16'(SCREEN_H - 1);
+
+  logic signed [15:0] mnx, mny, mxx, mxy, mnx_r, mny_r, mxx_r, mxy_r;
+  assign mnx_r = min3(ax, bx, gx);
+  assign mny_r = min3(ay, by, gy);
+  assign mxx_r = max3(ax, bx, gx);
+  assign mxy_r = max3(ay, by, gy);
+  assign mnx = (mnx_r > 0)                  ? mnx_r : 16'sd0;
+  assign mny = (mny_r > 0)                  ? mny_r : 16'sd0;
+  assign mxx = (mxx_r < XMAX) ? mxx_r : XMAX;
+  assign mxy = (mxy_r < YMAX) ? mxy_r : YMAX;
+
+  always_ff @(posedge clk or negedge rst_n) begin : p_tri
     if (!rst_n) begin // Reset
       st <= T_IDLE;  lg_start <= 1'b0;
       ax <= '0; ay <= '0; bx <= '0; by <= '0; gx <= '0; gy <= '0;
@@ -134,79 +207,94 @@ module draw_trian #(
       e0 <= '0; e1 <= '0; e2 <= '0; e0r <= '0; e1r <= '0; e2r <= '0;
       sx0 <= '0; sx1 <= '0; sx2 <= '0; sy0 <= '0; sy1 <= '0; sy2 <= '0;
       col <= '0;
+      fill_q <= 1'b0;  area_nula <= 1'b0;
+      pa <= '0; pb <= '0;
+      p00 <= '0; p01 <= '0; p10 <= '0; p11 <= '0; p20 <= '0; p21 <= '0;
     end else if (!stall) begin // Si no esta en Stall
       lg_start <= 1'b0;
       case (st)
-		  // Inicializacion de variables
-		  // Si area > 0, los vértices tienen una orientación.
-        // Si area < 0, tienen la orientación contraria.
-        // Si area == 0, los tres puntos son colineales o coinciden y no forman un triángulo de área positiva.
+        // Captura de los argumentos. Nada se calcula sobre las entradas, que
+        // llegan directamente de los registros de decoder_fsm.
         T_IDLE: if (start) begin
-          area = (36'(x1) - 36'(x0)) * (36'(y2) - 36'(y0))
-               - (36'(y1) - 36'(y0)) * (36'(x2) - 36'(x0));
-          if (area >= 0) begin v1x = x1; v1y = y1; v2x = x2; v2y = y2; end
-          else           begin v1x = x2; v1y = y2; v2x = x1; v2y = y1; end
-
           ax <= x0;  ay <= y0;
-          bx <= v1x; by <= v1y;
-          gx <= v2x; gy <= v2y;
-          col <= color_in;
+          bx <= x1;  by <= y1;
+          gx <= x2;  gy <= y2;
+          col    <= color_in;
+          fill_q <= fill;
+          st     <= T_AREA;
+        end
 
-          if (fill) begin
-            // Caja que encierra al triangulo, ya recortada contra la pantalla: 
-				// minimos contra 0 y maximos contra el ultimo pixel.
-            mnx = (((x0 < v1x) ? ((x0 < v2x) ? x0 : v2x)
-                               : ((v1x < v2x) ? v1x : v2x)) > 0)
-                  ? ((x0 < v1x) ? ((x0 < v2x) ? x0 : v2x)
-                                : ((v1x < v2x) ? v1x : v2x)) : 16'sd0;
-            mny = (((y0 < v1y) ? ((y0 < v2y) ? y0 : v2y)
-                               : ((v1y < v2y) ? v1y : v2y)) > 0)
-                  ? ((y0 < v1y) ? ((y0 < v2y) ? y0 : v2y)
-                                : ((v1y < v2y) ? v1y : v2y)) : 16'sd0;
-            mxx = (((x0 > v1x) ? ((x0 > v2x) ? x0 : v2x)
-                               : ((v1x > v2x) ? v1x : v2x)) < SCREEN_W - 1)
-                  ? ((x0 > v1x) ? ((x0 > v2x) ? x0 : v2x)
-                                : ((v1x > v2x) ? v1x : v2x)) : 16'(SCREEN_W - 1);
-            mxy = (((y0 > v1y) ? ((y0 > v2y) ? y0 : v2y)
-                               : ((v1y > v2y) ? v1y : v2y)) < SCREEN_H - 1)
-                  ? ((y0 > v1y) ? ((y0 > v2y) ? y0 : v2y)
-                                : ((v1y > v2y) ? v1y : v2y)) : 16'(SCREEN_H - 1);
-				
-				// Asigna variables
-            bx0 <= mnx;  bx1 <= mxx;  by0 <= mny;  by1 <= mxy;
-            cx  <= mnx;  cy  <= mny;
+        // Area orientada, primera mitad: los dos productos.
+        T_AREA: begin
+          pa <= d_bxax * d_gyay;
+          pb <= d_byay * d_gxax;
+          st <= T_ORIENT;
+        end
 
-            // Incrementos constantes de cada funcion de arista: sx por cada paso en x, sy por cada fila. 
-				// Sustituyen a la multiplicacion dentro del lazo.
-            sx0 <= -(36'(v1y) - 36'(y0));    sy0 <= (36'(v1x) - 36'(x0));
-            sx1 <= -(36'(v2y) - 36'(v1y));   sy1 <= (36'(v2x) - 36'(v1x));
-            sx2 <= -(36'(y0)  - 36'(v2y));   sy2 <= (36'(x0)  - 36'(v2x));
-
-            // Las tres funciones evaluadas en la esquina superior izquierda de la caja. 
-				// Son las unicas multiplicaciones del algoritmo.
-            ev0 = (36'(v1x) - 36'(x0))  * (36'(mny) - 36'(y0))
-                - (36'(v1y) - 36'(y0))  * (36'(mnx) - 36'(x0));
-            ev1 = (36'(v2x) - 36'(v1x)) * (36'(mny) - 36'(v1y))
-                - (36'(v2y) - 36'(v1y)) * (36'(mnx) - 36'(v1x));
-            ev2 = (36'(x0)  - 36'(v2x)) * (36'(mny) - 36'(v2y))
-                - (36'(y0)  - 36'(v2y)) * (36'(mnx) - 36'(v2x));
-				
-				// Asigna variables
-            e0 <= ev0;  e1 <= ev1;  e2 <= ev2;
-            e0r <= ev0; e1r <= ev1; e2r <= ev2;
-
-            st <= ((area == 0) || (mnx > mxx) || (mny > mxy)) ? T_DONE : T_SETUP;
+        // Area orientada, segunda mitad: el signo decide el sentido de giro.
+        // Si area > 0, los vertices tienen una orientacion.
+        // Si area < 0, tienen la orientacion contraria y se intercambian B y C.
+        // Si area == 0, los tres puntos son colineales y no hay area que rellenar.
+        // El contorno tambien usa los vertices ordenados, igual que antes, para
+        // que las aristas salgan pixel a pixel identicas a la version anterior.
+        T_ORIENT: begin
+          if (pa < pb) begin
+            bx <= gx;  by <= gy;
+            gx <= bx;  gy <= by;
+          end
+          area_nula <= (pa == pb);
+          if (fill_q) begin
+            st <= T_BOX;
           end else begin
             lg_start <= 1'b1;
             st       <= T_E0;
           end
         end
 
+        // Caja envolvente recortada e incrementos constantes de cada funcion.
+			T_BOX: begin
+				 bx0 <= mnx;
+				 bx1 <= mxx;
+				 by0 <= mny;
+				 by1 <= mxy;
+
+				 cx <= mnx;
+				 cy <= mny;
+
+				 // Incrementos horizontales: -dy
+				 sx0 <= -$signed({{19{d_e0y[16]}}, d_e0y});
+				 sx1 <= -$signed({{19{d_e1y[16]}}, d_e1y});
+				 sx2 <= -$signed({{19{d_e2y[16]}}, d_e2y});
+
+				 // Incrementos verticales: dx
+				 sy0 <= $signed({{19{d_e0x[16]}}, d_e0x});
+				 sy1 <= $signed({{19{d_e1x[16]}}, d_e1x});
+				 sy2 <= $signed({{19{d_e2x[16]}}, d_e2x});
+
+				 st <= T_EVAL;
+			end
+        // Funciones de arista en la esquina de la caja, primera mitad:
+        // E(x, y) = (xb - xa)(y - ya) - (yb - ya)(x - xa)
+        T_EVAL: begin
+          p00 <= d_e0x * d_my0;   p01 <= d_e0y * d_mx0;
+          p10 <= d_e1x * d_my1;   p11 <= d_e1y * d_mx1;
+          p20 <= d_e2x * d_my2;   p21 <= d_e2y * d_mx2;
+
+          if (area_nula || (bx0 > bx1) || (by0 > by1)) st <= T_DONE;
+          else                                         st <= T_SUM;
+        end
+
+        // Segunda mitad: restas y carga de los acumuladores de fila.
+        T_SUM: begin
+          e0  <= 36'(p00) - 36'(p01);  e0r <= 36'(p00) - 36'(p01);
+          e1  <= 36'(p10) - 36'(p11);  e1r <= 36'(p10) - 36'(p11);
+          e2  <= 36'(p20) - 36'(p21);  e2r <= 36'(p20) - 36'(p21);
+          st  <= T_FILL;
+        end
+
         T_E0: if (lg_done) begin lg_start <= 1'b1; st <= T_E1; end
         T_E1: if (lg_done) begin lg_start <= 1'b1; st <= T_E2; end
         T_E2: if (lg_done) st <= T_DONE;
-
-        T_SETUP: st <= T_FILL;
 
         // Recorrido de la caja. 
 		  // Al final de cada fila los acumuladores vuelven al borde izquierdo con el valor que guardo er,

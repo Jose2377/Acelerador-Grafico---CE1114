@@ -96,9 +96,38 @@ module draw_circle #(
     endcase
   end
 
+  // Paso del punto medio de Bresenham, en paralelo
+  // Con err > 0 solo se retrocede en x:
+  //   x' = x - 1,  err' = err - 2x + 1
+  // Con err <= 0 se avanza en y, y se retrocede en x si el error queda positivo:
+  //   e1 = err + 2y + 3                      (y' = y + 1)
+  //   e1 >  0: x' = x - 1, err' = err + 2y - 2x + 4
+  //   e1 <= 0: x' = x,     err' = e1
+  // El fin del octante (x' < y') se resuelve igual, comparando x e y ya
+  // registrados contra la constante que corresponde a cada caso.
+  logic signed [21:0] upd_e1, upd_e2, upd_e3, upd_err;
+  logic signed [15:0] upd_x, upd_y;
+  logic               upd_fin, upd_sube;
+
+  assign upd_sube = (err <= 0);
+  assign upd_e1   = err + 22'(y) + 22'(y) + 22'sd3;
+  assign upd_e2   = err - 22'(x) - 22'(x) + 22'sd1;
+  assign upd_e3   = err + 22'(y) + 22'(y) - 22'(x) - 22'(x) + 22'sd4;
+
+  always_comb begin
+    if (!upd_sube) begin                 // err > 0
+      upd_x = x - 16'sd1;  upd_y = y;           upd_err = upd_e2;
+      upd_fin = (x <= y);                       // x - 1 < y
+    end else if (upd_e1 > 0) begin       // sube y baja
+      upd_x = x - 16'sd1;  upd_y = y + 16'sd1;  upd_err = upd_e3;
+      upd_fin = (x <= y + 16'sd1);              // x - 1 < y + 1
+    end else begin                       // solo sube
+      upd_x = x;           upd_y = y + 16'sd1;  upd_err = upd_e1;
+      upd_fin = (x <= y);                       // x < y + 1
+    end
+  end
+
   always_ff @(posedge clk or negedge rst_n) begin : p_circ
-    logic signed [21:0] err_n;
-    logic signed [15:0] x_n, y_n;
 
     if (!rst_n) begin // Reset
       st <= K_IDLE;
@@ -133,18 +162,15 @@ module draw_circle #(
           else                   oct <= oct + 1'b1;
         end
 
-        K_UPD: begin // Actualiza el pixel a dibujar
-          err_n = err;  x_n = x;  y_n = y;
-          if (err_n <= 0) begin // En base al error, pregunta si aumenta en Y
-            y_n   = y_n + 1;
-            err_n = err_n + 22'(y_n) + 22'(y_n) + 1;    // err += 2*y + 1
-          end
-          if (err_n > 0) begin // En base al error, pregunta si disminuye en X
-            x_n   = x_n - 1;
-            err_n = err_n - 22'(x_n) - 22'(x_n) - 1;    // err -= 2*x + 1
-          end // Guardar valores
-          err <= err_n;  x <= x_n;  y <= y_n;
-          st  <= (x_n < y_n) ? K_DONE : K_OUT;
+        // Actualiza el punto del octante.
+        // La version original evaluaba en cadena: comparar err, sumar 2y+1,
+        // volver a comparar, restar 2x+1 y comparar x con y, todo en un ciclo
+        // (unos 11 ns). Aqui los tres resultados posibles se calculan en
+        // paralelo desde registros (ver upd_* mas abajo) y solo se elige uno.
+        // El resultado es bit a bit el mismo que el de la cadena original.
+        K_UPD: begin
+          err <= upd_err;  x <= upd_x;  y <= upd_y;
+          st  <= upd_fin ? K_DONE : K_OUT;
         end
 
         // Recorrido del cuadrado circunscrito. 
