@@ -4,79 +4,73 @@
 // framebuffer_controller.sv
 // Modulo : Gestor de framebuffer, unico dueno del acceso a la memoria
 //
-// Media entre los dos clientes del framebuffer, que trabajan en dominios de
-// reloj distintos y con necesidades opuestas:
+// Media entre los dos clientes del framebuffer, 
+// que trabajan en dominios de reloj distintos y con necesidades opuestas:
 //
-//   - El rasterizador escribe pixeles sueltos y desordenados, a su ritmo,
-//     en el dominio de 100 MHz.
-//   - El barrido de video lee pixeles consecutivos y no puede esperar, en el
-//     dominio de pixel.
+//   - El rasterizador escribe pixeles sueltos y desordenados, a su ritmo, en el dominio de 100 MHz.
+//   - El barrido de video lee pixeles consecutivos y no puede esperar, en el dominio de pixel.
 //
-// La memoria, en cambio, solo es eficiente en rafagas. De ahi las dos piezas
-// centrales del modulo:
+// La memoria, en cambio, solo es eficiente en rafagas. De ahi las dos piezas centrales del modulo:
 //
-//   Combinador de escritura: acumula hasta BURST_LEN pixeles consecutivos en
-//   un buffer local y los manda de una vez. Mientras el pixel que llega
-//   extienda la rafaga en curso se acepta; cuando rompe la secuencia o se
-//   llega al limite, px_ready baja, la rafaga sale y el rasterizador vuelve
-//   a presentar el pixel rechazado. Las rafagas se alinean a frontera de
-//   BURST_LEN para que no cruce nunca el limite que la memoria espera.
+//   Combinador de escritura: acumula hasta BURST_LEN pixeles consecutivos en un buffer local y los manda de una vez. 
+//   Mientras el pixel que llega extienda la rafaga en curso se acepta; 
+//   cuando rompe la secuencia o se llega al limite, px_ready baja, 
+//   la rafaga sale y el rasterizador vuelve a presentar el pixel rechazado.
+//   Las rafagas se alinean a frontera de BURST_LEN para que no cruce nunca el limite que la memoria espera.
 //
-//   Agrupador de lectura: el barrido pide direcciones de una en una, asi que
-//   aqui se juntan las contiguas en una sola rafaga. Esperar indefinidamente
-//   a que llegue la siguiente direccion colgaria una peticion suelta, de modo
-//   que PACIENCIA acota la espera y la rafaga sale igual aunque este a medias.
+//   Agrupador de lectura: el barrido pide direcciones de una en una, asi que aqui se juntan las contiguas en una sola rafaga. 
+//   Esperar indefinidamente a que llegue la siguiente direccion colgaria una peticion suelta, 
+//   de modo que PACIENCIA acota la espera y la rafaga sale igual aunque este a medias.
 //
-// Arbitro de prioridad fija: la lectura del barrido gana siempre, porque el
-// video no se puede detener sin que la imagen se rompa; el rasterizador si
-// puede esperar, y para eso esta px_ready. Una rafaga ya arrancada se
-// completa, no se interrumpe.
+// Arbitro de prioridad fija: la lectura del barrido gana siempre, 
+// porque el video no se puede detener sin que la imagen se rompa; 
+// el rasterizador si puede esperar, y para eso esta px_ready. 
+// Una rafaga ya arrancada se completa, no se interrumpe.
 //
-// Doble buffer: el rasterizador escribe siempre en el contrario al que se
-// esta mostrando (~buffer_sel) y el barrido lee del delantero. El bit de
-// buffer viaja dentro de cada peticion de lectura por la cola asincrona, de
-// modo que una peticion en vuelo conserva el buffer que le correspondia
-// aunque el intercambio ocurra mientras cruza.
+// Doble buffer: 
+// el rasterizador escribe siempre en el contrario al que se esta mostrando (~buffer_sel) y el barrido lee del delantero. 
+// El bit de buffer viaja dentro de cada peticion de lectura por la cola asincrona, 
+// de modo que una peticion en vuelo conserva el buffer que le correspondia aunque el intercambio ocurra mientras cruza.
 //
-// Cruce de dominios: dos async_fifo, una para las direcciones que bajan del
-// dominio de pixel y otra para los datos que suben.
+// Cruce de dominios: dos async_fifo, 
+// una para las direcciones que bajan del dominio de pixel y otra para los datos que suben.
 //
 // vaciar lo activa el nivel superior cuando el rasterizador queda inactivo:
-// sin ello la ultima rafaga incompleta se quedaria esperando un pixel que ya
-// no va a llegar y los ultimos puntos de la figura no alcanzarian la memoria.
+// sin ello la ultima rafaga incompleta se quedaria esperando un pixel que ya no va a llegar
+// y los ultimos puntos de la figura no alcanzarian la memoria.
 //
-// Hacia abajo presenta un maestro Avalon-MM de rafaga, que atiende el
-// framebuffer interno o, en la placa, el controlador de SDRAM. Las dos
-// opciones son intercambiables sin tocar este modulo.
+// Hacia abajo presenta un maestro Avalon-MM de rafaga,
+// que atiende el framebuffer interno o, en la placa, el controlador de SDRAM. 
+// Las dos opciones son intercambiables sin tocar este modulo.
 //
 // Entradas
-//   clk, rst_n              reloj de rasterizado y SDRAM, y su reinicio activo en bajo
-//   px_valid                el rasterizador presenta un pixel
-//   px_addr                 indice de ese pixel en la pantalla
-//   px_color                su color en RGB565
-//   buffer_sel              buffer delantero, 0 = A y 1 = B; se escribe en el contrario
-//   vaciar                  cierra la rafaga incompleta cuando el rasterizador queda inactivo
-//   clk_pix, rst_pix_n      reloj y reinicio del dominio de pixel
-//   frame_buffer_req        el controlador VGA pide un pixel
-//   frame_buffer_addr       indice del pixel que pide
-//   frame_buffer_front      buffer del que debe leerlo
-//   sd_waitrequest          el medio de memoria no acepta la transaccion
-//   sd_readdata             dato devuelto por la memoria
+//   clk, rst_n              Reloj de rasterizado y SDRAM, y su reinicio
+//   px_valid                El rasterizador presenta un pixel
+//   px_addr                 Indice de ese pixel en la pantalla
+//   px_color                Su color en RGB565
+//   buffer_sel              Buffer delantero, 0 = A y 1 = B; se escribe en el contrario
+//   vaciar                  Cierra la rafaga incompleta cuando el rasterizador queda inactivo
+//   clk_pix, rst_pix_n      Reloj y reinicio del dominio de pixel
+//   frame_buffer_req        El controlador VGA pide un pixel
+//   frame_buffer_addr       Indice del pixel que pide
+//   frame_buffer_front      Buffer del que debe leerlo
+//   sd_waitrequest          El medio de memoria no acepta la transaccion
+//   sd_readdata             Dato devuelto por la memoria
 //   sd_readdatavalid        sd_readdata es valido en este ciclo
 //
 // Salidas
-//   px_ready                acepta el pixel del rasterizador; en bajo lo congela
-//   frame_buffer_ready      acepta la peticion del controlador VGA
-//   frame_buffer_data_in    pixel devuelto al controlador VGA
-//   frame_buffer_valid_in   ese pixel es valido en este ciclo
-//   sd_read, sd_write       maestro Avalon-MM de rafaga hacia la memoria
-//   sd_address              direccion de la rafaga
-//   sd_burstcount           longitud de la rafaga
-//   sd_writedata            dato escrito
-//   burst_writes            transacciones de escritura emitidas
-//   burst_reads             transacciones de lectura emitidas
-//   pixels_written          pixeles aceptados del rasterizador
-//   out_of_range            escrituras descartadas por caer fuera de las regiones
+//   px_ready                Acepta el pixel del rasterizador; en bajo lo congela
+//   frame_buffer_ready      Acepta la peticion del controlador VGA
+//   frame_buffer_data_in    Pixel devuelto al controlador VGA
+//   frame_buffer_valid_in   Ese pixel es valido en este ciclo
+//   sd_read, sd_write       Maestro Avalon-MM de rafaga hacia la memoria
+//   sd_address              Direccion de la rafaga
+//   sd_burstcount           Longitud de la rafaga
+//   sd_writedata            Dato escrito
+//   burst_writes            Transacciones de escritura emitidas
+//   burst_reads             Transacciones de lectura emitidas
+//   pixels_written          Pixeles aceptados del rasterizador
+//   out_of_range            Escrituras descartadas por caer fuera de las regiones
 //=============================================================================
 module framebuffer_controller #(
   parameter int SCREEN_W      = 64,
@@ -233,7 +227,7 @@ module framebuffer_controller #(
   // El agrupador espera un poco a que lleguen.
   // PACIENCIA acota esa espera para que una peticion suelta no se quede retenida indefinidamente.
   
-  localparam int PACIENCIA = 16;      // ciclos sin direccion nueva
+  localparam int PACIENCIA = 16;      // Ciclos sin direccion nueva
 
   logic [$clog2(PACIENCIA+1)-1:0] rd_espera;
 
@@ -325,9 +319,9 @@ module framebuffer_controller #(
                  && (!px_valid || !wr_en_region
                      || (wr_cnt == '0) || wr_extiende);
 
-  // El pixel que llega no cabe en la rafaga en curso: hay que vaciarla
-  // primero. px_ready ya esta en bajo, asi que el rasterizador lo vuelve a
-  // presentar cuando se le acepte.
+  // El pixel que llega no cabe en la rafaga en curso: 
+  // hay que vaciarla primero. px_ready ya esta en bajo, a
+  // si que el rasterizador lo vuelve a presentar cuando se le acepte.
   assign wr_cierra = (wr_st == W_LIBRE) && !vaciar_pend && px_valid
                   && wr_en_region && (wr_cnt != '0) && !wr_extiende;
 
@@ -359,7 +353,7 @@ module framebuffer_controller #(
             end else if (wr_cnt == '0) begin
               // Primera palabra de una rafaga nueva.
               wr_base        <= px_addr;
-              wr_buf         <= ~buffer_sel;     // siempre el buffer trasero
+              wr_buf         <= ~buffer_sel;     // Siempre el buffer trasero
               wr_datos[0]    <= px_color;
               wr_cnt         <= BCW'(1);
               pixels_written <= pixels_written + 32'd1;
@@ -415,8 +409,7 @@ module framebuffer_controller #(
   assign sd_write = (wr_st == W_PIDE) || (wr_st == W_DATOS);
 
   // El multiplexor se gobierna por sd_write y no por el estado de lectura:
-  // una rafaga de escritura en curso conserva su direccion pase lo que pase
-  // al otro lado.
+  // una rafaga de escritura en curso conserva su direccion pase lo que pase al otro lado.
   always_comb begin
     if (sd_write) begin
       sd_address    = base_de(wr_buf) + SD_ADDR_BITS'(wr_base);

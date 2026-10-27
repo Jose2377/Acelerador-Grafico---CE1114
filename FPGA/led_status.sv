@@ -2,29 +2,29 @@
 
 // Reparto de los diez LED de la DE1-SoC:
 //
-//   LEDR[2:0]  modo del sistema, MOE-01 a MOE-06 en binario
-//   LEDR[3]    ocupado
-//   LEDR[4]    error reciente             (alargado)
-//   LEDR[5]    desbordamiento de la cola  (alargado)
-//   LEDR[6]    buffer delantero: 0 es A, 1 es B
-//   LEDR[7]    cola de comandos llena     (alargado)
-//   LEDR[8]    el barrido se quedo sin datos
-//   LEDR[9]    latido, indica que el reloj del sistema vive
+//   LEDR[2:0]  Modo del sistema, MOE-01 a MOE-06 en binario
+//   LEDR[3]    Ocupado
+//   LEDR[4]    Error reciente             (alargado)
+//   LEDR[5]    Desbordamiento de la cola  (alargado)
+//   LEDR[6]    Buffer delantero: 0 es A, 1 es B
+//   LEDR[7]    Cola de comandos llena     (alargado)
+//   LEDR[8]    El barrido se quedo sin datos
+//   LEDR[9]    Latido, indica que el reloj del sistema vive
 //
 // El latido no es decorativo: distingue un sistema detenido de un sistema en reposo
 //
 // Entradas
-//   clk, rst_n   reloj del sistema y reinicio asincrono activo en bajo
-//   modo         modo del sistema, MOE-01 a MOE-06; sale por LEDR[2:0]
-//   busy         hay trabajo en curso
-//   err_tick     pulso: se registro un error; se alarga para que se vea
-//   overflow     nivel: hubo descartes en la ventana de medicion
-//   fifo_full    nivel: la cola de comandos esta llena ahora
-//   buffer_sel   buffer delantero, 0 es A y 1 es B
-//   underrun     nivel pegajoso del controlador VGA: el barrido se quedo sin datos
+//   clk, rst_n   Reloj del sistema y reinicio asincrono activo en bajo
+//   modo         Modo del sistema, MOE-01 a MOE-06; sale por LEDR[2:0]
+//   busy         Hay trabajo en curso
+//   err_tick     Señal: se registro un error; se alarga para que se vea
+//   overflow     Nivel: hubo descartes en la ventana de medicion
+//   fifo_full    Nivel: la cola de comandos esta llena ahora
+//   buffer_sel   Buffer delantero, 0 es A y 1 es B
+//   underrun     Nivel pegajoso del controlador VGA: el barrido se quedo sin datos
 //
 // Salidas
-//   leds         los diez LED rojos de la placa, con el reparto de arriba
+//   leds         Los diez LED rojos de la placa, con el reparto de arriba
 
 module led_status #(
   parameter int SYS_CLK_HZ = 100_000_000,
@@ -38,7 +38,7 @@ module led_status #(
 
   input  logic [2:0] modo,
   input  logic       busy,
-  input  logic       err_tick,       // Pulso: se registro un error
+  input  logic       err_tick,       // Señal: se registro un error
   input  logic       overflow,       // Nivel: hubo descartes en la ventana
   input  logic       fifo_full,      // Nivel: la cola esta llena ahora
   input  logic       buffer_sel,
@@ -53,9 +53,9 @@ module led_status #(
   localparam int LW              = $clog2(CICLOS_LATIDO + 1);
 
   // Alargador de pulsos
-  // Tres instancias de la misma cuenta atras. Se recarga con cada suceso,
-  // de modo que una racha mantiene el LED encendido en vez de parpadear a
-  // una frecuencia que el ojo no resuelve.
+  // Tres instancias de la misma cuenta atras. 
+  // Se recarga con cada suceso, 
+  // de modo que una racha mantiene el LED encendido en vez de parpadear a una frecuencia que el ojo no resuelve.
   logic [DW-1:0] cnt_err, cnt_ovf, cnt_full;
 
   always_ff @(posedge clk or negedge rst_n) begin

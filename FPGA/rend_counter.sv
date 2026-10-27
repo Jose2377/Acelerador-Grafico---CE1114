@@ -16,20 +16,18 @@
 // de modo que el HPS pueda leer los cuatro valores sin carrera y sin prisa.
 //
 // Entradas
-//   clk, rst_n       reloj de rasterizado y reinicio asincrono activo en bajo
-//   latch            pulso: cerrar la ventana y tomar la foto de los cuatro valores
-//   ventana_reset    pulso: abrir una ventana de medicion nueva
+//   clk, rst_n       Reloj de rasterizado y reinicio
+//   latch            Señal para cerrar la ventana y tomar la foto de los cuatro valores
+//   ventana_reset    Señal para abrir una ventana de medicion nueva
 //   rasterizando     hay un comando en vuelo; es lo que cuenta perf_cycles
-//   comand_tick      pulso: un comando mas completado
-//   px_tick          pulso: un pixel mas aceptado por el gestor de framebuffer
-//   drop_tick        pulso: un paquete mas descartado por la cola
+//   comand_tick      Señal que avisa que un comando mas fue completado
+//   px_tick          Señal que avisa que un pixel mas fue aceptado por el gestor de framebuffer
+//   drop_tick        Señal que avisa que un paquete mas fue descartado por la cola
 //
 // Salidas
-//   ciclos, comandos, pixeles, descartes
-//                    valores en curso de la ventana abierta, para observacion
-//   perf_cycles, perf_commands, perf_pixels, perf_dropped
-//                    la foto de la ultima ventana cerrada, que leen los
-//                    registros PERF_* del mapa
+//   ciclos, comandos, pixeles, descartes                    Valores en curso de la ventana abierta, para observacion
+//   perf_cycles, perf_commands, perf_pixels, perf_dropped   La foto de la ultima ventana cerrada, 
+//                                                           que leen los registros PERF_* del mapa
 
 module rend_counter (
   input  logic clk,
@@ -39,8 +37,8 @@ module rend_counter (
   // latch llega un ciclo antes que ventana_reset.
   // La foto se toma sobre la ventana cerrada y el reinicio ocurre despues.
   
-  input  logic        latch,            // Pulso: INF decodificado
-  input  logic        ventana_reset,    // Pulso: abrir ventana nueva
+  input  logic        latch,            // Señal: INF decodificado
+  input  logic        ventana_reset,    // Señal: abrir ventana nueva
 
   // Sucesos que se contabilizan
   input  logic        rasterizando,     // Hay un comando en vuelo
@@ -63,15 +61,14 @@ module rend_counter (
 );
 
   // Los contadores saturan en lugar de dar la vuelta.
-  
   function automatic logic [31:0] sumar(input logic [31:0] v, input logic inc);
     if (!inc)             sumar = v;
-    else if (&v)          sumar = v;        // ya saturado
+    else if (&v)          sumar = v;        // Ya saturado
     else                  sumar = v + 32'd1;
   endfunction
 
   always_ff @(posedge clk or negedge rst_n) begin
-    if (!rst_n) begin
+    if (!rst_n) begin // Reset
       ciclos        <= '0;
       comandos      <= '0;
       pixeles       <= '0;
@@ -81,19 +78,19 @@ module rend_counter (
       perf_pixels   <= '0;
       perf_dropped  <= '0;
     end else begin
-      if (latch) begin
+      if (latch) begin // Sube los resultados
         perf_cycles   <= ciclos;
         perf_commands <= comandos;
         perf_pixels   <= pixeles;
         perf_dropped  <= descartes;
       end
 
-      if (ventana_reset) begin
+      if (ventana_reset) begin // Reinicia
         ciclos    <= '0;
         comandos  <= '0;
         pixeles   <= '0;
         descartes <= '0;
-      end else begin
+      end else begin // Caso contrario, suma valores
         ciclos    <= sumar(ciclos,    rasterizando);
         comandos  <= sumar(comandos,  comand_tick);
         pixeles   <= sumar(pixeles,   px_tick);

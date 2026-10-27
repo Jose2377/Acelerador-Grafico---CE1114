@@ -1,17 +1,14 @@
 `timescale 1ns / 1ps
 //=============================================================================
 // Acelerador_pkg.sv
-// Proyecto : Unidad de aceleracion grafica 2D  -  ITCR CE-1114
 // Modulo   : Paquete de parametros, tipos y conversion de color compartidos
-// Autor    : Jose Maria Vindas Ortiz (2022209471)
 //
 // Incremento actual (camino completo hasta la salida de video):
-//   - region visible reducida de 64 x 48 pixeles
-//   - pixel de 16 bits en formato RGB565 (PIXEL_BITS del Documento de Diseno)
-//   - cola de comandos, decodificador, rasterizador, gestor de framebuffer
-//     con doble buffer y controlador VGA, todos presentes
-//   - el framebuffer vive en memoria interna de la FPGA (framebuffer_onchip);
-//     el controlador de SDRAM todavia no existe, pero el gestor ya habla el
+//   - Region visible reducida de 64 x 48 pixeles
+//   - Pixel de 16 bits en formato RGB565 (PIXEL_BITS del Documento de Diseno)
+//   - Cola de comandos, decodificador, rasterizador, gestor de framebuffer con doble buffer y controlador VGA, todos presentes
+//   - El framebuffer vive en memoria interna de la FPGA (framebuffer_onchip);
+//     El controlador de SDRAM todavia no existe, pero el gestor ya habla el
 //     Avalon-MM de rafaga que ese modulo implementara, de modo que el cambio
 //     es el parametro FB_ONCHIP del nivel superior
 //   - sin HPS: los registros del mapa estan cableados a los puertos del

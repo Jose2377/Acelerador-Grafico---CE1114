@@ -2,7 +2,6 @@
 
 //=============================================================================
 // Acelerador_Grafico_Top.sv
-// Proyecto : Unidad de aceleracion grafica 2D  -  ITCR CE-1114
 // Modulo   : Nivel superior, integracion de todos los bloques
 //
 // Camino que recorre un comando desde que el HPS lo escribe hasta que se ve
@@ -14,20 +13,18 @@
 //
 // Papel de cada bloque instanciado:
 //
-//   fifo                    cola de comandos; desacopla al software del
-//                           ritmo del rasterizador
-//   decoder_fsm             valida, traduce y gobierna los modos MOE
-//   processor_raster        reparte el comando entre las cinco primitivas
-//   framebuffer_controller  agrupa pixeles en rafagas y arbitra la memoria
-//   framebuffer_onchip      el framebuffer, cuando FB_ONCHIP esta activo
-//   vga_controller          prebusca lineas y produce la senal de video
-//   rend_counter            medidor de rendimiento de la ventana
-//   led_status              estado del sistema sobre los LED de la placa
-//   sync2                   los dos cruces de dominio de un bit
+//   fifo                    Cola de comandos; desacopla al software del ritmo del rasterizador
+//   decoder_fsm             Valida, traduce y gobierna los modos MOE
+//   processor_raster        Reparte el comando entre las cinco primitivas
+//   framebuffer_controller  Agrupa pixeles en rafagas y arbitra la memoria
+//   framebuffer_onchip      El framebuffer, cuando FB_ONCHIP esta activo
+//   vga_controller          Prebusca lineas y produce la senal de video
+//   rend_counter            Medidor de rendimiento de la ventana
+//   led_status              Estado del sistema sobre los LED de la placa
+//   sync2                   Los dos cruces de dominio de un bit
 //
-// Dos dominios de reloj. El de rasterizado y memoria va a 100 MHz; el de
-// pixel lo fija la temporizacion VGA. En la placa los produce un ALTPLL a
-// partir del oscilador de 50 MHz, y no guardan relacion de fase: todo lo que
+// Dos dominios de reloj. El de rasterizado y memoria va a 100 MHz; el de pixel lo fija la temporizacion VGA. 
+// En la placa los produce un ALTPLL a partir del oscilador de 50 MHz, y no guardan relacion de fase: todo lo que
 // cruza entre ellos pasa por sync2 (senales de un bit) o por las async_fifo
 // que vivien dentro del gestor de framebuffer (direcciones y datos).
 //

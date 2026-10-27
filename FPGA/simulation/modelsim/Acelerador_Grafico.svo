@@ -16,7 +16,7 @@
 // PROGRAM "Quartus Prime"
 // VERSION "Version 18.1.0 Build 625 09/12/2018 SJ Lite Edition"
 
-// DATE "10/21/2026 22:28:36"
+// DATE "10/22/2026 01:09:02"
 
 // 
 // Device: Altera 5CSEMA5F31C6 Package FBGA896
@@ -80,57 +80,57 @@ module DE1_SoC_top_level (
 	HPS_SD_DATA,
 	HPS_UART_RX,
 	HPS_UART_TX);
-input 	logic CLOCK_50 ;
-input 	logic [3:0] KEY_N ;
-output 	logic [9:0] LEDR ;
-output 	logic [12:0] DRAM_ADDR ;
-output 	logic [1:0] DRAM_BA ;
-output 	logic DRAM_CAS_N ;
-output 	logic DRAM_CKE ;
-output 	logic DRAM_CLK ;
-output 	logic DRAM_CS_N ;
-inout 	reg [15:0] DRAM_DQ ;
-output 	logic DRAM_LDQM ;
-output 	logic DRAM_RAS_N ;
-output 	logic DRAM_UDQM ;
-output 	logic DRAM_WE_N ;
-output 	logic [7:0] VGA_R ;
-output 	logic [7:0] VGA_G ;
-output 	logic [7:0] VGA_B ;
-output 	logic VGA_BLANK_N ;
-output 	logic VGA_CLK ;
-output 	logic VGA_HS ;
-output 	logic VGA_SYNC_N ;
-output 	logic VGA_VS ;
-output 	logic [14:0] HPS_DDR3_ADDR ;
-output 	logic [2:0] HPS_DDR3_BA ;
-output 	logic HPS_DDR3_CK_P ;
-output 	logic HPS_DDR3_CK_N ;
-output 	logic HPS_DDR3_CKE ;
-output 	logic HPS_DDR3_CS_N ;
-output 	logic HPS_DDR3_RAS_N ;
-output 	logic HPS_DDR3_CAS_N ;
-output 	logic HPS_DDR3_WE_N ;
-output 	logic HPS_DDR3_RESET_N ;
-inout 	reg [31:0] HPS_DDR3_DQ ;
-inout 	reg [3:0] HPS_DDR3_DQS_P ;
-inout 	reg [3:0] HPS_DDR3_DQS_N ;
-output 	logic HPS_DDR3_ODT ;
-output 	logic [3:0] HPS_DDR3_DM ;
-input 	logic HPS_DDR3_RZQ ;
-output 	logic HPS_ENET_GTX_CLK ;
-output 	logic HPS_ENET_TX_EN ;
-output 	logic [3:0] HPS_ENET_TX_DATA ;
-input 	logic HPS_ENET_RX_CLK ;
-input 	logic HPS_ENET_RX_DV ;
-input 	logic [3:0] HPS_ENET_RX_DATA ;
-inout 	reg HPS_ENET_MDIO ;
-output 	logic HPS_ENET_MDC ;
-output 	logic HPS_SD_CLK ;
-inout 	reg HPS_SD_CMD ;
-inout 	reg [3:0] HPS_SD_DATA ;
-input 	logic HPS_UART_RX ;
-output 	logic HPS_UART_TX ;
+input 	CLOCK_50;
+input 	[3:0] KEY_N;
+output 	[9:0] LEDR;
+output 	[12:0] DRAM_ADDR;
+output 	[1:0] DRAM_BA;
+output 	DRAM_CAS_N;
+output 	DRAM_CKE;
+output 	DRAM_CLK;
+output 	DRAM_CS_N;
+output 	[15:0] DRAM_DQ;
+output 	DRAM_LDQM;
+output 	DRAM_RAS_N;
+output 	DRAM_UDQM;
+output 	DRAM_WE_N;
+output 	[7:0] VGA_R;
+output 	[7:0] VGA_G;
+output 	[7:0] VGA_B;
+output 	VGA_BLANK_N;
+output 	VGA_CLK;
+output 	VGA_HS;
+output 	VGA_SYNC_N;
+output 	VGA_VS;
+output 	[14:0] HPS_DDR3_ADDR;
+output 	[2:0] HPS_DDR3_BA;
+output 	HPS_DDR3_CK_P;
+output 	HPS_DDR3_CK_N;
+output 	HPS_DDR3_CKE;
+output 	HPS_DDR3_CS_N;
+output 	HPS_DDR3_RAS_N;
+output 	HPS_DDR3_CAS_N;
+output 	HPS_DDR3_WE_N;
+output 	HPS_DDR3_RESET_N;
+output 	[31:0] HPS_DDR3_DQ;
+output 	[3:0] HPS_DDR3_DQS_P;
+output 	[3:0] HPS_DDR3_DQS_N;
+output 	HPS_DDR3_ODT;
+output 	[3:0] HPS_DDR3_DM;
+input 	HPS_DDR3_RZQ;
+output 	HPS_ENET_GTX_CLK;
+output 	HPS_ENET_TX_EN;
+output 	[3:0] HPS_ENET_TX_DATA;
+input 	HPS_ENET_RX_CLK;
+input 	HPS_ENET_RX_DV;
+input 	[3:0] HPS_ENET_RX_DATA;
+output 	HPS_ENET_MDIO;
+output 	HPS_ENET_MDC;
+output 	HPS_SD_CLK;
+output 	HPS_SD_CMD;
+output 	[3:0] HPS_SD_DATA;
+input 	HPS_UART_RX;
+output 	HPS_UART_TX;
 
 // Design Ports Information
 // KEY_N[1]	=>  Location: PIN_AA15,	 I/O Standard: 3.3-V LVTTL,	 Current Strength: Default
