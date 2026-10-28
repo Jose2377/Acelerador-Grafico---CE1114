@@ -62,6 +62,7 @@ module tb_escena_faro;
   localparam logic [7:0] OPC_INF       = Acelerador_pkg::OPC_INF;
 
   localparam logic [2:0] M_IDLE = Acelerador_pkg::MOE_IDLE;
+  localparam logic [2:0] M_INIT = Acelerador_pkg::MOE_INIT;
 
   localparam int W  = 64;
   localparam int H  = 48;
@@ -116,6 +117,7 @@ module tb_escena_faro;
   logic [$clog2(H)-1:0] px_y;
   logic [PB-1:0]      px_color;
   logic [AW-1:0]      px_addr;
+  logic [3:0]         px_len;
   logic               buffer_sel;
   logic               busy;
   logic        [2:0]  modo;
@@ -131,7 +133,7 @@ module tb_escena_faro;
                            .FIFO_DEPTH(FD), .FB_ONCHIP(1'b1)) dut (
     .clk(clk), .rst_n(rst_n),
     .clk_pix(clk_pix), .rst_pix_n(rst_pix_n),
-    .enable(enable), .reset_soft(reset_soft),
+    .enable(enable), .reset_soft(reset_soft), .perf_window(1'b0),
     .comand_w_ena(comand_w_ena), .comand_w_data(comand_w_data),
     .sd_read(sd_read), .sd_write(sd_write), .sd_address(sd_address),
     .sd_burstcount(sd_burstcount), .sd_writedata(sd_writedata),
@@ -142,7 +144,7 @@ module tb_escena_faro;
     .vga_blank_n(vga_blank_n), .vga_sync_n(vga_sync_n),
     .vga_underrun(vga_underrun), .vga_frames(vga_frames),
     .px_valid(px_valid), .px_x(px_x), .px_y(px_y),
-    .px_color(px_color), .px_addr(px_addr), .buffer_sel(buffer_sel),
+    .px_color(px_color), .px_addr(px_addr), .px_len(px_len), .buffer_sel(buffer_sel),
     .busy(busy), .modo(modo),
     .fifo_level(fifo_level), .fifo_full(fifo_full),
     .fifo_empty(fifo_empty), .overflow(overflow),
@@ -162,13 +164,18 @@ module tb_escena_faro;
   logic [PB-1:0] fb  [0:H-1][0:W-1];
   logic          fbw [0:H-1][0:W-1];
   int            emitidos = 0;
+  logic [31:0]   pw_arranque = '0;     // pixels_written al terminar MOE-01
   int            err_dir  = 0;          // discrepancias entre px_addr y y*W+x
 
   always @(posedge clk) begin
+    // Cada solicitud trae px_len pixeles consecutivos desde (px_x, px_y)
     if (px_valid && dut.px_ready) begin
-      fb[px_y][px_x]  <= px_color;
-      fbw[px_y][px_x] <= 1'b1;
-      emitidos        <= emitidos + 1;
+      for (int i = 0; i < px_len; i++) begin
+        // Bloqueante: el modelo solo se consulta en flancos de bajada
+        fb[px_y][px_x + i]  = px_color;
+        fbw[px_y][px_x + i] = 1'b1;
+      end
+      emitidos <= emitidos + px_len;
       if (px_addr !== AW'(px_y * W + px_x)) err_dir++;
     end
   end
@@ -465,6 +472,14 @@ module tb_escena_faro;
     rst_pix_n = 1'b1;
     repeat (8) @(negedge clk);
 
+    // MOE-01 limpia los dos buffers y descarta lo que llegue a la cola
+    // mientras tanto: la escena se envia cuando el sistema ya esta en espera.
+    while (modo == M_INIT) @(negedge clk);
+    repeat (64) @(negedge clk);
+    borrar_fb();
+    emitidos = 0;
+    pw_arranque = pixels_written;          // pixeles escritos por MOE-01
+
     //------------------------------------------------- 1. dibujo de la escena
     $display("");
     $display("--- 1. Dibujo de la escena -------------------------------");
@@ -519,7 +534,7 @@ module tb_escena_faro;
     // aceptado por el gestor de framebuffer. Si discrepan, uno de los dos
     // esta contando ciclos de contrapresion en lugar de pixeles.
     chk("el medidor coincide con lo observado", perf_pixels,   emitidos);
-    chk("pixeles anotados por el gestor",     pixels_written,  emitidos);
+    chk("pixeles anotados por el gestor",     pixels_written - pw_arranque, emitidos);
     chk("ningun pixel fuera de pantalla",     clip_count,      0);
     chk("direccion lineal siempre correcta",  err_dir,         0);
     chk("sin escrituras fuera de region",     out_of_range,    0);

@@ -14,6 +14,21 @@
 // La ventana se abre al salir de MOE-01 y tras cada INF, y se cierra cuando el decodificador decodifica INF. 
 // Al cerrarse se toma una foto que los registros conservan hasta el siguiente informe, 
 // de modo que el HPS pueda leer los cuatro valores sin carrera y sin prisa.
+//
+// Entradas
+//   clk, rst_n       Reloj de rasterizado y reinicio
+//   latch            Señal para cerrar la ventana y tomar la foto de los cuatro valores
+//   ventana_reset    Señal para abrir una ventana de medicion nueva
+//   rasterizando     hay un comando en vuelo; es lo que cuenta perf_cycles
+//   comand_tick      Señal que avisa que un comando mas fue completado
+//   px_n             Pixeles aceptados por el gestor de framebuffer en este ciclo
+//                    (hasta BURST_LEN cuando el rectangulo relleno entrega un tramo)
+//   drop_tick        Señal que avisa que un paquete mas fue descartado por la cola
+//
+// Salidas
+//   ciclos, comandos, pixeles, descartes                    Valores en curso de la ventana abierta, para observacion
+//   perf_cycles, perf_commands, perf_pixels, perf_dropped   La foto de la ultima ventana cerrada, 
+//                                                           que leen los registros PERF_* del mapa
 
 module rend_counter (
   input  logic clk,
@@ -23,13 +38,13 @@ module rend_counter (
   // latch llega un ciclo antes que ventana_reset.
   // La foto se toma sobre la ventana cerrada y el reinicio ocurre despues.
   
-  input  logic        latch,            // Pulso: INF decodificado
-  input  logic        ventana_reset,    // Pulso: abrir ventana nueva
+  input  logic        latch,            // Señal: INF decodificado
+  input  logic        ventana_reset,    // Señal: abrir ventana nueva
 
   // Sucesos que se contabilizan
   input  logic        rasterizando,     // Hay un comando en vuelo
   input  logic        comand_tick,      // Un comando mas completado
-  input  logic        px_tick,          // Un pixel mas aceptado por el gestor
+  input  logic [3:0]  px_n,             // Pixeles aceptados por el gestor en este ciclo
   input  logic        drop_tick,        // Un paquete mas descartado por la cola
 
   // Valores en curso, para observacion
@@ -47,15 +62,21 @@ module rend_counter (
 );
 
   // Los contadores saturan en lugar de dar la vuelta.
-  
   function automatic logic [31:0] sumar(input logic [31:0] v, input logic inc);
     if (!inc)             sumar = v;
-    else if (&v)          sumar = v;        // ya saturado
+    else if (&v)          sumar = v;        // Ya saturado
     else                  sumar = v + 32'd1;
   endfunction
 
+  // Suma de varios a la vez, tambien saturada
+  function automatic logic [31:0] sumar_n(input logic [31:0] v, input logic [3:0] n);
+    logic [32:0] t;
+    t = {1'b0, v} + 33'(n);
+    sumar_n = t[32] ? 32'hFFFF_FFFF : t[31:0];
+  endfunction
+
   always_ff @(posedge clk or negedge rst_n) begin
-    if (!rst_n) begin
+    if (!rst_n) begin // Reset
       ciclos        <= '0;
       comandos      <= '0;
       pixeles       <= '0;
@@ -65,22 +86,22 @@ module rend_counter (
       perf_pixels   <= '0;
       perf_dropped  <= '0;
     end else begin
-      if (latch) begin
+      if (latch) begin // Sube los resultados
         perf_cycles   <= ciclos;
         perf_commands <= comandos;
         perf_pixels   <= pixeles;
         perf_dropped  <= descartes;
       end
 
-      if (ventana_reset) begin
+      if (ventana_reset) begin // Reinicia
         ciclos    <= '0;
         comandos  <= '0;
         pixeles   <= '0;
         descartes <= '0;
-      end else begin
+      end else begin // Caso contrario, suma valores
         ciclos    <= sumar(ciclos,    rasterizando);
         comandos  <= sumar(comandos,  comand_tick);
-        pixeles   <= sumar(pixeles,   px_tick);
+        pixeles   <= sumar_n(pixeles, px_n);
         descartes <= sumar(descartes, drop_tick);
       end
     end

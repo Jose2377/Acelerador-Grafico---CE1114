@@ -7,29 +7,42 @@
 // El mas simple de los cinco modulos de dibujo y el que fija el contrato que
 // todos comparten:
 //
-//   start   pulso que carga los argumentos y arranca la figura
-//   busy    alto mientras la figura no ha terminado
-//   done    pulso de un ciclo al terminar; lo espera el decodificador
-//   stall   el gestor de framebuffer no acepta: congelar la maquina entera
+//   start   Señal que carga los argumentos y arranca la figura
+//   busy    Señal en alto mientras la figura no ha terminado
+//   done    Señal de un ciclo al terminar; lo espera el decodificador
+//   stall   Señal que el gestor de framebuffer no esta aceptando datos: congela la maquina entera
 //
-// Tres estados: carga los argumentos, presenta el pixel un ciclo y avisa.
-// El estado P_DONE existe por separado para que done sea un pulso limpio de
-// un ciclo y no coincida con el ultimo pixel.
+// Carga los argumentos, Presenta el pixel un ciclo y avisa.
+// El estado P_DONE existe por separado para que done sea un pulso limpio de un ciclo y no coincida con el ultimo pixel.
+//
+// Entradas
+//   clk, rst_n   Reloj del sistema y reinicio
+//   start        Señal que carga los argumentos y arranca la figura
+//   stall        Señal que el gestor de framebuffer no esta aceptando datos: congela la maquina entera
+//   x0, y0       Coordenada del pixel
+//   color_in     Color del pixel en RGB565
+//
+// Salidas
+//   busy         Señal en alto mientras la figura no ha terminado de dibujarse
+//   done         Señal de un ciclo al terminar
+//   px_valid     Solicitud de pixel valida
+//   px_x, px_y   Coordenada del pixel presentado
+//   px_color     Color de pixel
 //=============================================================================
 module draw_pixel #(
   parameter int PIXEL_BITS = 16
 )(
-  input  logic                    clk,
-  input  logic                    rst_n,
-  input  logic                    start,
-  input  logic                    stall,
-  input  logic signed [15:0]      x0, y0,
-  input  logic [PIXEL_BITS-1:0]   color_in,
-  output logic                    busy,
-  output logic                    done,      // pulso de un ciclo
-  output logic                    px_valid,
-  output logic signed [15:0]      px_x, px_y,
-  output logic [PIXEL_BITS-1:0]   px_color
+  input  logic                    clk,        // Reloj del sistema
+  input  logic                    rst_n,      // Reset del sistema
+  input  logic                    start,      // Señal que carga los argumentos y arranca la figura
+  input  logic                    stall,      // Señal que el gestor de framebuffer no esta aceptando datos: congela la maquina entera
+  input  logic signed [15:0]      x0, y0,     // Coordenada del pixel
+  input  logic [PIXEL_BITS-1:0]   color_in,   // Color del pixel en RGB565
+  output logic                    busy,       // Señal en alto mientras la figura no ha terminado
+  output logic                    done,       // Señal de un ciclo al terminar
+  output logic                    px_valid,   // Solicitud de pixel valida
+  output logic signed [15:0]      px_x, px_y, // Coordenada del pixel presentado
+  output logic [PIXEL_BITS-1:0]   px_color    // Color de pixel
 );
 
   typedef enum logic [1:0] {P_IDLE, P_OUT, P_DONE} pst_e;

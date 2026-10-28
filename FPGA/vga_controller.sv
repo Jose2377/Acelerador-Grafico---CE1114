@@ -5,39 +5,58 @@
 // Modulo : Controlador de video, prebusqueda de lineas y salida VGA
 //
 // Vive entero en el dominio de pixel y tiene un plazo que no admite demora:
-// cada ciclo de clk_pix el conversor de la placa espera un color, y si no
-// llega la imagen se rompe. La memoria, en cambio, responde en rafagas y con
-// esperas. Conciliar las dos cosas es todo el trabajo de este modulo.
+// cada ciclo de clk_pix el conversor de la placa espera un color, 
+// y si no llega la imagen se rompe. 
+// La memoria, en cambio, responde en rafagas y con esperas. 
+// Conciliar las dos cosas es todo el trabajo de este modulo.
 //
-// La solucion es prebuscar. Un motor de peticiones va pidiendo lineas
-// completas por delante de donde esta el barrido y las deja en line_buffer,
-// que guarda LINES de ellas; el barrido lee siempre de una ranura ya llena,
-// nunca de la memoria. Con LINES = 4 el barrido lleva hasta tres lineas de
-// margen, suficiente para absorber las esperas de la SDRAM.
+// La solucion es prebuscar. 
+// Un motor de peticiones va pidiendo lineas completas por delante de donde esta el barrido y las deja en line_buffer,
+// que guarda LINES de ellas; el barrido lee siempre de una ranura ya llena, nunca de la memoria. 
+// Con LINES = 4 el barrido lleva hasta tres lineas de margen, suficiente para absorber las esperas de la SDRAM.
 //
-// El motor pide una linea entera y espera a tenerla completa antes de
-// empezar la siguiente (estados F_LIBRE, F_PIDE, F_ESPERA). Las ranuras se
-// indexan por los bits bajos del numero de linea, de modo que el buffer es
-// circular sin ninguna comparacion; por eso LINES debe ser potencia de dos.
-// El vector lista marca que ranuras tienen una linea completa: se levanta al
-// recibir la ultima columna y se baja cuando el barrido termina de mostrarla.
+// El motor pide una linea entera y espera a tenerla completa antes de empezar la siguiente (estados F_LIBRE, F_PIDE, F_ESPERA). 
+// Las ranuras se indexan por los bits bajos del numero de linea, 
+// de modo que el buffer es circular sin ninguna comparacion; 
+// por eso LINES debe ser potencia de dos.
+// El vector lista marca que ranuras tienen una linea completa: 
+// se levanta al recibir la ultima columna y se baja cuando el barrido termina de mostrarla.
 //
-// El cuadro nuevo arranca en el intervalo vertical. Un llenado a medias no
-// se corta: se anota en reiniciar y se aplica al volver a F_LIBRE, mucho
-// antes de que el intervalo termine.
+// El cuadro nuevo arranca en el intervalo vertical. 
+// Un llenado a medias no se corta: se anota en reiniciar y se aplica al volver a F_LIBRE, 
+// mucho antes de que el intervalo termine.
 //
-// Salida de video. La lectura del buffer de lineas esta registrada, asi que
-// el pixel llega un ciclo despues de presentar su direccion; las senales de
-// sincronizacion se retrasan ese mismo ciclo para que la imagen no salga
-// corrida un pixel. El color se expande de RGB565 a RGB888 con la funcion del
-// paquete, y fuera de la region visible las tres componentes van a negro,
-// como exige el blanking.
+// Salida de video. 
+// La lectura del buffer de lineas esta registrada, asi que el pixel llega un ciclo despues de presentar su direccion; 
+// las senales de sincronizacion se retrasan ese mismo ciclo para que la imagen no salga corrida un pixel. 
+// El color se expande de RGB565 a RGB888 con la funcion del paquete, 
+// y fuera de la region visible las tres componentes van a negro, como exige el blanking.
 //
-// underrun es la bandera de que la prebusqueda se quedo corta: el barrido
-// alcanzo una ranura todavia vacia. Se muestra negro y la bandera queda
-// pegada, de modo que un fallo intermitente no pase desapercibido. No se
-// vigila hasta que el barrido se estabiliza, porque en el arranque en frio
-// ninguna ranura esta llena todavia y seria un falso positivo.
+// underrun es la bandera de que la prebusqueda se quedo corta: 
+// el barrido alcanzo una ranura todavia vacia. 
+// Se muestra negro y la bandera queda pegada, 
+// de modo que un fallo intermitente no pase desapercibido. 
+// No se vigila hasta que el barrido se estabiliza, 
+// porque en el arranque en frio ninguna ranura esta llena todavia y seria un falso positivo.
+//
+// Entradas
+//   clk_pix, rst_n          Reloj de pixel y reinicio
+//   front_buffer            Buffer delantero ya sincronizado a este dominio
+//   frame_buffer_ready      El gestor de framebuffer acepta la peticion
+//   frame_buffer_data_in    Pixel devuelto por el gestor
+//   frame_buffer_valid_in   Ese pixel es valido en este ciclo
+//
+// Salidas
+//   frame_buffer_req        Pide un pixel a la prebusqueda
+//   frame_buffer_addr       Indice del pixel que pide
+//   frame_buffer_front      Buffer del que debe leerse
+//   vga_r, vga_g, vga_b     Color del pixel en curso, hacia el conversor de video
+//   vga_hs, vga_vs          Sincronizacion horizontal y vertical
+//   vga_blank_n             Bajo fuera de la region visible
+//   vga_sync_n              Sincronizacion compuesta, fija en el conversor
+//   vsync_act               VSYNC activo en alto, para cruzar al dominio de rasterizado
+//   underrun                El barrido alcanzo una linea que aun no estaba llena
+//   frame_count             Cuadros emitidos desde el reinicio
 //=============================================================================
 module vga_controller #(
   parameter int H_VISIBLE  = 64,

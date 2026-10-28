@@ -1,0 +1,108 @@
+//=============================================================================
+// uag2d_pkg.sv
+// Proyecto : UAG-2D  -  Unidad de aceleracion grafica 2D (version reducida)
+// Modulo   : Paquete de tipos, parametros y constantes compartidas
+// Requisitos: RF-09, RF-13, RF-15, RM-05
+// Autor    : Jose Maria Vindas Ortiz (2022209471)  -  ITCR CE-1114
+//
+// Version reducida (LITE) del sistema descrito en el Documento de Diseno:
+//   - 1 bit por pixel (monocromo), un unico buffer
+//   - framebuffer en registros dentro de la FPGA (no SDRAM)
+//   - sin controlador VGA, sin controlador de comunicacion, sin HPS
+//=============================================================================
+package acelerador_pkg;
+
+  //--------------------------------------------------------------- Geometria
+  parameter int SCREEN_W  = 64;   // ancho  en pixeles (version reducida)
+  parameter int SCREEN_H  = 48;   // alto   en pixeles
+  parameter int XW        = $clog2(SCREEN_W);  // 6 bits
+  parameter int YW        = $clog2(SCREEN_H);  // 6 bits
+
+  parameter int FIFO_DEPTH = 16;  // comandos en cola (256 en el sistema completo)
+
+  // Anchos internos de la ruta aritmetica
+  parameter int CW  = 16;   // coordenada con signo tal como viaja en el paquete
+  parameter int EW  = 22;   // acumulador de error de Bresenham / distancias
+  parameter int TW  = 36;   // funciones de borde del triangulo
+
+  //-------------------------------------------------------- Codigos de operacion
+  typedef enum logic [7:0] {
+    OP_NOP            = 8'h00,
+    OP_DRAW_PIXEL     = 8'h01,
+    OP_DRAW_LINE      = 8'h02,
+    OP_DRAW_TRIA      = 8'h03,
+    OP_DRAW_TRIA_FILL = 8'h04,
+    OP_DRAW_RECT      = 8'h05,
+    OP_DRAW_RECT_FILL = 8'h06,
+    OP_DRAW_CIRC      = 8'h07,
+    OP_DRAW_CIRC_FILL = 8'h08,
+    OP_CLEAR          = 8'h09,
+    OP_SWAP_BUFFER    = 8'h0A,
+    OP_INF            = 8'h0B
+  } opcode_e;
+
+  //------------------------------------------------------------ Codigos de error
+  parameter logic [7:0] EC_06_OPCODE   = 8'h06;  // codigo de operacion desconocido
+  parameter logic [7:0] EC_07_PARAM    = 8'h07;  // parametro geometrico invalido
+  parameter logic [7:0] EC_08_OVERFLOW = 8'h08;  // desbordamiento de la cola
+
+  //----------------------------------------------------------- Modos del sistema
+  typedef enum logic [2:0] {
+    MOE_INIT  = 3'd0,   // MOE-01  inicializacion
+    MOE_IDLE  = 3'd1,   // MOE-02  espera
+    MOE_PROC  = 3'd2,   // MOE-03  procesamiento
+    MOE_SWAP  = 3'd3,   // MOE-04  intercambio de buffer
+    MOE_INFO  = 3'd4,   // MOE-05  informe de rendimiento
+    MOE_ERROR = 3'd5,   // MOE-06  error
+    MOE_WAIT  = 3'd6    // subestado interno de MOE-03: espera al rasterizador
+  } sys_state_e;
+
+  //-------------------------------------------- Comando decodificado (168 bits)
+  // Corresponde al paquete de 24 bytes de la seccion 5.7.1 del diseno, sin los
+  // campos reservados ni el CRC, que se consumen en el esclavo Avalon-MM.
+  typedef struct packed {
+    logic [7:0]         opcode;
+    logic [7:0]         flags;
+    logic [15:0]        seq_id;
+    logic signed [15:0] x0, y0;
+    logic signed [15:0] x1, y1;
+    logic signed [15:0] x2, y2;
+    logic [7:0]         r, g, b;
+    logic [15:0]        param;
+  } cmd_t;
+
+  parameter int CMD_BITS = $bits(cmd_t);
+
+  //---------------------------------------------------------------- Utilidades
+  function automatic logic signed [CW-1:0] smin2(
+      input logic signed [CW-1:0] a, input logic signed [CW-1:0] b);
+    smin2 = (a < b) ? a : b;
+  endfunction
+
+  function automatic logic signed [CW-1:0] smax2(
+      input logic signed [CW-1:0] a, input logic signed [CW-1:0] b);
+    smax2 = (a > b) ? a : b;
+  endfunction
+
+  function automatic logic signed [CW-1:0] smin3(
+      input logic signed [CW-1:0] a, input logic signed [CW-1:0] b,
+      input logic signed [CW-1:0] c);
+    smin3 = smin2(smin2(a, b), c);
+  endfunction
+
+  function automatic logic signed [CW-1:0] smax3(
+      input logic signed [CW-1:0] a, input logic signed [CW-1:0] b,
+      input logic signed [CW-1:0] c);
+    smax3 = smax2(smax2(a, b), c);
+  endfunction
+
+  // Reduccion de color RGB888 a un bit: cualquier color distinto de negro
+  // enciende el pixel. En el sistema completo esta funcion se sustituye por la
+  // conversion a RGB565 descrita en la seccion 5.5.1 del diseno.
+  function automatic logic color_bit(input logic [7:0] r,
+                                     input logic [7:0] g,
+                                     input logic [7:0] b);
+    color_bit = |{r, g, b};
+  endfunction
+
+endpackage

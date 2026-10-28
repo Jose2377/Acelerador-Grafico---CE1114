@@ -5,10 +5,13 @@
 // Proyecto : Unidad de aceleracion grafica 2D  -  ITCR CE-1114
 // Modulo   : Nivel superior de placa
 //
-// Une las tres piezas que hasta ahora vivian separadas:
+// Une las tres piezas del sistema:
 //
-//   soc_system              HPS, puente ligero HPS-FPGA, PLL y controlador de
-//                           la SDRAM externa, generados por Platform Designer
+//   soc_system              HPS, puente ligero HPS-FPGA, PLL, controlador de
+//                           la SDRAM externa y los dos Avalon-MM Pipeline
+//                           Bridge (mm_bridge_0 hacia los registros y
+//                           mm_bridge_sdram hacia la SDRAM), generados por
+//                           Platform Designer
 //   avalon_reg_file         el mapa de registros que el HPS ve del acelerador
 //   Acelerador_Grafico_Top  el acelerador completo, sin un solo cambio
 //
@@ -19,27 +22,58 @@
 //
 // Camino de la imagen. El rasterizador escribe pixeles en el buffer trasero a
 // traves de su maestro de rafaga, que aqui ya no habla con la memoria interna
-// de la FPGA sino con la SDRAM de 64 MB de la placa (FB_ONCHIP en cero), y el
-// barrido lee el buffer delantero y lo saca por el conversor de video.
+// de la FPGA sino, a traves de mm_bridge_sdram, con la SDRAM de 64 MB de la
+// placa (FB_ONCHIP en cero), y el barrido lee el buffer delantero y lo saca
+// por el conversor de video.
 //
 // Resolucion. Acelerador_pkg sigue declarando 64 x 48, que es lo que usan los
 // bancos de pruebas para correr rapido en ModelSim. Aqui se sobrescriben los
 // parametros de la instancia con 640 x 480 y la tabla VESA real, que tambien
-// viven en el paquete (VGA_H_VISIBLE y companeros). Ni el paquete ni la
-// simulacion cambian: el override es solo de esta instancia.
+// viven en el paquete (VGA_H_VISIBLE y companeros), y la cola con sus 256
+// comandos. Ni el paquete ni la simulacion cambian: el override es solo de
+// esta instancia.
 //
 // Relojes. Los tres salen del mismo PLL dentro de soc_system, alimentado por
 // el oscilador de 50 MHz de la placa:
 //
 //   clk_100_clk      100 MHz             dominio de HPS, SDRAM y rasterizado
 //   pll_0_vga_clk    25.175 MHz          dominio de pixel
-//   pll_0_sdram_clk  100 MHz, -3758 ps   solo hacia el pin DRAM_CLK
+//   pll_0_sdram_clk  100 MHz, +2917 ps (ver Acelerador_Grafico.sdc)   solo hacia el pin DRAM_CLK
 //
 // Que los tres vengan del mismo PLL es lo que da dos garantias: el reloj que
 // llega al chip de SDRAM tiene una relacion de fase conocida con el que usa su
 // controlador, y avalon_reg_file comparte reloj con el puente ligero, de modo
 // que no hay cruce de dominio en el camino de los registros, tal como asume
 // la cabecera de avalon_reg_file.sv.
+//
+// SDRAM. El controlador es el de Platform Designer (sdram_controller_0), no
+// uno propio. Su captura de lectura a 100 MHz no cierra en tiempo: es una
+// violacion conocida y temporal que Acelerador_Grafico.sdc documenta, junto
+// con la solucion prevista (un sdram_controller.sv propio y DRAM_CLK
+// reenviado por un registro DDIO).
+//
+// Entradas
+//   CLOCK_50          Oscilador de 50 MHz de la placa; alimenta el PLL de soc_system
+//   KEY_N             Pulsadores, activos en bajo; KEY0 es el reinicio
+//   DRAM_DQ           Bus de datos de la SDRAM (bidireccional)
+//   HPS_DDR3_*        Bus de la DDR3 del HPS; parte es bidireccional
+//   HPS_ENET_RX_CLK, HPS_ENET_RX_DV, HPS_ENET_RX_DATA, HPS_ENET_MDIO
+//                     Recepcion y gestion del Ethernet del HPS (IF-03)
+//   HPS_SD_CMD, HPS_SD_DATA
+//                     MicroSD de arranque del HPS (bidireccionales)
+//   HPS_UART_RX       Consola serial del HPS, entrada
+//
+// Salidas
+//   LEDR              Indicador de estado del sistema
+//   DRAM_ADDR, DRAM_BA, DRAM_CAS_N, DRAM_CKE, DRAM_CLK, DRAM_CS_N,
+//   DRAM_LDQM, DRAM_RAS_N, DRAM_UDQM, DRAM_WE_N
+//                     Control de la SDRAM externa donde vive el framebuffer
+//   VGA_R, VGA_G, VGA_B, VGA_BLANK_N, VGA_CLK, VGA_HS, VGA_SYNC_N, VGA_VS
+//                     Salida de video hacia el conversor de la placa
+//   HPS_ENET_GTX_CLK, HPS_ENET_TX_EN, HPS_ENET_TX_DATA, HPS_ENET_MDC
+//                     Transmision y gestion del Ethernet del HPS
+//   HPS_SD_CLK        Reloj de la microSD
+//   HPS_UART_TX       Consola serial del HPS, salida
 //=============================================================================
 module DE1_SoC_top_level (
   //------------------------------------------------------- Reloj y pulsadores
@@ -180,7 +214,7 @@ module DE1_SoC_top_level (
   end
 
   //===========================================================================
-  // Avalon-MM de rafaga del acelerador hacia la SDRAM
+  // Avalon-MM de rafaga del acelerador hacia la SDRAM (via mm_bridge_sdram)
   //===========================================================================
   logic                  fb_read, fb_write;
   logic [SD_AW-1:0]      fb_address;        // Direccion en PALABRAS de 16 bits
@@ -193,7 +227,14 @@ module DE1_SoC_top_level (
   //===========================================================================
   // Senales entre el banco de registros y el acelerador
   //===========================================================================
-  logic              gfx_enable, gfx_reset_soft;
+  logic              gfx_enable, gfx_reset_soft, gfx_perf_window;
+  logic              gfx_buffer_sel, gfx_evt_inf, gfx_evt_err;
+  // Peticion de interrupcion del banco de registros. soc_system todavia no
+  // tiene habilitada la interfaz de interrupciones FPGA a HPS (f2h_irq), asi
+  // que por ahora el driver trabaja por sondeo de CONTROL[5:4]. Para usarla:
+  // habilitar "FPGA-to-HPS interrupts" en el HPS dentro de Platform Designer,
+  // exportar una linea, regenerar y conectar gfx_irq a ese puerto.
+  logic              gfx_irq;
   logic              gfx_cmd_w_ena;
   logic [31:0]       gfx_cmd_w_data;
 
@@ -326,6 +367,8 @@ module DE1_SoC_top_level (
 
     .enable         (gfx_enable),
     .reset_soft     (gfx_reset_soft),
+    .perf_window    (gfx_perf_window),
+    .irq            (gfx_irq),
     .comand_w_ena   (gfx_cmd_w_ena),
     .comand_w_data  (gfx_cmd_w_data),
 
@@ -335,6 +378,9 @@ module DE1_SoC_top_level (
     .fifo_full      (gfx_fifo_full),
     .fifo_empty     (gfx_fifo_empty),
     .overflow       (gfx_overflow),
+    .buffer_sel     (gfx_buffer_sel),
+    .evt_inf        (gfx_evt_inf),
+    .evt_err        (gfx_evt_err),
     .err_last       (gfx_err_last),
     .err_count      (gfx_err_count),
     .perf_cycles    (gfx_perf_cycles),
@@ -385,6 +431,7 @@ module DE1_SoC_top_level (
     // CONTROL (0x04) y CMD_FIFO_W (0x0C)
     .enable           (gfx_enable),
     .reset_soft       (gfx_reset_soft),
+    .perf_window      (gfx_perf_window),
     .comand_w_ena     (gfx_cmd_w_ena),
     .comand_w_data    (gfx_cmd_w_data),
 
@@ -416,7 +463,9 @@ module DE1_SoC_top_level (
     .px_y             (),
     .px_color         (),
     .px_addr          (),
-    .buffer_sel       (),
+    .buffer_sel       (gfx_buffer_sel),     // STATUS (0x08), bit 7
+    .evt_inf          (gfx_evt_inf),
+    .evt_err          (gfx_evt_err),
 
     // STATUS (0x08)
     .busy             (gfx_busy),
@@ -454,9 +503,10 @@ module DE1_SoC_top_level (
   // El indicador de estado del sistema sale tal cual por los diez LED rojos.
   assign LEDR = gfx_leds;
 
-  // Reloj del chip de SDRAM. Sale desfasado del PLL para que, tras el retardo
-  // de pista de la placa, llegue alineado con los datos que emite el
-  // controlador en el dominio de 100 MHz.
+  // Reloj del chip de SDRAM. Sale del PLL desfasado 2917 ps, que es el minimo
+  // con el que el chip toma el comando sin un ciclo de retraso tras el
+  // retardo de pista de la placa (ver Acelerador_Grafico.sdc, que tambien
+  // explica la violacion de tiempo conocida en la lectura).
   assign DRAM_CLK = clk_sdram;
 
   // Reloj del conversor de video. Si en la placa la imagen apareciera corrida

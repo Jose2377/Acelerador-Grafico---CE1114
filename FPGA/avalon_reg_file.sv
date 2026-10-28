@@ -2,12 +2,11 @@
 
 //=============================================================================
 // avalon_reg_file.sv
-// Proyecto : Unidad de aceleracion grafica 2D  -  ITCR CE-1114
 // Modulo   : Banco de registros Avalon-MM esclavo, cara visible del HPS
 //
-// Este modulo es lo unico que el HPS toca. Detras del puente ligero
-// (h2f_lw_axi_master, base 0xFF20_0000) traduce lecturas y escrituras de
-// 32 bits en los puertos sueltos que Acelerador_Grafico_Top ya expone.
+// Este modulo es lo unico que el HPS toca. 
+// Detras del puente ligero (h2f_lw_axi_master, base 0xFF20_0000) traduce lecturas 
+// y escrituras de 32 bits en los puertos sueltos que Acelerador_Grafico_Top ya expone.
 //
 // Platform Designer no genera este modulo: la IP del HPS entrega el maestro,
 // pero el mapa de registros del proyecto es propio y hay que escribirlo.
@@ -15,19 +14,24 @@
 // Mapa de registros (desplazamientos en bytes desde la base del puente)
 //
 //   0x00  ID          R   constante 0xACE1_1140, confirma que el puente vive
-//   0x04  CONTROL     RW  [0] enable     nivel, queda puesto
-//                         [1] soft_reset pulso de un ciclo, se autolimpia
+//   0x04  CONTROL     RW  [0] enable       nivel, queda puesto
+//                         [1] soft_reset   pulso de un ciclo, se autolimpia; se lee 0
+//                         [2] perf_window  pulso de un ciclo, se autolimpia; se lee 0.
+//                                          Abre una ventana de medicion nueva: el driver
+//                                          lo escribe al empezar un lote y INF la cierra
+//                         [3] irq_en       nivel, habilita la salida de interrupcion
+//                         [4] irq_inf      R/W1C, pendiente: un INF publico un informe
+//                         [5] irq_err      R/W1C, pendiente: se registro un error (EC-06 a EC-08)
 //   0x08  STATUS      R   [0]     busy
 //                         [3:1]   modo (MOE)
 //                         [4]     fifo_full
 //                         [5]     fifo_empty
 //                         [6]     overflow
-//                         [7]     vga_underrun
+//                         [7]     buffer_sel, buffer delantero (0 = A, 1 = B)
 //                         [15:8]  fifo_level, saturado en 255
 //                         [31:16] seq_last
-//   0x0C  CMD_FIFO_W  W   una palabra del paquete; seis escrituras
-//                         consecutivas (W0 a W5) encolan un comando
-//   0x10  ERR_INFO    R   [3:0] err_last, [31:16] err_count
+//   0x0C  CMD_FIFO_W  W   Una palabra del paquete; seis escrituras consecutivas (W0 a W5) encolan un comando
+//   0x10  ERR_INFO    R   [3:0] err_last, [4] vga_underrun, [31:16] err_count
 //   0x14  PERF_CYCLES R
 //   0x18  PERF_CMDS   R
 //   0x1C  PERF_PIXELS R
@@ -38,34 +42,63 @@
 //   0x30  PIXELS_WR   R
 //   0x34  OUT_RANGE   R
 //   0x38  VGA_FRAMES  R
-//   0x3C  LEDS        R   copia del indicador de estado, para depurar
+//   0x3C  LEDS        R   Copia del indicador de estado, para depurar
 //
-// Protocolo. Esclavo Avalon-MM de 32 bits, sin waitrequest (nunca bloquea)
-// y con readLatency = 1: readdata es valido el ciclo siguiente a read. Esos
-// dos valores son los que hay que declarar en Platform Designer si algun dia
-// este modulo se empaqueta como componente.
+// Interrupcion. irq = irq_en && (irq_inf || irq_err), en nivel.
+// Las dos banderas se marcan aunque irq_en este en bajo, 
+// de modo que el driver puede trabajar por sondeo leyendo CONTROL, 
+// y se limpian escribiendo un 1 en su bit (W1C). 
+// Escribir CONTROL con esos bits en 0 no toca las pendientes,
+// asi que el driver puede cambiar enable sin perder una interrupcion.
+// Si un evento llega en el mismo ciclo que su limpieza, gana el evento.
 //
-// avs_address llega en BYTES, como lo entrega el maestro exportado del
-// Avalon-MM Pipeline Bridge. Los dos bits bajos se descartan y el indice de
-// palabra es avs_address[5:2]. Si en su lugar se conecta un maestro declarado
-// en palabras, hay que quitar ese desplazamiento.
+// Protocolo. Esclavo Avalon-MM de 32 bits, sin waitrequest (nunca bloquea) y con readLatency = 1: 
+// readdata es valido el ciclo siguiente a read.
+// Esos dos valores son los que hay que declarar en Platform Designer si algun dia este modulo se empaqueta como componente.
 //
-// La escritura a CMD_FIFO_W es la razon de que esto no pueda ser un PIO del
-// catalogo: comand_w_ena tiene que durar exactamente un ciclo, porque el
-// ensamblador del nivel superior cuenta palabras con el. Un PIO deja un
-// registro en alto y encolaria la misma palabra seis veces.
+// avs_address llega en BYTES, como lo entrega el maestro exportado del Avalon-MM Pipeline Bridge.
+// Los dos bits bajos se descartan y el indice de palabra es avs_address[5:2].
+// Si en su lugar se conecta un maestro declarado en palabras, hay que quitar ese desplazamiento.
+//
+// La escritura a CMD_FIFO_W es la razon de que esto no pueda ser un PIO del catalogo: 
+// comand_w_ena tiene que durar exactamente un ciclo, porque el ensamblador del nivel superior cuenta palabras con el.
+// Un PIO deja un registro en alto y encolaria la misma palabra seis veces.
+//
+// Entradas
+//   clk, rst_n        Reloj y reinicio del dominio del sistema
+//   avs_address       Direccion en bytes del esclavo Avalon-MM, 64 posiciones
+//   avs_read          Lectura de un registro
+//   avs_write         Escritura de un registro
+//   avs_writedata     Dato que escribe el HPS
+
+//   busy, modo, fifo_level, fifo_full, fifo_empty, overflow,
+//   buffer_sel                                                        Estado que publica el registro STATUS
+//   evt_inf, evt_err                                                  Pulsos de evento para las banderas de interrupcion
+//   err_last, err_count                                               Contenido del registro ERR_INFO
+//   perf_cycles, perf_commands, perf_pixels, perf_dropped             Los cuatro registros de rendimiento
+//   seq_last, clip_count, burst_writes, burst_reads, pixels_written,  
+//   out_of_range, vga_frames, vga_underrun, leds                      Registros auxiliares de instrumentacion, de solo lectura
+//
+// Salidas
+//   avs_readdata      Dato devuelto al HPS en una lectura
+//   enable            Bit enable del registro CONTROL
+//   reset_soft        Bit de reinicio por software del registro CONTROL
+//   perf_window       Pulso que abre una ventana de medicion nueva
+//   irq               Peticion de interrupcion hacia el HPS, en nivel
+//   comand_w_ena      Señal de escritura en el puerto COMAND_FIFO_W
+//   comand_w_data     Palabra del paquete de comando que se esta escribiendo
 //=============================================================================
 module avalon_reg_file #(
   parameter int FIFO_DEPTH = Acelerador_pkg::FIFO_DEPTH,
   parameter int LVL_BITS   = $clog2(FIFO_DEPTH) + 1
 )(
-  // Reloj y reset del dominio del sistema. En la placa es el mismo que
-  // alimenta h2f_lw_axi_clk, de modo que no hay cruce de dominio aqui.
+  // Reloj y reset del dominio del sistema.
+  // En la placa es el mismo que alimenta h2f_lw_axi_clk, de modo que no hay cruce de dominio aqui.
   input  logic        clk,
   input  logic        rst_n,
 
   //--------------------------------------------------- Avalon-MM esclavo
-  input  logic [5:0]  avs_address,      // bytes, 64 posiciones
+  input  logic [5:0]  avs_address,      // Bytes, 64 posiciones
   input  logic        avs_read,
   input  logic        avs_write,
   input  logic [31:0] avs_writedata,
@@ -74,6 +107,8 @@ module avalon_reg_file #(
   //------------------------------- Hacia Acelerador_Grafico_Top (salidas)
   output logic        enable,
   output logic        reset_soft,
+  output logic        perf_window,
+  output logic        irq,
   output logic        comand_w_ena,
   output logic [31:0] comand_w_data,
 
@@ -84,6 +119,9 @@ module avalon_reg_file #(
   input  logic              fifo_full,
   input  logic              fifo_empty,
   input  logic              overflow,
+  input  logic              buffer_sel,
+  input  logic              evt_inf,
+  input  logic              evt_err,
   input  logic [3:0]        err_last,
   input  logic [15:0]       err_count,
   input  logic [31:0]       perf_cycles,
@@ -125,38 +163,58 @@ module avalon_reg_file #(
   localparam logic [3:0] R_LEDS        = 4'hF;
 
   //------------------------------------------------------------- Escritura
-  // enable es un nivel que persiste. soft_reset es un pulso de un ciclo: el
-  // nivel superior lo usa para vaciar el ensamblador de paquete y avisar al
-  // decodificador, y dejarlo en alto mantendria el sistema detenido.
+  // enable es un nivel que persiste. soft_reset es un pulso de un ciclo:
+  // El nivel superior lo usa para vaciar el ensamblador de paquete y avisar al decodificador,
+  // y dejarlo en alto mantendria el sistema detenido.
+  // perf_window sigue la misma regla que soft_reset.
+  logic irq_en, irq_inf, irq_err;
+  logic w_control;
+
+  assign w_control = avs_write && (idx == R_CONTROL);
+
   always_ff @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
-      enable     <= 1'b0;
-      reset_soft <= 1'b0;
+      enable      <= 1'b0;
+      reset_soft  <= 1'b0;
+      perf_window <= 1'b0;
+      irq_en      <= 1'b0;
+      irq_inf     <= 1'b0;
+      irq_err     <= 1'b0;
     end else begin
-      reset_soft <= 1'b0;                      // se autolimpia cada ciclo
-      if (avs_write && (idx == R_CONTROL)) begin
-        enable     <= avs_writedata[0];
-        reset_soft <= avs_writedata[1];
+      reset_soft  <= 1'b0;                     // Se autolimpian cada ciclo
+      perf_window <= 1'b0;
+      if (w_control) begin
+        enable      <= avs_writedata[0];
+        reset_soft  <= avs_writedata[1];
+        perf_window <= avs_writedata[2];
+        irq_en      <= avs_writedata[3];
       end
+
+      // Pendientes: el evento las marca, un 1 escrito en su bit las limpia
+      if (evt_inf)                              irq_inf <= 1'b1;
+      else if (w_control && avs_writedata[4])  irq_inf <= 1'b0;
+      if (evt_err)                              irq_err <= 1'b1;
+      else if (w_control && avs_writedata[5])  irq_err <= 1'b0;
     end
   end
 
-  // Palabra del paquete. Se pasa combinacional junto con el pulso para que
-  // el ensamblador del nivel superior la capture en el mismo flanco en que
-  // ve comand_w_ena, igual que hace el banco de pruebas.
+  assign irq = irq_en && (irq_inf || irq_err);
+
+  // Palabra del paquete. 
+  // Se pasa combinacional junto con el pulso para que el ensamblador del nivel superior
+  // la capture en el mismo flanco en que ve comand_w_ena, igual que hace el banco de pruebas.
   assign comand_w_ena  = avs_write && (idx == R_CMD_FIFO_W);
   assign comand_w_data = avs_writedata;
 
   //-------------------------------------------------------------- Lectura
-  // readLatency = 1. El multiplexor se registra, de modo que la ruta critica
-  // no atraviesa el interconnect del puente.
+  // readLatency = 1.
+  // El multiplexor se registra, de modo que la ruta critica no atraviesa el interconnect del puente.
   logic [31:0] status_word, err_word;
 
-  // Nivel de la cola recortado al campo de 8 bits que STATUS le reserva en
-  // [15:8]. Con FIFO_DEPTH de 256 el nivel necesita 9 bits, porque tiene que
-  // poder valer 256; pero ese unico valor que no cabe es la cola llena, que
-  // fifo_full ya informa en el bit 4. Saturar en 255 no pierde informacion y
-  // conserva el mapa de registros tal como lo documenta el diseno.
+  // Nivel de la cola recortado al campo de 8 bits que STATUS le reserva en [15:8]. 
+  // Con FIFO_DEPTH de 256 el nivel necesita 9 bits, porque tiene que poder valer 256;
+  // pero ese unico valor que no cabe es la cola llena, que fifo_full ya informa en el bit 4.
+  // Saturar en 255 no pierde informacion y conserva el mapa de registros tal como lo documenta el diseno.
   localparam int   LVLX = (LVL_BITS > 9) ? LVL_BITS : 9;
   logic [LVLX-1:0] nivel_ext;
   logic [7:0]      nivel_8;
@@ -166,14 +224,14 @@ module avalon_reg_file #(
 
   assign status_word = {seq_last,                        // [31:16]
                         nivel_8,                         // [15:8]
-                        vga_underrun,                    // [7]
+                        buffer_sel,                      // [7]
                         overflow,                        // [6]
                         fifo_empty,                      // [5]
                         fifo_full,                       // [4]
                         modo,                            // [3:1]
                         busy};                           // [0]
 
-  assign err_word = {err_count, 12'd0, err_last};
+  assign err_word = {err_count, 11'd0, vga_underrun, err_last};
 
   always_ff @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
@@ -181,7 +239,8 @@ module avalon_reg_file #(
     end else if (avs_read) begin
       case (idx)
         R_ID          : avs_readdata <= ID_MAGIC;
-        R_CONTROL     : avs_readdata <= {30'd0, 1'b0, enable};
+        R_CONTROL     : avs_readdata <= {26'd0, irq_err, irq_inf, irq_en,
+                                         1'b0, 1'b0, enable};
         R_STATUS      : avs_readdata <= status_word;
         R_ERR_INFO    : avs_readdata <= err_word;
         R_PERF_CYCLES : avs_readdata <= perf_cycles;

@@ -138,6 +138,7 @@ set_global_assignment -name MAX_CORE_JUNCTION_TEMP 85
 set_global_assignment -name POWER_PRESET_COOLING_SOLUTION "23 MM HEAT SINK WITH 200 LFPM AIRFLOW"
 set_global_assignment -name POWER_BOARD_THERMAL_MODEL "NONE (CONSERVATIVE)"
 set_global_assignment -name QIP_FILE Platform_Designer/synthesis/soc_system.qip
+set_global_assignment -name SDC_FILE Acelerador_Grafico.sdc
 set_global_assignment -name SYSTEMVERILOG_FILE Acelerador_pkg.sv
 set_global_assignment -name SYSTEMVERILOG_FILE Acelerador_Grafico_Top.sv
 set_global_assignment -name SYSTEMVERILOG_FILE fifo.sv

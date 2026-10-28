@@ -1,0 +1,100 @@
+//=============================================================================
+// vga_timing.sv
+// Generador de temporizacion de video
+//
+// Dos contadores: el horizontal recorre una linea completa y el vertical
+// avanza cada vez que el horizontal da la vuelta. De ahi salen las dos
+// sincronizaciones, la senal de dato activo y la posicion del pixel.
+//
+// Cada eje se recorre siempre en este orden:
+//
+//   |<-- visible -->|<- front ->|<-- sync -->|<- back ->|
+//   0            V-1                                 T-1
+//
+// El tramo visible va primero para que la posicion del pixel coincida con el
+// contador sin restar nada.
+//
+// No sabe de memoria ni de color: es puro tiempo, y por eso se verifica
+// contra la tabla del estandar sin montar el resto del sistema.
+//=============================================================================
+module vga_timing #(
+  parameter int H_VISIBLE = 640,
+  parameter int H_FRONT   = 16,
+  parameter int H_SYNC    = 96,
+  parameter int H_BACK    = 48,
+  parameter int V_VISIBLE = 480,
+  parameter int V_FRONT   = 10,
+  parameter int V_SYNC    = 2,
+  parameter int V_BACK    = 33,
+  parameter bit H_POL     = 1'b0,      // nivel activo de la sincronizacion
+  parameter bit V_POL     = 1'b0
+)(
+  input  logic clk_pix,
+  input  logic rst_n,
+
+  output logic hsync,
+  output logic vsync,
+  output logic de,                     // dato activo: dentro de la region visible
+  output logic [$clog2(H_VISIBLE)-1:0] pix_x,
+  output logic [$clog2(V_VISIBLE)-1:0] pix_y,
+
+  output logic linea_fin,              // ultimo pixel visible de una linea
+  output logic cuadro_inicio,          // primer ciclo del intervalo vertical
+  output logic vsync_act               // sincronismo vertical, activo en alto
+);
+
+  localparam int H_TOTAL = H_VISIBLE + H_FRONT + H_SYNC + H_BACK;
+  localparam int V_TOTAL = V_VISIBLE + V_FRONT + V_SYNC + V_BACK;
+  localparam int HCW     = $clog2(H_TOTAL);
+  localparam int VCW     = $clog2(V_TOTAL);
+
+  localparam int H_SYNC_INI = H_VISIBLE + H_FRONT;
+  localparam int H_SYNC_FIN = H_VISIBLE + H_FRONT + H_SYNC;   // exclusivo
+  localparam int V_SYNC_INI = V_VISIBLE + V_FRONT;
+  localparam int V_SYNC_FIN = V_VISIBLE + V_FRONT + V_SYNC;   // exclusivo
+
+  logic [HCW-1:0] hcnt;
+  logic [VCW-1:0] vcnt;
+
+  // Contadores
+  always_ff @(posedge clk_pix or negedge rst_n) begin
+    if (!rst_n) begin
+      hcnt <= '0;
+      vcnt <= '0;
+    end else if (hcnt == HCW'(H_TOTAL - 1)) begin
+      hcnt <= '0;
+      vcnt <= (vcnt == VCW'(V_TOTAL - 1)) ? '0 : vcnt + 1'b1;
+    end else begin
+      hcnt <= hcnt + 1'b1;
+    end
+  end
+
+  // Salidas
+  logic h_visible, v_visible, h_en_sync, v_en_sync;
+
+  assign h_visible = (hcnt < HCW'(H_VISIBLE));
+  assign v_visible = (vcnt < VCW'(V_VISIBLE));
+  assign h_en_sync = (hcnt >= HCW'(H_SYNC_INI)) && (hcnt < HCW'(H_SYNC_FIN));
+  assign v_en_sync = (vcnt >= VCW'(V_SYNC_INI)) && (vcnt < VCW'(V_SYNC_FIN));
+
+  assign hsync = h_en_sync ? H_POL : ~H_POL;
+  assign vsync = v_en_sync ? V_POL : ~V_POL;
+  assign de    = h_visible && v_visible;
+
+  // Truncar es seguro: solo se usan cuando de vale 1.
+  assign pix_x = hcnt[$clog2(H_VISIBLE)-1:0];
+  assign pix_y = vcnt[$clog2(V_VISIBLE)-1:0];
+
+  // Version activa en alto del sincronismo vertical. Es la que cruza hacia
+  // el dominio de rasterizado: el decodificador no tiene por que conocer la
+  // polaridad que pide el monitor.
+  assign vsync_act = v_en_sync;
+
+  assign linea_fin = v_visible && (hcnt == HCW'(H_VISIBLE - 1));
+
+  // Primer ciclo del intervalo vertical. Es cuando el controlador reinicia
+  // la prebusqueda: queda todo el intervalo por delante para llenar las
+  // primeras lineas del cuadro siguiente.
+  assign cuadro_inicio = (vcnt == VCW'(V_VISIBLE)) && (hcnt == '0);
+
+endmodule

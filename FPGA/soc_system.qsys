@@ -818,7 +818,7 @@
   <parameter name="gui_output_clock_frequency8" value="100.0" />
   <parameter name="gui_output_clock_frequency9" value="100.0" />
   <parameter name="gui_phase_shift0" value="0" />
-  <parameter name="gui_phase_shift1" value="3758" />
+  <parameter name="gui_phase_shift1" value="2917" />
   <parameter name="gui_phase_shift10" value="0" />
   <parameter name="gui_phase_shift11" value="0" />
   <parameter name="gui_phase_shift12" value="0" />

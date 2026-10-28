@@ -2,7 +2,6 @@
 
 //=============================================================================
 // Acelerador_Grafico_Top.sv
-// Proyecto : Unidad de aceleracion grafica 2D  -  ITCR CE-1114
 // Modulo   : Nivel superior, integracion de todos los bloques
 //
 // Camino que recorre un comando desde que el HPS lo escribe hasta que se ve
@@ -14,22 +13,20 @@
 //
 // Papel de cada bloque instanciado:
 //
-//   fifo                    cola de comandos; desacopla al software del
-//                           ritmo del rasterizador
-//   decoder_fsm             valida, traduce y gobierna los modos MOE
-//   processor_raster        reparte el comando entre las cinco primitivas
-//   framebuffer_controller  agrupa pixeles en rafagas y arbitra la memoria
-//   framebuffer_onchip      el framebuffer, cuando FB_ONCHIP esta activo
-//   vga_controller          prebusca lineas y produce la senal de video
-//   rend_counter            medidor de rendimiento de la ventana
-//   led_status              estado del sistema sobre los LED de la placa
-//   sync2                   los dos cruces de dominio de un bit
+//   fifo                    Cola de comandos; desacopla al software del ritmo del rasterizador
+//   decoder_fsm             Valida, traduce y gobierna los modos MOE
+//   processor_raster        Reparte el comando entre las cinco primitivas; su pixel_gen recorta y calcula la direccion
+//   framebuffer_controller  Agrupa pixeles en rafagas y arbitra la memoria; cruza dominios con dos async_fifo
+//   framebuffer_onchip      El framebuffer interno, cuando FB_ONCHIP esta activo
+//   vga_controller          Prebusca lineas (line_buffer), genera la temporizacion (vga_timing) y produce la senal de video
+//   rend_counter            Medidor de rendimiento de la ventana
+//   led_status              Estado del sistema sobre los LED de la placa
+//   sync2                   Los dos cruces de dominio de un bit
 //
-// Dos dominios de reloj. El de rasterizado y memoria va a 100 MHz; el de
-// pixel lo fija la temporizacion VGA. En la placa los produce un ALTPLL a
-// partir del oscilador de 50 MHz, y no guardan relacion de fase: todo lo que
+// Dos dominios de reloj. El de rasterizado y memoria va a 100 MHz; el de pixel lo fija la temporizacion VGA. 
+// En la placa los produce el pll_0 de soc_system (25.175 MHz el de pixel) a partir del oscilador de 50 MHz, y no guardan relacion de fase: todo lo que
 // cruza entre ellos pasa por sync2 (senales de un bit) o por las async_fifo
-// que vivien dentro del gestor de framebuffer (direcciones y datos).
+// que viven dentro del gestor de framebuffer (direcciones y datos).
 //
 // Ensamblador de paquete. El puerto CMD_FIFO_W recibe las seis palabras de
 // 32 bits del paquete de 24 bytes en orden W0 a W5, una por escritura. El
@@ -38,14 +35,60 @@
 // en ese ciclo w[5] todavia no esta escrito.
 //
 // FB_ONCHIP elige donde vive el framebuffer. Las dos ramas presentan el
-// mismo Avalon-MM de rafaga, asi que sustituir la memoria interna por el
-// controlador de SDRAM de la placa es cambiar el parametro, nada mas; el
-// maestro queda expuesto en los puertos en los dos casos para poder
+// mismo Avalon-MM de rafaga, asi que cambiar de medio es cambiar el
+// parametro, nada mas:
+//
+//   1  Bancos de pruebas (64 x 48). Lo atiende framebuffer_onchip, dentro
+//      de este modulo; las entradas sd_waitrequest, sd_readdata y
+//      sd_readdatavalid se ignoran.
+//   0  Placa (640 x 480). El maestro sale por los puertos sd_* hacia el
+//      controlador de SDRAM de soc_system, porque los dos buffers no caben
+//      en la memoria embebida de la FPGA.
+//
+// El maestro queda expuesto en los puertos en los dos casos para poder
 // observar la transaccion sin sondear la jerarquia.
 //
-// Lo que el HPS ve de todo esto son los registros del mapa: CONTROL (0x04),
-// STATUS (0x08), CMD_FIFO_W (0x0C), ERR_INFO (0x10) y los de rendimiento
-// (0x14 a 0x20), cableados a los puertos de este modulo.
+// Lo que el HPS ve de todo esto son los registros del mapa, que
+// avalon_reg_file cablea a los puertos de este modulo: CONTROL (0x04),
+// STATUS (0x08), CMD_FIFO_W (0x0C), ERR_INFO (0x10), los de rendimiento
+// (0x14 a 0x20) y los de instrumentacion (0x24 a 0x3C). En simulacion no hay
+// HPS: es el banco de pruebas quien acciona estos puertos directamente.
+//
+// Entradas
+//   clk, rst_n              Reloj y reinicio del dominio de rasterizado y SDRAM, 100 MHz
+//   clk_pix, rst_pix_n      Reloj y reinicio del dominio de pixel, lo fija la temporizacion VGA
+//   enable, reset_soft      Bits del registro CONTROL (0x04)
+//   perf_window             Pulso de CONTROL (0x04, bit 2): abre una ventana de medicion nueva
+//   comand_w_ena            Pulso de escritura en CMD_FIFO_W (0x0C)
+//   comand_w_data           Palabra del paquete; las seis se escriben en orden W0 a W5
+//   sd_waitrequest          El medio de memoria no acepta la transaccion (solo con FB_ONCHIP en 0)
+//   sd_readdata             Dato devuelto por la memoria (solo con FB_ONCHIP en 0)
+//   sd_readdatavalid        sd_readdata es valido en este ciclo (solo con FB_ONCHIP en 0)
+//
+// Salidas
+//   sd_read, sd_write, sd_address, sd_burstcount, sd_writedata
+//                           Maestro Avalon-MM de rafaga hacia el framebuffer.
+//                           Con FB_ONCHIP en 1 solo reflejan la transaccion que atiende framebuffer_onchip
+//   vga_r, vga_g, vga_b, vga_hs, vga_vs, vga_blank_n, vga_sync_n
+//                           Salida de video hacia el conversor de la placa
+//   vga_underrun            El barrido se quedo sin datos (ERR_INFO, bit 4)
+//   vga_frames              Cuadros emitidos desde el reinicio (VGA_FRAMES, 0x38)
+//   px_valid, px_x, px_y, px_len, px_color, px_addr
+//                           Solicitud de pixel del rasterizador (IF-07), para observacion.
+//                           px_len pixeles consecutivos desde (px_x, px_y), todos de px_color
+//   buffer_sel              Buffer delantero, 0 = A y 1 = B (STATUS, bit 7)
+//   evt_inf, evt_err        Pulsos de un ciclo: INF publico un informe / se registro un error.
+//                           Marcan las banderas de interrupcion de CONTROL
+//   busy, modo, fifo_level, fifo_full, fifo_empty, overflow
+//                           Registro STATUS (0x08)
+//   seq_last                SEQ_ID del ultimo comando aceptado (STATUS, bits 31:16)
+//   err_last, err_count     Registro ERR_INFO (0x10)
+//   perf_cycles, perf_commands, perf_pixels, perf_dropped
+//                           Registros de rendimiento (0x14 a 0x20)
+//   clip_count              Pixeles descartados por caer fuera de la pantalla (CLIP_COUNT, 0x24)
+//   burst_writes, burst_reads, pixels_written, out_of_range
+//                           Instrumentacion del gestor de framebuffer (0x28 a 0x34)
+//   leds                    Indicador de estado sobre los LED rojos de la placa (LEDS, 0x3C)
 //=============================================================================
 module Acelerador_Grafico_Top #(
   parameter int SCREEN_W   = Acelerador_pkg::SCREEN_W,
@@ -53,11 +96,15 @@ module Acelerador_Grafico_Top #(
   parameter int PIXEL_BITS = Acelerador_pkg::PIXEL_BITS,
   parameter int FIFO_DEPTH = Acelerador_pkg::FIFO_DEPTH,
   parameter int SYS_CLK_HZ = Acelerador_pkg::SYS_CLK_HZ,
+  // Cuadros de video por cada cambio del LED de refresco (LEDR[0]).
+  // 30 a 60 Hz da un parpadeo de 1 Hz; los bancos de pruebas lo reducen.
+  parameter int CUADROS_LED = 30,
 
   // Temporizacion del barrido de video.
   // Los valores por defecto son los reducidos del paquete, que es lo que usan
   // los bancos de pruebas; el nivel de placa los sobrescribe con la tabla VESA
-  // de 640 x 480 a 60 Hz sin tocar el paquete ni la simulacion.
+  // de 640 x 480 a 60 Hz (y con SCREEN_W, SCREEN_H y FIFO_DEPTH propios)
+  // sin tocar el paquete ni la simulacion.
   //
   // Invariante: H_VISIBLE tiene que coincidir con SCREEN_W y V_VISIBLE con
   // SCREEN_H. Si no, el indice de pixel que produce vga_controller y el que
@@ -80,20 +127,23 @@ module Acelerador_Grafico_Top #(
   input  logic               rst_n,
 
   // Dominio de pixel, lo fija la temporizacion VGA. En la placa los dos
-  // relojes salen de un ALTPLL alimentado por el oscilador de 50 MHz.
+  // relojes salen del pll_0 de soc_system, alimentado por el oscilador de 50 MHz.
   input  logic               clk_pix,
   input  logic               rst_pix_n,
 
   // Registro CONTROL (0x04)
   input  logic               enable,
   input  logic               reset_soft,
+  input  logic               perf_window,
 
-  // Puerto COMAND_FIFO_W (0x0C)
+  // Registro CMD_FIFO_W (0x0C)
   // Las seis palabras del paquete, escritas en orden W0 a W5.
   input  logic               comand_w_ena,
   input  logic        [31:0] comand_w_data,
 
   // Maestro de rafaga Avalon-MM hacia el medio que guarda el framebuffer.
+  // Con FB_ONCHIP en 1 las salidas solo reflejan la transaccion y las
+  // entradas se ignoran.
   output logic                                   sd_read,
   output logic                                   sd_write,
   output logic [Acelerador_pkg::SD_ADDR_BITS-1:0] sd_address,
@@ -112,13 +162,16 @@ module Acelerador_Grafico_Top #(
   output logic               vga_underrun,
   output logic        [31:0] vga_frames,
 
-  // Solicitud de pixel
+  // Solicitud de pixel del rasterizador (IF-07), para observacion
   output logic               px_valid,
   output logic [$clog2(SCREEN_W)-1:0] px_x,
   output logic [$clog2(SCREEN_H)-1:0] px_y,
   output logic [PIXEL_BITS-1:0]       px_color,
+  output logic [$clog2(Acelerador_pkg::BURST_LEN+1)-1:0] px_len,
   output logic [$clog2(SCREEN_W*SCREEN_H)-1:0] px_addr,
   output logic               buffer_sel,
+  output logic               evt_inf,
+  output logic               evt_err,
 
   // Registro STATUS (0x08)
   output logic               busy,
@@ -138,14 +191,14 @@ module Acelerador_Grafico_Top #(
   output logic        [31:0] perf_pixels,
   output logic        [31:0] perf_dropped,
 
-  // Auxiliares
+  // Auxiliares: seq_last forma parte de STATUS y clip_count es CLIP_COUNT (0x24)
   output logic        [15:0] seq_last,
   output logic        [31:0] clip_count,
 
   // Indicador de estado sobre los LED rojos de la placa
   output logic        [9:0]  leds,
 
-  // Instrumentacion del gestor de framebuffer
+  // Instrumentacion del gestor de framebuffer (0x28 a 0x34)
   output logic        [31:0] burst_writes,
   output logic        [31:0] burst_reads,
   output logic        [31:0] pixels_written,
@@ -206,7 +259,8 @@ module Acelerador_Grafico_Top #(
     .full(fifo_full), .empty(fifo_empty), .level(fifo_level),
     .drop(fifo_drop), .drop_count(drop_count));
 
-  // MOE-01 vacia la cola.
+  // MOE-01 vacia la cola durante toda la inicializacion, incluida la limpieza
+  // del framebuffer: lo que se escriba antes de MOE-02 se descarta.
   assign init_flush = (modo == Acelerador_pkg::MOE_INIT);
   assign overflow = (drop_count != 16'd0);
 
@@ -230,7 +284,7 @@ module Acelerador_Grafico_Top #(
     .ras_x0(ras_x0), .ras_y0(ras_y0), .ras_x1(ras_x1), .ras_y1(ras_y1),
     .ras_x2(ras_x2), .ras_y2(ras_y2), .ras_radius(ras_radius),
     .ras_r(ras_r), .ras_g(ras_g), .ras_b(ras_b),
-    .ras_busy(ras_busy), .ras_done(ras_done),
+    .ras_busy(ras_busy), .ras_done(ras_done), .px_pend(px_valid),
     .vsync(vsync_sys), .buffer_sel(buffer_sel),
     .perf_latch(perf_latch), .perf_clear(perf_clear),
     .modo(modo), .busy(busy),
@@ -249,10 +303,10 @@ module Acelerador_Grafico_Top #(
     .x0(ras_x0), .y0(ras_y0), .x1(ras_x1), .y1(ras_y1),
     .x2(ras_x2), .y2(ras_y2), .radius(ras_radius),
     .color_r(ras_r), .color_g(ras_g), .color_b(ras_b),
-    .clr_cnt(perf_clear),
+    .clr_cnt(perf_clear || perf_window),
     .busy(ras_busy), .done(ras_done),
     .px_valid(px_valid), .px_x(px_x), .px_y(px_y),
-    .px_color(px_color), .px_addr(px_addr),
+    .px_color(px_color), .px_addr(px_addr), .px_len(px_len),
     .pix_count(pix_count), .clip_count(clip_count));
 
   // Medidor de rendimiento
@@ -262,19 +316,23 @@ module Acelerador_Grafico_Top #(
   // Eso hace comparables dos ventanas aunque entre ellas el sistema haya estado esperando a la red.
   
   logic [31:0] ciclos, comandos, pixeles, descartes;
-  logic        ventana_reset, px_tick;
+  logic        ventana_reset;
+  logic [3:0]  px_n;
 
-  assign ventana_reset = perf_clear || (modo == Acelerador_pkg::MOE_INIT);
+  // La ventana se reabre tras cada INF, al pedirlo el driver con
+  // perf_window al empezar un lote, y durante MOE-01.
+  assign ventana_reset = perf_clear || perf_window || (modo == Acelerador_pkg::MOE_INIT);
 
   // Un pixel cuenta cuando el gestor de framebuffer lo acepta, no cuando el rasterizador lo presenta.
   // Con contrapresion el mismo pixel se presenta varios ciclos seguidos.
-  assign px_tick = px_valid && px_ready;
+  // Con el relleno por tramos se aceptan hasta BURST_LEN pixeles de una vez.
+  assign px_n = (px_valid && px_ready) ? 4'(px_len) : 4'd0;
 
   rend_counter u_rend (
     .clk(clk), .rst_n(rst_n),
     .latch(perf_latch), .ventana_reset(ventana_reset),
     .rasterizando(busy && enable),
-    .comand_tick(comand_tick), .px_tick(px_tick), .drop_tick(fifo_drop),
+    .comand_tick(comand_tick), .px_n(px_n), .drop_tick(fifo_drop),
     .ciclos(ciclos), .comandos(comandos),
     .pixeles(pixeles), .descartes(descartes),
     .perf_cycles(perf_cycles), .perf_commands(perf_commands),
@@ -294,11 +352,17 @@ module Acelerador_Grafico_Top #(
 
   assign err_tick = (err_count != err_count_q);
 
-  led_status #(.SYS_CLK_HZ(SYS_CLK_HZ)) u_leds (
+  // Eventos para las banderas de interrupcion del banco de registros
+  assign evt_inf = perf_latch;
+  assign evt_err = err_tick;
+
+  // Reparto de la tabla de LED del diseno; vsync_sys alimenta el pulso de refresco.
+  led_status #(.SYS_CLK_HZ(SYS_CLK_HZ), .FIFO_DEPTH(FIFO_DEPTH),
+               .CUADROS_PARPADEO(CUADROS_LED)) u_leds (
     .clk(clk), .rst_n(rst_n),
-    .modo(modo), .busy(busy), .err_tick(err_tick),
-    .overflow(overflow), .fifo_full(fifo_full),
-    .buffer_sel(buffer_sel), .underrun(vga_underrun),
+    .modo(modo), .err_tick(err_tick),
+    .fifo_level(fifo_level), .fifo_full(fifo_full),
+    .buffer_sel(buffer_sel), .vsync(vsync_sys),
     .leds(leds));
 
   // Cruces entre los dos dominios de reloj
@@ -308,7 +372,7 @@ module Acelerador_Grafico_Top #(
   logic front_buffer_pix;            // buffer_sel visto desde el dominio pixel
   logic vsync_pix;                    // VSYNC activo en alto, dominio de pixel
 
-  // Puerto de lectura del barrido,lo cierra el gestor de framebuffer. 
+  // Puerto de lectura del barrido, lo cierra el gestor de framebuffer. 
   // Vive entero en el dominio de pixel.
   logic                                   fb_req, fb_front, fb_ready, fb_valid;
   logic [$clog2(SCREEN_W*SCREEN_H)-1:0]   fb_addr;
@@ -346,6 +410,8 @@ module Acelerador_Grafico_Top #(
     .underrun(vga_underrun), .frame_count(vga_frames));
 
   // Gestor de framebuffer
+  // Con el rasterizador inactivo se fuerza la salida de la ultima rafaga
+  // incompleta, que de otro modo esperaria un pixel que ya no va a llegar.
   logic vaciar_combinador;
   assign vaciar_combinador = !ras_busy;
 
@@ -367,7 +433,7 @@ module Acelerador_Grafico_Top #(
     .FB_BASE_B(Acelerador_pkg::FB_BASE_B)
   ) u_fbc (
     .clk(clk), .rst_n(rst_n),
-    .px_valid(px_valid), .px_addr(px_addr), .px_color(px_color),
+    .px_valid(px_valid), .px_addr(px_addr), .px_len(px_len), .px_color(px_color),
     .px_ready(px_ready),
     .buffer_sel(buffer_sel), .vaciar(vaciar_combinador),
     .clk_pix(clk_pix), .rst_pix_n(rst_pix_n),
@@ -384,8 +450,9 @@ module Acelerador_Grafico_Top #(
   // Medio que guarda el framebuffer
   //
   // Las dos ramas presentan el mismo Avalon-MM de rafaga, de modo que el
-  // gestor no distingue una de otra. Sustituir la memoria interna por el
-  // controlador de SDRAM es cambiar este parametro, nada mas.
+  // gestor no distingue una de otra. En simulacion FB_ONCHIP vale 1 y lo
+  // atiende framebuffer_onchip; en la placa vale 0 y el maestro sale por los
+  // puertos sd_* hacia el controlador de SDRAM de soc_system.
   generate
     if (FB_ONCHIP) begin : g_fb_interno
       framebuffer_onchip #(

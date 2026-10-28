@@ -1,0 +1,131 @@
+module Acelerador_top
+  import uag2d_pkg::*;
+(
+  input  logic        clk,
+  input  logic        rst_n,
+
+  input  logic [3:0]  avs_address,
+  input  logic        avs_write,
+  input  logic [31:0] avs_writedata,
+  input  logic        avs_read,
+  output logic [31:0] avs_readdata,
+  output logic        avs_waitrequest
+);
+
+  //------------------------------------------------------------- senales
+  logic        fifo_wr, fifo_rd, fifo_full, fifo_empty, fifo_ovf;
+  cmd_t        fifo_wdata, fifo_rdata;
+  logic [4:0]  fifo_level;
+
+  logic        soft_reset, clear_err, win_start, win_stop;
+
+  logic        ras_start, ras_done, ras_busy;
+  cmd_t        ras_cmd;
+
+  sys_state_e  state;
+  logic        cmd_done, cmd_error, swap_pulse, info_pulse;
+  logic [7:0]  dec_err_code, dec_err_opcode;
+  logic [15:0] dec_err_seq;
+  logic [7:0]  err_code, err_opcode;
+  logic [15:0] err_seq;
+  logic        err_pending;
+
+  logic               fb_we, fb_color;
+  logic [XW-1:0]      fb_x;
+  logic [YW-1:0]      fb_y, fb_row;
+  logic [SCREEN_W-1:0] fb_data;
+
+  logic [63:0] perf_cycles;
+  logic [31:0] perf_cmd, perf_pix, perf_err, frame_id;
+  logic        pix_written;
+
+  //-------------------------------------------------- esclavo Avalon-MM
+  avalon_slave_lite u_slave (
+    .clk(clk), .rst_n(rst_n),
+    .avs_address(avs_address), .avs_write(avs_write),
+    .avs_writedata(avs_writedata), .avs_read(avs_read),
+    .avs_readdata(avs_readdata), .avs_waitrequest(avs_waitrequest),
+    .fifo_wr(fifo_wr), .fifo_wdata(fifo_wdata),
+    .fifo_full(fifo_full), .fifo_empty(fifo_empty), .fifo_level(fifo_level),
+    .soft_reset(soft_reset), .clear_err(clear_err),
+    .win_start(win_start), .win_stop(win_stop),
+    .state(state), .ras_busy(ras_busy), .err_pending(err_pending),
+    .err_code(err_code), .err_opcode(err_opcode), .err_seq(err_seq),
+    .perf_cycles(perf_cycles), .perf_cmd(perf_cmd),
+    .perf_pix(perf_pix), .perf_err(perf_err), .frame_id(frame_id),
+    .fb_row(fb_row), .fb_data(fb_data)
+  );
+
+  //------------------------------------------------------ cola de comandos
+  cmd_fifo #(.DEPTH(FIFO_DEPTH)) u_fifo (
+    .clk(clk), .rst_n(rst_n), .flush(soft_reset),
+    .wr_en(fifo_wr), .wr_data(fifo_wdata), .overflow(fifo_ovf),
+    .rd_en(fifo_rd), .rd_data(fifo_rdata),
+    .empty(fifo_empty), .full(fifo_full), .level(fifo_level)
+  );
+
+  //---------------------------------------- decodificador y maquina de estados
+  cmd_decoder_fsm u_fsm (
+    .clk(clk), .rst_n(rst_n), .soft_reset(soft_reset),
+    .fifo_empty(fifo_empty), .fifo_data(fifo_rdata), .fifo_rd(fifo_rd),
+    .ras_start(ras_start), .ras_cmd(ras_cmd), .ras_done(ras_done),
+    .state(state), .cmd_done(cmd_done), .cmd_error(cmd_error),
+    .err_code(dec_err_code), .err_opcode(dec_err_opcode), .err_seq(dec_err_seq),
+    .swap_pulse(swap_pulse), .info_pulse(info_pulse)
+  );
+
+  //------------------------------------------------ nucleo de rasterizacion
+  raster_core u_raster (
+    .clk(clk), .rst_n(rst_n),
+    .start(ras_start), .cmd(ras_cmd),
+    .busy(ras_busy), .done(ras_done),
+    .fb_we(fb_we), .fb_x(fb_x), .fb_y(fb_y), .fb_color(fb_color),
+    .pix_written(pix_written)
+  );
+
+  //------------------------------------------------------ framebuffer
+  framebuffer_mono u_fb (
+    .clk(clk), .rst_n(rst_n),
+    .wr_en(fb_we), .wr_x(fb_x), .wr_y(fb_y), .wr_color(fb_color),
+    .rd_row(fb_row), .rd_data(fb_data)
+  );
+
+  //--------------------------------------------------- medidor de rendimiento
+  // El desbordamiento de la cola tambien cuenta como error (RC-02).
+  perf_counter u_perf (
+    .clk(clk), .rst_n(rst_n),
+    .win_start(win_start), .win_stop(win_stop), .clr(1'b0),
+    .ev_cmd(cmd_done), .ev_pix(pix_written),
+    .ev_err(cmd_error | fifo_ovf), .ev_frame(swap_pulse),
+    .cycles(perf_cycles), .cmd_count(perf_cmd), .pix_count(perf_pix),
+    .err_count(perf_err), .frame_id(frame_id), .window_open()
+  );
+
+  //--------------------------------- bandera y registro de informacion de error
+  // El desbordamiento de la cola (EC-08) lo detecta el esclavo, no el
+  // decodificador, por lo que ERR_INFO se consolida aqui.
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      err_pending <= 1'b0;
+      err_code    <= '0;
+      err_opcode  <= '0;
+      err_seq     <= '0;
+    end else if (clear_err || soft_reset) begin
+      err_pending <= 1'b0;
+      err_code    <= '0;
+      err_opcode  <= '0;
+      err_seq     <= '0;
+    end else if (fifo_ovf) begin
+      err_pending <= 1'b1;
+      err_code    <= EC_08_OVERFLOW;
+      err_opcode  <= fifo_wdata.opcode;
+      err_seq     <= fifo_wdata.seq_id;
+    end else if (cmd_error) begin
+      err_pending <= 1'b1;
+      err_code    <= dec_err_code;
+      err_opcode  <= dec_err_opcode;
+      err_seq     <= dec_err_seq;
+    end
+  end
+
+endmodule

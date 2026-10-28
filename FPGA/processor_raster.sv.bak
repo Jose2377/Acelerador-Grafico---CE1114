@@ -1,0 +1,191 @@
+//=============================================================================
+// processor_raster.sv
+// Procesador de comandos y rasterizador: nucleo de generacion de pixeles
+//
+// Recibe un comando ya decodificado por decoder_fsm, junto con el color tal
+// como viaja en la palabra W4 del paquete (RGB888), y entrega la solicitud
+// de pixel de la interfaz IF-07, en RGB565 y con su direccion lineal dentro
+// del buffer. No conoce la cola, ni el protocolo, ni el mapa de registros.
+//
+// Reparto de responsabilidades:
+//   - este modulo: reasignacion de parametros por operacion, pulsos de
+//     arranque, multiplexado de la figura activa y conversion de color
+//   - modulos de dibujo: la geometria, cada uno con la misma interfaz
+//   - pixel_gen: recorte, direccion e instrumentacion
+//
+// La conversion RGB888 a RGB565 vive aqui y en un solo sitio: los modulos de
+// dibujo transportan el color ya convertido y nunca lo interpretan, de modo
+// que un cambio de PIXEL_BITS no obliga a tocar la geometria.
+//
+// Correspondencia con la maquina de estados interna del rasterizador de la
+// perspectiva de dinamica de estados: E1 WAIT es busy en bajo, E2 FETCH y
+// E4 SETUP son el ciclo de captura de argumentos de cada modulo de dibujo,
+// E5 ITERATE es el recorrido que produce un pixel por ciclo y E7 DONE es el
+// pulso de done. E3 VALIDATE lo resuelve decoder_fsm antes de arrancar, y
+// E6 MERGE, que desacopla la generacion de la escritura mediante el buffer
+// de combinacion, solo tiene contenido cuando exista el gestor de
+// framebuffer: hoy la solicitud de pixel sale sin contrapresion.
+//=============================================================================
+module processor_raster #(
+  parameter int SCREEN_W   = Acelerador_pkg::SCREEN_W,
+  parameter int SCREEN_H   = Acelerador_pkg::SCREEN_H,
+  parameter int PIXEL_BITS = Acelerador_pkg::PIXEL_BITS
+)(
+  input  logic               clk,
+  input  logic               rst_n,
+
+  // comando decodificado
+  input  logic               start,
+  input  logic        [3:0]  op,
+  input  logic signed [15:0] x0, y0, x1, y1, x2, y2,
+  input  logic        [9:0]  radius,
+
+  // color de la palabra W4 del paquete, en RGB888
+  input  logic        [7:0]  color_r,
+  input  logic        [7:0]  color_g,
+  input  logic        [7:0]  color_b,
+
+  // control de la ventana de medicion
+  input  logic               clr_cnt,
+
+  output logic               busy,
+  output logic               done,
+
+  // solicitud de pixel (IF-07)
+  output logic               px_valid,
+  output logic [$clog2(SCREEN_W)-1:0] px_x,
+  output logic [$clog2(SCREEN_H)-1:0] px_y,
+  output logic [PIXEL_BITS-1:0]       px_color,
+  output logic [$clog2(SCREEN_W*SCREEN_H)-1:0] px_addr,
+
+  // instrumentacion
+  output logic        [31:0] pix_count,
+  output logic        [31:0] clip_count
+);
+
+  //------------------------------------------------- codigos de operacion
+  // Se traen del paquete con el nombre calificado en lugar de una
+  // importacion comodin: el valor sigue declarado en un solo sitio y la
+  // resolucion no depende de como cada herramienta procese el import.
+  localparam logic [3:0] OP_PIXEL     = Acelerador_pkg::OP_PIXEL;
+  localparam logic [3:0] OP_LINE      = Acelerador_pkg::OP_LINE;
+  localparam logic [3:0] OP_RECT      = Acelerador_pkg::OP_RECT;
+  localparam logic [3:0] OP_RECT_FILL = Acelerador_pkg::OP_RECT_FILL;
+  localparam logic [3:0] OP_CIRC      = Acelerador_pkg::OP_CIRC;
+  localparam logic [3:0] OP_CIRC_FILL = Acelerador_pkg::OP_CIRC_FILL;
+  localparam logic [3:0] OP_TRIA      = Acelerador_pkg::OP_TRIA;
+  localparam logic [3:0] OP_TRIA_FILL = Acelerador_pkg::OP_TRIA_FILL;
+  localparam logic [3:0] OP_CLEAR     = Acelerador_pkg::OP_CLEAR;
+
+  //---------------------------------------------------- conversion de color
+  // Desplazamiento y OR, sin aritmetica ni condicionales: se resuelve en
+  // cableado y no consume ningun ciclo. Es el unico punto del diseno donde
+  // el color cambia de formato.
+  logic [PIXEL_BITS-1:0] color565;
+  assign color565 = Acelerador_pkg::rgb888_to_rgb565(color_r, color_g, color_b);
+
+  //-------------------------------------------------- operacion en curso
+  logic [3:0] op_q;
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n)     op_q <= OP_PIXEL;
+    else if (start) op_q <= op;
+  end
+
+  //------------------------------------------- reasignacion de parametros
+  // CLEAR se reescribe como un rectangulo relleno del tamano de la
+  // pantalla. A diferencia de la version anterior, PIXEL ya no se reescribe
+  // como rectangulo de una celda: tiene su propio modulo, que es el que fija
+  // la interfaz uniforme de la familia.
+  logic signed [15:0] rx0, ry0, rx1, ry1;
+  logic               rfill;
+
+  always_comb begin
+    case (op)
+      OP_CLEAR: begin
+        rx0 = 16'sd0;  ry0 = 16'sd0;
+        rx1 = 16'(SCREEN_W - 1);  ry1 = 16'(SCREEN_H - 1);  rfill = 1'b1;
+      end
+      default: begin
+        rx0 = x0;  ry0 = y0;  rx1 = x1;  ry1 = y1;
+        rfill = (op == OP_RECT_FILL);
+      end
+    endcase
+  end
+
+  //------------------------------------------------- pulsos de arranque
+  logic s_pix, s_rect, s_line, s_circ, s_tria;
+  assign s_pix  = start &&  (op == OP_PIXEL);
+  assign s_rect = start && ((op == OP_RECT) || (op == OP_RECT_FILL)
+                         || (op == OP_CLEAR));
+  assign s_line = start &&  (op == OP_LINE);
+  assign s_circ = start && ((op == OP_CIRC) || (op == OP_CIRC_FILL));
+  assign s_tria = start && ((op == OP_TRIA) || (op == OP_TRIA_FILL));
+
+  //------------------------------------------------------- primitivas
+  logic               bp, br, bl, bc, bt;
+  logic               dp, dr, dl, dc, dt;
+  logic               vp, vr, vl, vc, vt;
+  logic signed [15:0] xp, xr, xl, xc, xt;
+  logic signed [15:0] yp, yr, yl, yc, yt;
+  logic [PIXEL_BITS-1:0] kp, kr, kl, kc, kt;
+
+  draw_pixel #(.PIXEL_BITS(PIXEL_BITS)) u_pix (
+    .clk(clk), .rst_n(rst_n), .start(s_pix),
+    .x0(x0), .y0(y0), .color_i(color565),
+    .busy(bp), .done(dp), .px_valid(vp),
+    .px_x(xp), .px_y(yp), .px_color(kp));
+
+  draw_rect #(.PIXEL_BITS(PIXEL_BITS)) u_rect (
+    .clk(clk), .rst_n(rst_n), .start(s_rect), .fill(rfill),
+    .x0(rx0), .y0(ry0), .x1(rx1), .y1(ry1), .color_i(color565),
+    .busy(br), .done(dr), .px_valid(vr),
+    .px_x(xr), .px_y(yr), .px_color(kr));
+
+  draw_line #(.PIXEL_BITS(PIXEL_BITS)) u_line (
+    .clk(clk), .rst_n(rst_n), .start(s_line),
+    .x0_i(x0), .y0_i(y0), .x1_i(x1), .y1_i(y1), .color_i(color565),
+    .busy(bl), .done(dl), .px_valid(vl),
+    .px_x(xl), .px_y(yl), .px_color(kl));
+
+  draw_circle #(.PIXEL_BITS(PIXEL_BITS)) u_circ (
+    .clk(clk), .rst_n(rst_n), .start(s_circ), .fill(op == OP_CIRC_FILL),
+    .cx_i(x0), .cy_i(y0), .r_i(radius), .color_i(color565),
+    .busy(bc), .done(dc), .px_valid(vc),
+    .px_x(xc), .px_y(yc), .px_color(kc));
+
+  draw_trian #(.SCREEN_W(SCREEN_W), .SCREEN_H(SCREEN_H),
+               .PIXEL_BITS(PIXEL_BITS)) u_tria (
+    .clk(clk), .rst_n(rst_n), .start(s_tria), .fill(op == OP_TRIA_FILL),
+    .x0(x0), .y0(y0), .x1(x1), .y1(y1), .x2(x2), .y2(y2),
+    .color_i(color565),
+    .busy(bt), .done(dt), .px_valid(vt),
+    .px_x(xt), .px_y(yt), .px_color(kt));
+
+  //--------------------------------------------- multiplexado de salida
+  logic                  v_raw;
+  logic signed [15:0]    x_raw, y_raw;
+  logic [PIXEL_BITS-1:0] k_raw;
+
+  always_comb begin
+    case (op_q)
+      OP_PIXEL:               begin v_raw = vp; x_raw = xp; y_raw = yp; k_raw = kp; end
+      OP_LINE:                begin v_raw = vl; x_raw = xl; y_raw = yl; k_raw = kl; end
+      OP_CIRC, OP_CIRC_FILL:  begin v_raw = vc; x_raw = xc; y_raw = yc; k_raw = kc; end
+      OP_TRIA, OP_TRIA_FILL:  begin v_raw = vt; x_raw = xt; y_raw = yt; k_raw = kt; end
+      default:                begin v_raw = vr; x_raw = xr; y_raw = yr; k_raw = kr; end
+    endcase
+  end
+
+  //------------------------------------------------- generador de pixeles
+  pixel_gen #(.SCREEN_W(SCREEN_W), .SCREEN_H(SCREEN_H),
+              .PIXEL_BITS(PIXEL_BITS)) u_pxgen (
+    .clk(clk), .rst_n(rst_n), .clr_cnt(clr_cnt),
+    .valid_i(v_raw), .x_i(x_raw), .y_i(y_raw), .color_i(k_raw),
+    .px_valid(px_valid), .px_x(px_x), .px_y(px_y),
+    .px_color(px_color), .px_addr(px_addr),
+    .pix_count(pix_count), .clip_count(clip_count));
+
+  assign busy = bp | br | bl | bc | bt;
+  assign done = dp | dr | dl | dc | dt;
+
+endmodule

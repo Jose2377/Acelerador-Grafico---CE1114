@@ -4,38 +4,48 @@
 // framebuffer_onchip.sv
 // Modulo : Framebuffer en memoria interna de la FPGA, esclavo Avalon-MM
 //
-// Ocupa el lugar del controlador de SDRAM mientras ese no exista. Habla el
-// mismo Avalon-MM de rafaga que implementara el modulo real, de modo que el
-// gestor de framebuffer no distingue uno de otro: cambiar de medio es mover
-// el parametro FB_ONCHIP del nivel superior y nada mas.
+// Ocupa el lugar del controlador de SDRAM mientras ese no exista. 
+// Habla el mismo Avalon-MM de rafaga que implementara el modulo real, 
+// de modo que el gestor de framebuffer no distingue uno de otro: 
+// cambiar de medio es mover el parametro FB_ONCHIP del nivel superior y nada mas.
 //
-// Guarda los dos buffers en bloques M10K de la FPGA, uno tras otro en una
-// memoria plana. La traduccion de direccion compara contra las dos bases en
-// lugar de mirar un bit, para que siga siendo correcta si las bases del
-// paquete dejan de ser potencias de dos.
+// Guarda los dos buffers en bloques M10K de la FPGA, uno tras otro en una memoria plana. 
+// La traduccion de direccion compara contra las dos bases en lugar de mirar un bit, 
+// para que siga siendo correcta si las bases del paquete dejan de ser potencias de dos.
 //
-// No pretende ser rapido sino realista, y para eso imita los dos
-// comportamientos de la SDRAM que mas afectan al diseno:
+// No pretende ser rapido sino realista, y para eso imita los dos comportamientos de la SDRAM que mas afectan al diseno:
 //
-//   RD_LATENCY    ciclos entre aceptar la peticion y entregar el primer
-//                 dato, modelados con una tuberia de registros
-//   STALL_PERIOD  esperas periodicas via waitrequest, como las de un
-//                 refresco o una activacion de fila. Son las que obligan al
-//                 arbitro a decidir y al rasterizador a detenerse; sin ellas
-//                 el diseno pareceria correcto y fallaria en la placa.
+//   RD_LATENCY    Ciclos entre aceptar la peticion y entregar el primer dato, modelados con una tuberia de registros
+//   STALL_PERIOD  Esperas periodicas via waitrequest, como las de un refresco o una activacion de fila. 
+//                 Son las que obligan al arbitro a decidir y al rasterizador a detenerse; 
+//                 sin ellas el diseno pareceria correcto y fallaria en la placa.
 //
-// Protocolo de rafaga: el maestro mantiene sd_address fijo durante toda la
-// transaccion, asi que el puntero que recorre las palabras lo lleva el
-// esclavo. La lectura se acepta en un solo latido y a partir de ahi entrega
-// burstcount palabras seguidas sin volver a mirar waitrequest.
+// Protocolo de rafaga: el maestro mantiene sd_address fijo durante toda la transaccion, 
+// asi que el puntero que recorre las palabras lo lleva el esclavo. 
+// La lectura se acepta en un solo latido y 
+// a partir de ahi entrega burstcount palabras seguidas sin volver a mirar waitrequest.
 //
-// La diferencia util frente a un modelo de banco de pruebas esta al final
-// del archivo: este modulo no acepta en silencio cualquier cosa, sino que
-// comprueba el protocolo y avisa en el instante en que se rompe. Si el
-// gestor emite un burstcount invalido, solapa lecturas o se sale de region,
-// el error aparece donde se produce y no tres mil ciclos despues disfrazado
-// de imagen torcida. Un acceso fuera de region no se escribe, para no
-// corromper un pixel valido mientras se cuenta el suceso.
+// La diferencia util frente a un modelo de banco de pruebas esta al final del archivo: 
+// este modulo no acepta en silencio cualquier cosa, sino que comprueba el protocolo y avisa en el instante en que se rompe. 
+// Si el gestor emite un burstcount invalido, solapa lecturas o se sale de region,
+// el error aparece donde se produce y no tres mil ciclos despues disfrazado de imagen torcida.
+// Un acceso fuera de region no se escribe, para no corromper un pixel valido mientras se cuenta el suceso.
+//
+// Entradas
+//   clk, rst_n        Reloj del sistema y reinicio
+//   sd_read           Peticion de lectura del maestro de rafaga
+//   sd_write          Peticion de escritura
+//   sd_address        Direccion de la rafaga
+//   sd_burstcount     Longitud de la rafaga
+//   sd_writedata      Dato que se escribe
+//
+// Salidas
+//   sd_waitrequest    No acepta la transaccion todavia (modela las esperas)
+//   sd_readdata       Dato devuelto
+//   sd_readdatavalid  sd_readdata es valido en este ciclo
+//   words_written     Palabras escritas en total
+//   words_read        Palabras devueltas en total
+//   range_errors      Accesos que cayeron fuera de las dos regiones
 //=============================================================================
 module framebuffer_onchip #(
   parameter int SCREEN_W     = 64,
@@ -50,8 +60,8 @@ module framebuffer_onchip #(
   // Debe ser al menos uno: la lectura de la memoria ya consume un ciclo.
   parameter int RD_LATENCY   = 4,
 
-  // Esperas periodicas. waitrequest sube durante STALL_BUSY ciclos de cada
-  // STALL_PERIOD. Con STALL_PERIOD = 0 no hay esperas.
+  // Esperas periodicas. waitrequest sube durante STALL_BUSY ciclos de cada STALL_PERIOD. 
+  // Con STALL_PERIOD = 0 no hay esperas.
   parameter int STALL_PERIOD = 30,
   parameter int STALL_BUSY   = 3
 )(
@@ -96,8 +106,8 @@ module framebuffer_onchip #(
 `endif
 
   // Traduccion de direccion
-  // La base se decide comparando, no mirando un bit, para que el modulo siga
-  // siendo correcto si las bases del paquete dejan de ser potencias de dos.
+  // La base se decide comparando, no mirando un bit, 
+  // para que el modulo siga siendo correcto si las bases del paquete dejan de ser potencias de dos.
   function automatic logic en_region(input logic [SD_ADDR_BITS-1:0] a);
     en_region = ((a >= SD_ADDR_BITS'(FB_BASE_A)) &&
                  (a <  SD_ADDR_BITS'(FB_BASE_A + FB_PIXELS)))
@@ -125,9 +135,8 @@ module framebuffer_onchip #(
                        && (espera_cnt < SPW'(STALL_BUSY));
 
   // Escritura de rafaga
-  // La direccion llega con el primer latido y avanza sola mientras write siga
-  // alto y waitrequest en bajo. El maestro mantiene sd_address fijo durante
-  // toda la rafaga, asi que el puntero lo lleva el esclavo.
+  // La direccion llega con el primer latido y avanza sola mientras write siga alto y waitrequest en bajo. 
+  // El maestro mantiene sd_address fijo durante toda la rafaga, asi que el puntero lo lleva el esclavo.
   logic            wr_latido;
   logic [MEMW-1:0] wr_ptr, wr_idx;
   logic [BCW-1:0]  wr_quedan;
@@ -137,17 +146,17 @@ module framebuffer_onchip #(
   assign wr_primero = (wr_quedan == '0);
   assign wr_idx     = wr_primero ? traducir(sd_address) : wr_ptr;
 
-  // Un acceso fuera de region no se escribe: el gestor de framebuffer ya
-  // garantiza la restriccion, de modo que si llega uno es un fallo y lo que
-  // interesa es no corromper un pixel valido mientras se cuenta el suceso.
+  // Un acceso fuera de region no se escribe: 
+  // el gestor de framebuffer ya garantiza la restriccion, de modo que si llega uno es un fallo y
+  // lo que interesa es no corromper un pixel valido mientras se cuenta el suceso.
   assign wr_valido = wr_latido && (wr_idx < MEMW'(MEM_WORDS))
                   && (!wr_primero || en_region(sd_address));
 
   // Lectura de rafaga
   // La peticion se acepta en un solo latido y a partir de ahi el esclavo
-  // produce burstcount palabras seguidas, una por ciclo, sin volver a mirar
-  // waitrequest: es el comportamiento del modelo del banco y el que espera la
-  // maquina R_DATOS del gestor.
+  // Produce burstcount palabras seguidas, una por ciclo, 
+  // sin volver a mirar waitrequest: es el comportamiento del modelo del banco
+  // y el que espera la maquina R_DATOS del gestor.
   logic            rd_arranca, rd_sigue, rd_busca;
   logic [MEMW-1:0] rd_ptr, rd_idx;
   logic [BCW-1:0]  rd_quedan;
@@ -157,17 +166,17 @@ module framebuffer_onchip #(
   assign rd_busca   = rd_arranca || rd_sigue;
   assign rd_idx     = rd_arranca ? traducir(sd_address) : rd_ptr;
 
-  // Si el indice se sale, se lee la posicion cero. El latido se produce
-  // igual: el maestro cuenta palabras y quedarse corto lo colgaria esperando
-  // una que no llega. La asercion de mas abajo deja constancia.
+  // Si el indice se sale, se lee la posicion cero. 
+  // El latido se produce igual: el maestro cuenta palabras
+  // y quedarse corto lo colgaria esperando una que no llega. 
+  // La asercion de mas abajo deja constancia.
   logic [MEMW-1:0] rd_idx_seguro;
   assign rd_idx_seguro = (rd_idx < MEMW'(MEM_WORDS)) ? rd_idx : '0;
 
   // Memoria
-  // Plantilla de doble puerto simple: una escritura y una lectura registrada
-  // en el mismo bloque. Es lo que infiere M10K. El arbitro del gestor
-  // garantiza que lectura y escritura nunca coinciden, asi que no hay que
-  // resolver colisiones.
+  // Plantilla de doble puerto simple: una escritura y una lectura registrada en el mismo bloque. 
+  // Es lo que infiere M10K. El arbitro del gestor garantiza que lectura y escritura nunca coinciden,
+  // asi que no hay que resolver colisiones.
   logic [PIXEL_BITS-1:0] ram_data [0:RD_LATENCY-1];
   logic                  ram_valid  [0:RD_LATENCY-1];
 
@@ -224,8 +233,8 @@ module framebuffer_onchip #(
 
 
   // Vista por buffer, para las comprobaciones del banco de pruebas
-  // Equivalente a la funcion sdram_px del banco. Se invoca por nombre
-  // jerarquico, por ejemplo u_fbmem.leer_pixel(~buffer_sel, y*W + x).
+  // Equivalente a la funcion sdram_px del banco. 
+  // Se invoca por nombre jerarquico, por ejemplo u_fbmem.leer_pixel(~buffer_sel, y*W + x).
   function automatic logic [PIXEL_BITS-1:0] leer_pixel(input logic buf_b,
                                                        input int   idx);
     leer_pixel = mem[(buf_b ? FB_PIXELS : 0) + idx];
@@ -235,9 +244,8 @@ module framebuffer_onchip #(
 `ifndef ALTERA_RESERVED_QIS
 
   // Comprobaciones de protocolo
-  // El modelo del banco acepta en silencio cualquier cosa. Este modulo avisa:
-  // si el gestor de framebuffer rompe el protocolo, el fallo se ve donde se
-  // produce y no tres mil ciclos despues como una imagen torcida.
+  // El modelo del banco acepta en silencio cualquier cosa. Este modulo avisa: si el gestor de framebuffer rompe el protocolo,
+  // el fallo se ve donde se produce y no tres mil ciclos despues como una imagen torcida.
   initial begin
     if (RD_LATENCY < 1)
       $error("framebuffer_onchip: RD_LATENCY (%0d) debe ser al menos 1",

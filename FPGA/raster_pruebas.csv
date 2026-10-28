@@ -1,0 +1,136 @@
+prueba;obtenido;esperado;resultado
+modo tras la inicializacion;1;1;OK
+cola vacia al arrancar;1;1;OK
+nivel de la cola al arrancar;0;0;OK
+sin errores al arrancar;0;0;OK
+buffer delantero al arrancar;0;0;OK
+RGB888(0,0,0) a RGB565;0x0000;0x0000;OK
+RGB888(255,255,255) a RGB565;0xffff;0xffff;OK
+RGB888(255,0,0) a RGB565;0xf800;0xf800;OK
+RGB888(0,255,0) a RGB565;0x07e0;0x07e0;OK
+RGB888(0,0,255) a RGB565;0x001f;0x001f;OK
+RGB888(255,255,0) a RGB565;0xffe0;0xffe0;OK
+RGB888(0,255,255) a RGB565;0x07ff;0x07ff;OK
+RGB888(255,0,255) a RGB565;0xf81f;0xf81f;OK
+RGB888(7,3,7) a RGB565;0x0000;0x0000;OK
+RGB888(8,4,8) a RGB565;0x0821;0x0821;OK
+RGB888(18,52,86) a RGB565;0x11aa;0x11aa;OK
+pixeles emitidos por DRAW_PIXEL;1;1;OK
+pixel (10,10) en rojo;0xf800;0xf800;OK
+SEQ_ID recuperado del paquete;43981;43981;OK
+comandos de la ventana;1;1;OK
+NOP no emite pixeles;0;0;OK
+NOP cuenta como comando;2;2;OK
+pixel (11,10) en negro;0x0000;0x0000;OK
+pixel fuera de pantalla no se escribe;0;0;OK
+recortar no genera error;0;0;OK
+linea horizontal (0,0)-(10,0);11;11;OK
+extremo inicial (0,0) en verde;0x07e0;0x07e0;OK
+extremo final (10,0) en verde;0x07e0;0x07e0;OK
+linea vertical (0,0)-(0,10);11;11;OK
+diagonal perfecta (0,0)-(10,10);11;11;OK
+pendiente suave (0,0)-(20,7);21;21;OK
+linea degenerada (5,5)-(5,5);1;1;OK
+linea recortada: solo la parte visible;21;21;OK
+relleno 10x6;60;60;OK
+vecino exterior (14,9);0;0;OK
+relleno uniforme: centro (8,6) azul;0x001f;0x001f;OK
+contorno 10x6 (perimetro);28;28;OK
+interior hueco (25,6);0;0;OK
+borde superior (25,4) amarillo;0xffe0;0xffe0;OK
+borde derecho (29,6) amarillo;0xffe0;0xffe0;OK
+centro vacio (32,24);0;0;OK
+contorno (42,24) en cian;0x07ff;0x07ff;OK
+contorno (32,14) en cian;0x07ff;0x07ff;OK
+fuera del disco (16,10);0;0;OK
+centro del disco en magenta;0xf81f;0xf81f;OK
+borde del disco en magenta;0xf81f;0xf81f;OK
+area del disco r=5 (esperado ~79);81;entre 70 y 95;OK
+interior hueco (20,35);0;0;OK
+arista 1: vertice (20,20) en rojo;0xf800;0xf800;OK
+arista 2: vertice (30,40) en rojo;0xf800;0xf800;OK
+arista 3: base (20,40) en rojo;0xf800;0xf800;OK
+exterior (36,22);0;0;OK
+interior relleno (44,35) en verde;0x07e0;0x07e0;OK
+area del triangulo (esperado ~210);221;entre 180 y 240;OK
+pixeles de CLEAR;3072;3072;OK
+fondo (32,24) en azul;0x001f;0x001f;OK
+esquina (63,47) en azul;0x001f;0x001f;OK
+ocho pixeles del lote escritos;8;8;OK
+ningun comando del lote se perdio;0;0;OK
+SEQ_ID del ultimo del lote;7;7;OK
+primero del lote (0,5);1;1;OK
+ultimo del lote (21,5);1;1;OK
+todos los del lote presentes;8;8;OK
+cola vacia tras el lote;1;1;OK
+cola llena;1;1;OK
+nivel de la cola al tope;16;16;OK
+bit de overflow activo;1;1;OK
+ultimo error registrado es EC-08;8;8;OK
+errores contabilizados;4;4;OK
+los almacenados se ejecutaron;16;16;OK
+primer comando del lote sobrevivio;1;1;OK
+comando FD-1 sobrevivio;1;1;OK
+comando FD fue descartado;0;0;OK
+comando FD+3 fue descartado;0;0;OK
+la maquina paso por MOE-06;1;1;OK
+MOE-06 no es absorbente;1;1;OK
+opcode desconocido no dibuja;0;0;OK
+ultimo error es EC-06;6;6;OK
+radio nulo no dibuja;0;0;OK
+ultimo error es EC-07;7;7;OK
+tras dos errores el sistema sigue;100;100;OK
+comando valido posterior (6,6);0x07e0;0x07e0;OK
+modo final de vuelta en espera;1;1;OK
+buffer antes del swap;0;0;OK
+el swap espera al flanco de VSYNC;0;0;OK
+modo durante la espera es MOE-04;3;3;OK
+buffer intercambiado tras el VSYNC;1;1;OK
+segundo swap vuelve al buffer A;0;0;OK
+contador de comandos reiniciado;0;0;OK
+contador de pixeles reiniciado;0;0;OK
+pixeles acumulados en la ventana;200;200;OK
+INF publica los pixeles de la ventana;200;200;OK
+INF publica los comandos de la ventana;2;2;OK
+INF publica los descartes de la ventana;0;0;OK
+INF publica ciclos distintos de cero;622;entre 200 y 100000;OK
+la ventana queda reiniciada;0;0;OK
+la escena completa se ejecuto en orden;208;208;OK
+sin descartes en la escena;0;0;OK
+discrepancias de px_addr;0;0;OK
+rampa: rojo maximo en (62,7);0xf800;0xf800;OK
+rampa: verde maximo en (62,23);0x07c0;0x07c0;OK
+rampa: azul maximo en (62,39);0x001f;0x001f;OK
+rampa: nivel cero en (0,7);0x0000;0x0000;OK
+periodo horizontal en relojes de pixel;800;800;OK
+ancho del pulso HSYNC;96;96;OK
+lineas por cuadro;525;525;OK
+ancho del pulso VSYNC en lineas;2;2;OK
+pixeles visibles por cuadro;307200;307200;OK
+HSYNC en reposo es alto (polaridad negativa);1;1;OK
+VSYNC en reposo es alto (polaridad negativa);1;1;OK
+la escena se rasterizo entera;3072;3072;OK
+la memoria contiene la escena rasterizada;0;0;OK
+el intercambio cambio de buffer;1;1;OK
+pixeles capturados en un cuadro;3072;3072;OK
+la imagen barrida coincide con la rasterizada;0;0;OK
+ninguna escritura se perdio camino a memoria;14584;14584;OK
+la memoria no vio accesos fuera de region;0;0;OK
+ninguna escritura fuera de region;0;0;OK
+palabras por transaccion de escritura;4;entre 2 y 9;OK
+palabras por transaccion de lectura;7;entre 2 y 9;OK
+sin vaciado del buffer de lineas;0;0;OK
+cuadros barridos;7;entre 0 y 1000000;OK
+ciclos publicados por el medidor;315;entre 100 y 2000;OK
+ciclos reales transcurridos;4334;entre 4000 y 100000;OK
+el medidor ignora el tiempo en reposo;1;1;OK
+pixeles de la ventana;100;100;OK
+comandos de la ventana, sin contar el INF;1;1;OK
+LED del modo coincide con el modo;1;1;OK
+LED de ocupado en reposo;0;0;OK
+LED de buffer sigue a buffer_sel;1;1;OK
+LED de error apagado antes;0;0;OK
+LED de error encendido tras el fallo;1;1;OK
+el destello sigue encendido a mitad;1;1;OK
+el destello se apaga al cumplirse;0;0;OK
+el latido cambio de estado;1;1;OK

@@ -1,0 +1,73 @@
+//=============================================================================
+// pixel_gen.sv
+// Generador de pixeles: etapa de salida del rasterizador (interfaz IF-07)
+//
+// Recibe el flujo crudo del modulo de dibujo activo, en coordenadas de 16
+// bits con signo, y lo convierte en la solicitud de pixel que consume el
+// gestor de framebuffer:
+//
+//      x (visible)  |  y (visible)  |  color RGB565  |  valido
+//
+// Hace tres cosas y ninguna mas:
+//   1. recorte de la region visible          (clip_scissor)
+//   2. calculo de la direccion lineal        (addr_calc)
+//   3. instrumentacion: pixeles emitidos y pixeles descartados por recorte
+//
+// Es combinacional en la ruta de datos a proposito: mantiene la latencia del
+// rasterizador en cero y deja la decision de registrar al gestor de
+// framebuffer, que es quien conoce la temporizacion de la SDRAM. Los
+// contadores si son sincronos.
+//=============================================================================
+module pixel_gen #(
+  parameter int SCREEN_W   = 64,
+  parameter int SCREEN_H   = 48,
+  parameter int PIXEL_BITS = 16
+)(
+  input  logic                    clk,
+  input  logic                    rst_n,
+  input  logic                    clr_cnt,     // reinicia la ventana de medicion
+
+  // flujo crudo del modulo de dibujo activo
+  input  logic                    valid_i,
+  input  logic signed [15:0]      x_i, y_i,
+  input  logic [PIXEL_BITS-1:0]   color_i,
+
+  // solicitud de pixel (IF-07)
+  output logic                    px_valid,
+  output logic [$clog2(SCREEN_W)-1:0] px_x,
+  output logic [$clog2(SCREEN_H)-1:0] px_y,
+  output logic [PIXEL_BITS-1:0]   px_color,
+  output logic [$clog2(SCREEN_W*SCREEN_H)-1:0] px_addr,
+
+  // instrumentacion
+  output logic [31:0]             pix_count,
+  output logic [31:0]             clip_count
+);
+
+  logic fuera;
+
+  clip_scissor #(.SCREEN_W(SCREEN_W), .SCREEN_H(SCREEN_H)) u_clip (
+    .valid_i(valid_i), .x_i(x_i), .y_i(y_i),
+    .valid_o(px_valid), .x_o(px_x), .y_o(px_y), .fuera(fuera));
+
+  addr_calc #(.SCREEN_W(SCREEN_W), .SCREEN_H(SCREEN_H)) u_addr (
+    .x(px_x), .y(px_y), .addr(px_addr));
+
+  // El color no se transforma aqui: llega ya en RGB565 desde el nivel
+  // superior, que es el unico punto donde vive la conversion desde RGB888.
+  assign px_color = color_i;
+
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      pix_count  <= '0;
+      clip_count <= '0;
+    end else if (clr_cnt) begin
+      pix_count  <= '0;
+      clip_count <= '0;
+    end else begin
+      if (px_valid) pix_count  <= pix_count  + 32'd1;
+      if (fuera)    clip_count <= clip_count + 32'd1;
+    end
+  end
+
+endmodule
