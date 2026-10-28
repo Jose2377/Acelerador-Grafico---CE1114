@@ -50,6 +50,17 @@ TAM_PAQUETE   = 24     # bytes, seis palabras de 32 bits (W0..W5)
 TAM_LOTE_MAX  = 256    # paquetes por lote
 TAM_ENCABEZADO = 8     # bytes: tipo, banderas, longitud, secuencia
 
+# Disposicion del paquete (Figura 4). Bits dentro de cada palabra de 32.
+#   W0: OPCODE[31:24] FLAGS[23:16] SEQ_ID[15:0]
+#   W1: X0[31:16] Y0[15:0]      (int16 con signo, complemento a dos)
+#   W2: X1[31:16] Y1[15:0]
+#   W3: X2[31:16] Y2[15:0]
+#   W4: RESERVADO[31:24] R[23:16] G[15:8] B[7:0]
+#   W5: RESERVADO[31:16] PARAM[15:0]   (radio en circ/circ_fill)
+PALABRAS_PAQUETE = 6
+ORDEN_BYTES = "<"      # cada palabra en little-endian (x86 y ARM Cortex-A9)
+SEQ_MAX = 0xFFFF       # SEQ_ID de 16 bits, da la vuelta a 0
+
 TIPO_LOTE      = 0x01
 TIPO_SOLICITUD = 0x02
 TIPO_REPORTE   = 0x03

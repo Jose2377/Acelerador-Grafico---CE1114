@@ -4,6 +4,7 @@
 Uso:
   python3 gfxcli.py check  escenas/ejemplo.gfx      valida sin transmitir
   python3 gfxcli.py send   escenas/ejemplo.gfx      valida y transmite
+  python3 gfxcli.py paquetes escenas/ejemplo.gfx    muestra los paquetes W0..W5
   python3 gfxcli.py cpu    escenas/ejemplo.gfx      ejecuta en CPU (referencia)
   python3 gfxcli.py inf                             pide el reporte al hardware
   python3 gfxcli.py comandos                        tabla de comandos
@@ -15,7 +16,7 @@ import sys
 from gfx import config as cfgmod
 from gfx import constantes as K
 from gfx.interprete import InterpreteComandos
-from gfx.codificador import CodificadorPaquete
+from gfx.codificador import CodificadorPaquete, tabla_paquetes
 from gfx.transporte import ClienteTransporte
 from gfx.reporte import ReporteRendimiento
 from gfx.raster_cpu import RasterizadorCPU
@@ -90,6 +91,17 @@ def orden_send(args, cfg):
     return 0
 
 
+def orden_paquetes(args, cfg):
+    res = analizar(args.script, cfg)
+    if res is None:
+        return 2
+    if res.rechazados:
+        return 1
+    print()
+    print(tabla_paquetes(res.comandos))
+    return 0
+
+
 def orden_inf(args, cfg):
     cli = ClienteTransporte(cfg["host"], cfg["puerto"], cfg["tam_lote"])
     rep = ReporteRendimiento(cfg["ruta_reportes"])
@@ -153,6 +165,10 @@ def main(argv=None):
     s = sub.add_parser("send", help="valida y transmite el script")
     s.add_argument("script")
     s.set_defaults(func=orden_send)
+
+    s = sub.add_parser("paquetes", help="muestra los paquetes codificados")
+    s.add_argument("script")
+    s.set_defaults(func=orden_paquetes)
 
     s = sub.add_parser("cpu", help="ejecuta el script en CPU (referencia)")
     s.add_argument("script")

@@ -19,7 +19,7 @@ from tkinter import filedialog, messagebox
 from gfx import config as cfgmod
 from gfx import constantes as K
 from gfx.interprete import InterpreteComandos
-from gfx.codificador import CodificadorPaquete
+from gfx.codificador import CodificadorPaquete, tabla_paquetes
 from gfx.transporte import ClienteTransporte
 from gfx.reporte import ReporteRendimiento
 from gfx.raster_cpu import RasterizadorCPU
@@ -72,6 +72,8 @@ class VentanaInterfaz(tk.Tk):
         m.add_command(label="Validar", accelerator="Ctrl+D",
                       command=self.validar)
         m.add_command(label="Enviar", accelerator="Ctrl+F", command=self.enviar)
+        m.add_command(label="Ver paquetes (W0..W5)",
+                      command=self.ver_paquetes)
         m.add_command(label="Ejecutar en CPU (referencia)",
                       command=self.ejecutar_cpu)
         m.add_separator()
@@ -346,6 +348,13 @@ class VentanaInterfaz(tk.Tk):
         finally:
             cli.cerrar()
 
+    def ver_paquetes(self):
+        res = self._analizar()
+        if res is None or res.rechazados:
+            return
+        self._ventana_texto("Paquetes codificados",
+                            tabla_paquetes(res.comandos), ancho="820x480")
+
     def ejecutar_cpu(self):
         res = self._analizar()
         if res is None or res.rechazados:
@@ -399,10 +408,10 @@ class VentanaInterfaz(tk.Tk):
             lineas.append("{:<8}{}".format(cod, desc))
         self._ventana_texto("Codigos de error", "\n".join(lineas))
 
-    def _ventana_texto(self, titulo, contenido):
+    def _ventana_texto(self, titulo, contenido, ancho="560x420"):
         v = tk.Toplevel(self)
         v.title(titulo)
-        v.geometry("560x420")
+        v.geometry(ancho)
         t = tk.Text(v, wrap=tk.NONE, font=("Courier New", 10))
         t.pack(fill=tk.BOTH, expand=True)
         t.insert("1.0", contenido)

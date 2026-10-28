@@ -4,8 +4,8 @@ Interfaz en Python 3 del proyecto *Integracion de unidad de aceleracion
 grafica para plataformas a la medida en FPGA (DE1-SoC)*.
 
 Esta entrega contiene **solo la interfaz**: estructura de modulos, CLI,
-constantes, tipos y configuracion. El interprete esta implementado; el
-codificador de paquetes, el transporte TCP y el rasterizador de
+constantes, tipos y configuracion. El interprete y el codificador de paquetes
+estan implementados; el transporte TCP y el rasterizador de
 referencia quedan como stubs marcados `PENDIENTE`.
 
 ## Estructura
@@ -21,13 +21,13 @@ Interfaz/
     errores.py         ErrorComando                             [listo]
     config.py          carga del archivo de configuracion       [listo]
     interprete.py      InterpreteComandos                       [listo]
-    codificador.py     CodificadorPaquete (24 bytes, W0..W5)    [PENDIENTE]
+    codificador.py     CodificadorPaquete (24 bytes, W0..W5)    [listo]
     transporte.py      ClienteTransporte (socket TCP, IF-03)    [PENDIENTE]
     reporte.py         ReporteRendimiento (CSV acumulativo)     [parcial]
     raster_cpu.py      RasterizadorCPU (referencia)             [PENDIENTE]
   escenas/ejemplo.gfx  escena de ejemplo
   escenas/con_errores.gfx  escena con errores para probar la validacion
-  tests/               pruebas unitarias del interprete
+  tests/               pruebas del interprete y del codificador
   reportes/            salida CSV y log de errores de sesion
 ```
 
@@ -55,6 +55,7 @@ Windows. En Linux puede necesitar el paquete `python3-tk`.
 python3 gfxcli.py comandos                  tabla de comandos y rangos
 python3 gfxcli.py check escenas/ejemplo.gfx valida sin transmitir
 python3 gfxcli.py send  escenas/ejemplo.gfx valida y transmite
+python3 gfxcli.py paquetes escenas/ejemplo.gfx  muestra W0..W5 en hex
 python3 gfxcli.py cpu   escenas/ejemplo.gfx ejecuta en CPU (referencia)
 python3 gfxcli.py inf                       solicita el reporte
 ```
@@ -113,7 +114,23 @@ Se rechazaron 2 de 18 comandos. No se transmitio ningun paquete.
 python -m unittest discover tests
 ```
 
+## Formato del paquete (Figura 4)
+
+```
+        31      24 23      16 15       8 7        0
+  W0  | OPCODE    | FLAGS     | SEQ_ID              |
+  W1  | X0 (int16 con signo)  | Y0 (int16 con signo)|
+  W2  | X1                    | Y1                  |
+  W3  | X2                    | Y2                  |
+  W4  | RESERVADO | R         | G        | B        |
+  W5  | RESERVADO             | PARAM (radio)       |
+```
+
+Cada palabra se envia en little-endian, de W0 a W5. Los campos que la
+operacion no usa y los reservados van en cero. SEQ_ID empieza en 0,
+aumenta en uno por paquete y vuelve a 0 despues de 0xFFFF.
+
 ## Siguiente paso
 
-Implementar `CodificadorPaquete.codificar` en `gfx/codificador.py`
-(paquete de 24 bytes, palabras W0 a W5).
+Implementar `ClienteTransporte` en `gfx/transporte.py` (socket TCP,
+encabezado de 8 bytes, lotes de hasta 256 paquetes).
