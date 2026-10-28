@@ -66,6 +66,32 @@ TIPO_SOLICITUD = 0x02
 TIPO_REPORTE   = 0x03
 TIPO_ERROR     = 0x04
 
+# Protocolo de aplicacion sobre TCP (IF-03)
+# Encabezado de 8 bytes en orden de red (big-endian), seguido de la carga:
+#   byte 0     tipo       uint8   TIPO_*
+#   byte 1     banderas   uint8   BANDERA_*
+#   bytes 2-3  longitud   uint16  bytes de carga util que siguen
+#   bytes 4-7  secuencia  uint32  numero de mensaje del cliente; las
+#                                 respuestas (reporte/error) lo repiten
+# La carga de un LOTE son N paquetes de 24 bytes tal cual (1 <= N <= 256);
+# el servicio del HPS no los reinterpreta, los escribe en el driver.
+FORMATO_ENCABEZADO = ">BBHI"
+LONGITUD_MAX = TAM_LOTE_MAX * TAM_PAQUETE          # 6144 bytes
+BANDERA_INICIO_VENTANA = 0x01   # en LOTE: reinicia la ventana de medicion
+
+# Carga de REPORTE: ContadoresRendimiento, orden de red, 16 bytes
+#   ciclos uint32, comandos uint32, pixeles uint32,
+#   errores uint16, descartados uint16
+FORMATO_REPORTE = ">IIIHH"
+TAM_REPORTE = 16
+
+# Carga de ERROR: codigo uint8 (5 = EC-05 ... 8 = EC-08), reservado uint8,
+# seguido de un texto UTF-8 opcional con el detalle.
+FORMATO_ERROR = ">BB"
+
+PUERTO_PREDETERMINADO = 5000
+TIMEOUT_PREDETERMINADO = 5.0    # segundos
+
 # Codigos de error
 EC_01 = "EC-01"  # Operacion inexistente                     (Interfaz)
 EC_02 = "EC-02"  # Numero de argumentos incorrecto           (Interfaz)

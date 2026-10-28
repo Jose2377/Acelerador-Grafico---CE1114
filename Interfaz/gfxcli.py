@@ -16,9 +16,8 @@ import sys
 from gfx import config as cfgmod
 from gfx import constantes as K
 from gfx.interprete import InterpreteComandos
-from gfx.codificador import CodificadorPaquete, tabla_paquetes
-from gfx.transporte import ClienteTransporte
-from gfx.reporte import ReporteRendimiento
+from gfx.codificador import tabla_paquetes
+from gfx import operaciones
 from gfx.raster_cpu import RasterizadorCPU
 
 
@@ -64,31 +63,17 @@ def orden_check(args, cfg):
     return 1 if res.rechazados else 0
 
 
+def log_consola(texto, tag=None):
+    print(texto)
+
+
 def orden_send(args, cfg):
     res = analizar(args.script, cfg)
     if res is None:
         return 2
     if res.rechazados:
-        return 1                     # No se transmite nada
-
-    cod = CodificadorPaquete()
-    cli = ClienteTransporte(cfg["host"], cfg["puerto"], cfg["tam_lote"])
-    try:
-        cli.conectar()
-        for i in range(0, len(res.comandos), cli.tam_lote):
-            lote = res.comandos[i:i + cli.tam_lote]
-            cli.enviar_lote(cod.codificar_lote(lote))
-        print("Transmitidos {} paquetes a {}:{}".format(
-            res.aceptados, cfg["host"], cfg["puerto"]))
-    except NotImplementedError as e:
-        print("[pendiente] {}".format(e))
-        return 2
-    except OSError as e:
-        print("Error {}: {}".format(K.EC_05, e))
-        return 2
-    finally:
-        cli.cerrar()
-    return 0
+        return 1                     # no se transmite nada
+    return 0 if operaciones.enviar_escena(res.comandos, cfg, log_consola) else 2
 
 
 def orden_paquetes(args, cfg):
@@ -103,23 +88,7 @@ def orden_paquetes(args, cfg):
 
 
 def orden_inf(args, cfg):
-    cli = ClienteTransporte(cfg["host"], cfg["puerto"], cfg["tam_lote"])
-    rep = ReporteRendimiento(cfg["ruta_reportes"])
-    try:
-        cli.conectar()
-        datos = cli.solicitar_reporte()
-        fila = rep.parsear_respuesta(datos)
-        rep.mostrar(fila)
-        rep.anexar(fila)
-    except NotImplementedError as e:
-        print("[pendiente] {}".format(e))
-        return 2
-    except OSError as e:
-        print("Error {}: {}".format(K.EC_05, e))
-        return 2
-    finally:
-        cli.cerrar()
-    return 0
+    return 0 if operaciones.pedir_reporte(cfg, log_consola) else 2
 
 
 def orden_cpu(args, cfg):
@@ -156,6 +125,8 @@ def main(argv=None):
         description="Interfaz de comandos del acelerador grafico DE1-SoC.")
     p.add_argument("-c", "--config", default="config.json",
                    help="archivo de configuracion (por omision config.json)")
+    p.add_argument("--host", help="direccion del HPS (sobrescribe config)")
+    p.add_argument("--puerto", type=int, help="puerto (sobrescribe config)")
     sub = p.add_subparsers(dest="orden", required=True)
 
     s = sub.add_parser("check", help="valida el script sin transmitir")
@@ -182,6 +153,10 @@ def main(argv=None):
 
     args = p.parse_args(argv)
     cfg = cfgmod.cargar(args.config)
+    if args.host:
+        cfg["host"] = args.host
+    if args.puerto:
+        cfg["puerto"] = args.puerto
     return args.func(args, cfg)
 
 

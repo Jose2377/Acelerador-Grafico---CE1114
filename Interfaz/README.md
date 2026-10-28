@@ -4,9 +4,9 @@ Interfaz en Python 3 del proyecto *Integracion de unidad de aceleracion
 grafica para plataformas a la medida en FPGA (DE1-SoC)*.
 
 Esta entrega contiene **solo la interfaz**: estructura de modulos, CLI,
-constantes, tipos y configuracion. El interprete y el codificador de paquetes
-estan implementados; el transporte TCP y el rasterizador de
-referencia quedan como stubs marcados `PENDIENTE`.
+constantes, tipos y configuracion. El interprete, el codificador de paquetes y el transporte TCP
+estan implementados; el rasterizador de referencia queda como stub
+marcado `PENDIENTE`.
 
 ## Estructura
 
@@ -14,6 +14,8 @@ referencia quedan como stubs marcados `PENDIENTE`.
 Interfaz/
   gfxcli.py            punto de entrada por linea de ordenes
   gfxgui.py            ventana (tkinter): editor de escena + salida
+  servidor_simulado.py simula el servicio del HPS, para probar sin la tarjeta
+  PROTOCOLO.md         protocolo TCP entre la interfaz y el HPS
   config.json          host del HPS, puerto, tamano de lote, rutas
   gfx/
     constantes.py      opcodes, rangos, codigos EC, protocolo   [listo]
@@ -22,12 +24,14 @@ Interfaz/
     config.py          carga del archivo de configuracion       [listo]
     interprete.py      InterpreteComandos                       [listo]
     codificador.py     CodificadorPaquete (24 bytes, W0..W5)    [listo]
-    transporte.py      ClienteTransporte (socket TCP, IF-03)    [PENDIENTE]
-    reporte.py         ReporteRendimiento (CSV acumulativo)     [parcial]
+    transporte.py      ClienteTransporte (socket TCP, IF-03)    [listo]
+    reporte.py         ReporteRendimiento (CSV acumulativo)     [listo]
+    protocolo.py       encabezado TCP de 8 bytes y cargas       [listo]
+    operaciones.py     flujo enviar/reporte (CLI y ventana)     [listo]
     raster_cpu.py      RasterizadorCPU (referencia)             [PENDIENTE]
   escenas/ejemplo.gfx  escena de ejemplo
   escenas/con_errores.gfx  escena con errores para probar la validacion
-  tests/               pruebas del interprete y del codificador
+  tests/               pruebas del interprete, codificador y transporte
   reportes/            salida CSV y log de errores de sesion
 ```
 
@@ -130,7 +134,32 @@ Cada palabra se envia en little-endian, de W0 a W5. Los campos que la
 operacion no usa y los reservados van en cero. SEQ_ID empieza en 0,
 aumenta en uno por paquete y vuelve a 0 despues de 0xFFFF.
 
+## Probar sin la tarjeta
+
+En una terminal, levantar el servidor simulado:
+
+```
+python servidor_simulado.py -v
+```
+
+En otra, enviar una escena a 127.0.0.1 (o poner ese host en la ventana):
+
+```
+python gfxcli.py --host 127.0.0.1 send escenas/ejemplo.gfx
+```
+
+Si la escena termina en `inf`, la interfaz pide el reporte, lo muestra y lo
+anexa a `reportes/rendimiento.csv`. Los contadores del simulador son
+estimaciones; solo sirven para probar el camino de ida y vuelta.
+`--fallar-lote N` hace que el simulador responda EC-05 al N-esimo lote.
+
+## Protocolo TCP
+
+Encabezado de 8 bytes en orden de red: tipo (uint8), banderas (uint8),
+longitud (uint16), secuencia (uint32). Detalle completo, cargas y ejemplo
+en `PROTOCOLO.md`.
+
 ## Siguiente paso
 
-Implementar `ClienteTransporte` en `gfx/transporte.py` (socket TCP,
-encabezado de 8 bytes, lotes de hasta 256 paquetes).
+Implementar `RasterizadorCPU` en `gfx/raster_cpu.py` (implementacion de
+referencia en CPU para comparar contra el acelerador).

@@ -12,16 +12,17 @@ Compilado:
 """
 
 import os
+import queue
 import sys
+import threading
 import tkinter as tk
 from tkinter import filedialog, messagebox
 
 from gfx import config as cfgmod
 from gfx import constantes as K
 from gfx.interprete import InterpreteComandos
-from gfx.codificador import CodificadorPaquete, tabla_paquetes
-from gfx.transporte import ClienteTransporte
-from gfx.reporte import ReporteRendimiento
+from gfx.codificador import tabla_paquetes
+from gfx import operaciones
 from gfx.raster_cpu import RasterizadorCPU
 
 
@@ -35,6 +36,8 @@ class VentanaInterfaz(tk.Tk):
         self.cfg = cfgmod.cargar("config.json")
         self.ruta_actual = None
         self.modificado = False
+        self._cola_log = queue.Queue()   # mensajes desde el hilo de envio
+        self._ocupado = False
 
         self._construir_menu()
         self._construir_barra()
@@ -46,6 +49,8 @@ class VentanaInterfaz(tk.Tk):
         self.bind("<Control-s>", lambda e: self.guardar())
         self.bind("<Control-d>", lambda e: self.validar())
         self.bind("<Control-f>", lambda e: self.enviar())
+
+        self.after(100, self._atender_cola_log)
 
         if ruta_inicial and os.path.exists(ruta_inicial):
             self.cargar_archivo(ruta_inicial)
@@ -92,23 +97,26 @@ class VentanaInterfaz(tk.Tk):
         f = tk.Frame(self, bd=1, relief=tk.RAISED)
         f.pack(side=tk.TOP, fill=tk.X)
 
+        # Conexion a la derecha y empaquetada primero: nunca queda cortada
+        conexion = tk.Frame(f)
+        conexion.pack(side=tk.RIGHT, padx=4)
+        tk.Label(conexion, text="HPS:").pack(side=tk.LEFT)
+        self.var_host = tk.StringVar(value=self.cfg["host"])
+        tk.Entry(conexion, textvariable=self.var_host,
+                 width=16).pack(side=tk.LEFT, padx=2)
+        tk.Label(conexion, text="Puerto:").pack(side=tk.LEFT)
+        self.var_puerto = tk.StringVar(value=str(self.cfg["puerto"]))
+        tk.Entry(conexion, textvariable=self.var_puerto,
+                 width=7).pack(side=tk.LEFT, padx=2)
+
         for texto, accion in (("Abrir", self.abrir),
                               ("Guardar", self.guardar),
                               ("Validar", self.validar),
                               ("Enviar", self.enviar),
                               ("CPU", self.ejecutar_cpu),
                               ("INF", self.solicitar_inf)):
-            tk.Button(f, text=texto, width=12,
+            tk.Button(f, text=texto, width=8,
                       command=accion).pack(side=tk.LEFT, padx=2, pady=2)
-
-        tk.Label(f, text="  HPS:").pack(side=tk.LEFT)
-        self.var_host = tk.StringVar(value=self.cfg["host"])
-        tk.Entry(f, textvariable=self.var_host,
-                 width=16).pack(side=tk.LEFT, padx=2)
-        tk.Label(f, text="Puerto:").pack(side=tk.LEFT)
-        self.var_puerto = tk.StringVar(value=str(self.cfg["puerto"]))
-        tk.Entry(f, textvariable=self.var_puerto,
-                 width=7).pack(side=tk.LEFT, padx=2)
 
     def _construir_cuerpo(self):
         panel = tk.PanedWindow(self, orient=tk.VERTICAL,
@@ -325,28 +333,13 @@ class VentanaInterfaz(tk.Tk):
         self._analizar()
 
     def enviar(self):
+        if self._ocupado:
+            return
         res = self._analizar()
         if res is None or res.rechazados:
             return
-        cfg = self._config_viva()
-        cod = CodificadorPaquete()
-        cli = ClienteTransporte(cfg["host"], cfg["puerto"], cfg["tam_lote"])
-        try:
-            cli.conectar()
-            for i in range(0, len(res.comandos), cli.tam_lote):
-                lote = res.comandos[i:i + cli.tam_lote]
-                cli.enviar_lote(cod.codificar_lote(lote))
-            self.log("Transmitidos {} paquetes a {}:{}".format(
-                res.aceptados, cfg["host"], cfg["puerto"]), "ok")
-            self.var_estado.set("Lote transmitido.")
-        except NotImplementedError as e:
-            self.log("[pendiente] {}".format(e), "pend")
-            self.var_estado.set("Transporte pendiente.")
-        except OSError as e:
-            self.log("Error {}: {}".format(K.EC_05, e), "err")
-            self.var_estado.set("Fallo de conexion.")
-        finally:
-            cli.cerrar()
+        self._en_segundo_plano(operaciones.enviar_escena,
+                               res.comandos, self._config_viva())
 
     def ver_paquetes(self):
         res = self._analizar()
@@ -366,24 +359,45 @@ class VentanaInterfaz(tk.Tk):
             self.log("[pendiente] {}".format(e), "pend")
 
     def solicitar_inf(self):
-        cfg = self._config_viva()
-        cli = ClienteTransporte(cfg["host"], cfg["puerto"], cfg["tam_lote"])
-        rep = ReporteRendimiento(cfg["ruta_reportes"])
+        if self._ocupado:
+            return
+        self.limpiar_salida()
+        self._en_segundo_plano(operaciones.pedir_reporte, self._config_viva())
+
+    # -- trabajo en segundo plano: la red no congela la ventana
+
+    def _en_segundo_plano(self, funcion, *args):
+        self._ocupado = True
+        self.config(cursor="watch")
+        self.var_estado.set("Comunicando con el HPS...")
+
+        def log_hilo(texto, tag=None):
+            self._cola_log.put(("log", texto, tag))
+
+        def trabajo():
+            try:
+                ok = funcion(*args, log_hilo)
+            except Exception as e:                   # no dejar la UI trabada
+                log_hilo("Error inesperado: {}".format(e), "err")
+                ok = False
+            self._cola_log.put(("fin", ok, None))
+
+        threading.Thread(target=trabajo, daemon=True).start()
+
+    def _atender_cola_log(self):
         try:
-            cli.conectar()
-            fila = rep.parsear_respuesta(cli.solicitar_reporte())
-            self.log("--- Reporte de rendimiento ---")
-            for k, v in fila.items():
-                self.log("  {:<14} {}".format(k, v))
-            rep.anexar(fila)
-            self.var_estado.set("Reporte anexado a {}".format(
-                cfg["ruta_reportes"]))
-        except NotImplementedError as e:
-            self.log("[pendiente] {}".format(e), "pend")
-        except OSError as e:
-            self.log("Error {}: {}".format(K.EC_05, e), "err")
-        finally:
-            cli.cerrar()
+            while True:
+                tipo, a, b = self._cola_log.get_nowait()
+                if tipo == "log":
+                    self.log(a, b)
+                else:
+                    self._ocupado = False
+                    self.config(cursor="")
+                    self.var_estado.set("Listo." if a else
+                                        "Fallo la comunicacion con el HPS.")
+        except queue.Empty:
+            pass
+        self.after(100, self._atender_cola_log)
 
     # Ayuda
 

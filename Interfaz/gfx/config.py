@@ -11,6 +11,7 @@ PREDETERMINADO = {
     "ruta_reportes": "reportes/rendimiento.csv",
     "ruta_log_errores": "reportes/errores_sesion.log",
     "sys_clk_hz": 50000000,
+    "timeout_s": 5.0,
 }
 
 
