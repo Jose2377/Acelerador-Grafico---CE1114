@@ -32,7 +32,7 @@ esac
 preparar_permisos() {
     local f
     for f in "$SCRIPTS"/*.sh "$EXT"/board/de1soc/post-image.sh \
-             "$EXT"/board/de1soc/rootfs-overlay/etc/init.d/S90gpu2d; do
+             "$EXT"/board/de1soc/rootfs-overlay/etc/init.d/S90gpu2d.sh; do
         [ -f "$f" ] || continue
         sed -i 's/\r$//' "$f"
         chmod +x "$f"

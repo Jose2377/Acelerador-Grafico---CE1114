@@ -63,7 +63,7 @@ Linux/
       post-image.sh                  arma sdcard.img (u-boot.img en 256 KiB | p1 FAT | p2 ext4 | p3 tipo A2)
       fpga/soc_system.rbf            bitstream (llega por git)
       qts/                           handoff del preloader
-      rootfs-overlay/                IP fija, arranque del servicio (S90gpu2d)
+      rootfs-overlay/                IP fija, arranque del servicio (S90gpu2d.sh)
     package/gpu2d-driver, gpu2d-servicio
   ejemplos/driver/                 driver /dev/gpu2d (gpu2d.c) e interfaz común (gpu2d_ioctl.h)
   ejemplos/servicio/               servicio TCP con PROTOCOLO.md (ver sección 7)
@@ -190,11 +190,18 @@ Si el `.rbf` llega por otra vía (por ejemplo, una memoria USB): `bash scripts/0
    devmem 0xFF200008 32        # STATUS
    ps | grep gpu2d-servicio
    ```
-6. **Red:** PC en `192.168.10.1/24` con cable directo, luego `ssh root@192.168.10.2`.
+6. **Red:** la PC debe quedar en `192.168.10.1/24` en la interfaz del cable (mírala con `ip link`; aquí es `enp34s0`). En Ubuntu, NetworkManager borra una IP puesta con `ip addr add`, así que créala como perfil:
+   ```bash
+   nmcli con add type ethernet ifname enp34s0 con-name de1soc ipv4.method manual ipv4.addresses 192.168.10.1/24 ipv6.method disabled
+   nmcli con up de1soc
+   ip addr show enp34s0        # debe mostrar inet 192.168.10.1/24
+   ping 192.168.10.2
+   ssh root@192.168.10.2
+   ```
 
-Con Linux corriendo, **no reprogrames la FPGA por JTAG** sin antes ejecutar `/etc/init.d/S90gpu2d stop; rmmod gpu2d`. Lo normal es actualizar el `.rbf` y reiniciar.
+Con Linux corriendo, **no reprogrames la FPGA por JTAG** sin antes ejecutar `sh /etc/init.d/S90gpu2d.sh stop; rmmod gpu2d`. Lo normal es actualizar el `.rbf` y reiniciar.
 
-**Protección del arranque.** `boot.scr` agrega `gpu2d.fpga=1` a la línea de órdenes del kernel solo si `fpga load` funcionó y habilitó los puentes. Con `gpu2d.fpga=0`, el driver no toca `0xFF200000` (leerlo sin FPGA cuelga el sistema), y `S90gpu2d` no inicia el servicio. Compruébalo con `cat /proc/cmdline`. Si programaste por JTAG y habilitaste los puentes a mano, carga el driver con `modprobe gpu2d fpga=1`.
+**Protección del arranque.** `boot.scr` agrega `gpu2d.fpga=1` a la línea de órdenes del kernel solo si `fpga load` funcionó y habilitó los puentes. Con `gpu2d.fpga=0`, el driver no toca `0xFF200000` (leerlo sin FPGA cuelga el sistema), y `S90gpu2d.sh` no inicia el servicio. Compruébalo con `cat /proc/cmdline`. Si programaste por JTAG y habilitaste los puentes a mano, carga el driver con `modprobe gpu2d fpga=1`.
 
 ---
 
@@ -203,7 +210,7 @@ Con Linux corriendo, **no reprogrames la FPGA por JTAG** sin antes ejecutar `/et
 1. `Interfaz/config.json` ya apunta a `192.168.10.2:5000`. Para probar sin la placa con `servidor_simulado.py`, cambia el host a `127.0.0.1` en la barra superior de la GUI.
 2. Pon la PC en `192.168.10.1/24`, conecta el cable directo y comprueba con `ping 192.168.10.2`.
 3. `python gfxgui.py escenas/ejemplo.gfx` → *Enviar*, o `python gfxcli.py send escenas/ejemplo.gfx`. Con `inf` al final, la escena devuelve el reporte de rendimiento y lo anexa a `reportes/rendimiento.csv`.
-4. Para ver en vivo lo que recibe la placa: `ssh root@192.168.10.2`, luego `/etc/init.d/S90gpu2d stop` y `gpu2d-servicio 5000 -v`.
+4. Para ver en vivo lo que recibe la placa: `ssh root@192.168.10.2`, luego `sh /etc/init.d/S90gpu2d.sh stop` y `gpu2d-servicio 5000 -v`.
 
 ### Cómo se reparte el trabajo
 
@@ -244,8 +251,11 @@ cd ../../../Interfaz && python3 gfxcli.py send escenas/ejemplo.gfx   # con host 
 |---|---|
 | La consola muestra `Poky ... (Yocto Project 1.3) socfpga login:` | La SD tiene la imagen de fábrica de Terasic: no se grabó `sdcard.img`. Repite `06-grabar-sd.sh` con el dispositivo correcto (en lectores internos es `/dev/mmcblk0`, no `/dev/sdX`) y revisa que la partición FAT tenga `boot.scr` y `socfpga_cyclone5_de1_soc.dtb` |
 | SPL repite `mmc_load_image_raw_sector: mmc block read error` / `Error: -38` | El SPL no encuentra `u-boot.img` en el sector 0x200 (256 KiB). La imagen se armó sin él: `bash scripts/01-preparar-buildroot.sh`, luego `make -C ~/de1soc/output uboot-dirclean all`, y vuelve a grabar |
-| U-Boot: `Command 'load' failed: Error -6` tras `Programando FPGA` | La FPGA recibió el `.rbf` pero no terminó de inicializar. Revisa 1) *Configuration scheme* = Passive Parallel x16 (fase B), recompila y regenera el `.rbf`; 2) SW10: en U-Boot (pulsa una tecla durante la cuenta atrás) ejecuta `md.l 0xff706000 1`; `(valor & 0xF8) >> 3` es MSEL y debe ser `0x0A` (01010). Mientras falle, Linux arranca sin el acelerador |
+| U-Boot: `Command 'load' failed: Error -6` tras `Programando FPGA` | La FPGA recibió el `.rbf` pero no terminó de inicializar. Revisa 1) *Configuration scheme* = Passive Parallel x16 (fase B), recompila y regenera el `.rbf`; 2) SW10: lee el estado del gestor de configuración (es un registro del HPS, no del puente; se puede leer siempre). En Linux, `devmem 0xFF706000 32`; en U-Boot, `md.l 0xff706000 1`. `(valor & 0xF8) >> 3` es MSEL y debe ser `0x0A` (01010). Mientras falle, Linux arranca sin el acelerador |
 | El arranque se congela en `gpu2d: loading out-of-tree module` | Versión vieja del driver con la FPGA sin programar. La actual solo toca el puente si U-Boot pasa `gpu2d.fpga=1` |
+| `ping 192.168.10.2` sin respuesta, la PC sin `inet 192.168.10.1` | NetworkManager quitó la IP manual: usa el perfil `nmcli` de la fase D. En la placa, `ip addr show eth0` debe mostrar `192.168.10.2` |
+| `rcS: /etc/init.d/S90gpu2d: Permission denied` | Script viejo sin permiso de ejecución. Ahora es `S90gpu2d.sh` (rcS lo carga sin `+x`). Borra el viejo: `rm ~/de1soc/output/target/etc/init.d/S90gpu2d` y regenera la imagen |
+| `devmem 0xFF200000` da `Bus error` | Normal si la FPGA no está programada (`gpu2d.fpga=0`): el puente está cerrado |
 | `Permission denied` al ejecutar un script | Ejecútalo con `bash scripts/...`. Los scripts arreglan solos los permisos de `post-image.sh` |
 | `/bin/bash^M: bad interpreter` | Finales de línea CRLF de Windows. Ejecuta con `bash scripts/...` (se corrigen solos). `.gitattributes` evita que vuelva a pasar |
 | `no existe .../output/.config` | Falta `bash scripts/01-preparar-buildroot.sh` |

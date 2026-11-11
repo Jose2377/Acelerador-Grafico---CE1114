@@ -12,4 +12,4 @@ echo "Modulo: $KO"
 echo
 echo "Para probarlo en la placa encendida sin regrabar la SD:"
 echo "  scp $KO $OUT/target/usr/bin/gpu2d-servicio root@192.168.10.2:/tmp/"
-echo "  ssh root@192.168.10.2 '/etc/init.d/S90gpu2d stop; rmmod gpu2d; insmod /tmp/gpu2d.ko; /tmp/gpu2d-servicio 5000 &'"
+echo "  ssh root@192.168.10.2 'sh /etc/init.d/S90gpu2d.sh stop; rmmod gpu2d; insmod /tmp/gpu2d.ko; /tmp/gpu2d-servicio 5000 &'"
