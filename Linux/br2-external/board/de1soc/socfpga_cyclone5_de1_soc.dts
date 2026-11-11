@@ -1,0 +1,94 @@
+// SPDX-License-Identifier: GPL-2.0
+/*
+ * Device tree del kernel para la Terasic DE1-SoC (Cyclone V SoC).
+ * El kernel mainline no trae uno para esta placa; este se basa en
+ * socfpga_cyclone5_de0_nano_soc.dts (kernel) y en
+ * socfpga_cyclone5_de1_soc.dts (U-Boot).
+ */
+/dts-v1/;
+/*
+ * external.mk copia este archivo a arch/arm/boot/dts/intel/socfpga/
+ * y lo agrega al Makefile de ese directorio.
+ */
+#include "socfpga_cyclone5.dtsi"
+
+/ {
+	model = "Terasic DE1-SoC";
+	compatible = "terasic,de1-soc", "altr,socfpga-cyclone5", "altr,socfpga";
+
+	chosen {
+		bootargs = "earlyprintk";
+		stdout-path = "serial0:115200n8";
+	};
+
+	memory@0 {
+		name = "memory";
+		device_type = "memory";
+		reg = <0x0 0x40000000>; /* 1 GB DDR3 del HPS */
+	};
+
+	aliases {
+		ethernet0 = &gmac1;
+	};
+
+	regulator_3_3v: regulator {
+		compatible = "regulator-fixed";
+		regulator-name = "3.3V";
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
+	};
+
+	/*
+	 * El HPS de Acelerador_Grafico (soc_system.qsys) solo multiplexa EMAC1,
+	 * SDIO y UART0: GPIO, I2C0 y USB1 están en "Unused", así que el LED y el
+	 * botón del HPS, el acelerómetro y el USB no se declaran aquí.
+	 */
+
+	/*
+	 * avalon_reg_file detrás de mm_bridge_0 (h2f_lw_axi_master, offset 0x0,
+	 * ADDRESS_WIDTH 6 = 64 bytes, 16 registros de 32 bits).
+	 */
+	gpu2d@ff200000 {
+		compatible = "itcr,gpu2d-1.0";
+		reg = <0xff200000 0x40>;
+		status = "okay";
+	};
+};
+
+&gmac1 {
+	status = "okay";
+	phy-mode = "rgmii";
+
+	rxd0-skew-ps = <420>;
+	rxd1-skew-ps = <420>;
+	rxd2-skew-ps = <420>;
+	rxd3-skew-ps = <420>;
+	txen-skew-ps = <0>;
+	txc-skew-ps = <1860>;
+	rxdv-skew-ps = <420>;
+	rxc-skew-ps = <1680>;
+
+	max-frame-size = <3800>;
+};
+
+&gpio0 {
+	status = "okay";
+};
+
+&gpio1 {
+	status = "okay";
+};
+
+&gpio2 {
+	status = "okay";
+};
+
+&mmc0 {
+	vmmc-supply = <&regulator_3_3v>;
+	vqmmc-supply = <&regulator_3_3v>;
+	status = "okay";
+};
+
+&uart0 {
+	status = "okay";
+};

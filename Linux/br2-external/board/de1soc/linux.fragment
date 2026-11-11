@@ -1,0 +1,27 @@
+# Ajustes sobre socfpga_defconfig para el proyecto
+
+# Camino de puesta en marcha: acceso a 0xFF200000 desde espacio de usuario
+# vía /dev/mem (mmap). Quitar en la versión final si se quiere cerrar.
+CONFIG_DEVMEM=y
+# CONFIG_STRICT_DEVMEM is not set
+# CONFIG_IO_STRICT_DEVMEM is not set
+
+# Módulos cargables (el driver del puente ligero)
+CONFIG_MODULES=y
+CONFIG_MODULE_UNLOAD=y
+CONFIG_MODULE_FORCE_UNLOAD=y
+
+# Sistema de archivos raíz y utilidades
+CONFIG_EXT4_FS=y
+CONFIG_DEVTMPFS=y
+CONFIG_DEVTMPFS_MOUNT=y
+CONFIG_IKCONFIG=y
+CONFIG_IKCONFIG_PROC=y
+
+# Gestor y puentes FPGA (permite reprogramar desde Linux más adelante)
+CONFIG_FPGA=y
+CONFIG_FPGA_MGR_SOCFPGA=y
+CONFIG_FPGA_BRIDGE=y
+CONFIG_SOCFPGA_FPGA_BRIDGE=y
+CONFIG_FPGA_REGION=y
+CONFIG_OF_FPGA_REGION=y

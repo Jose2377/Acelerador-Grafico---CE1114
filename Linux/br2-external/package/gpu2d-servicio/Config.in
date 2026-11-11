@@ -1,0 +1,5 @@
+config BR2_PACKAGE_GPU2D_SERVICIO
+	bool "gpu2d-servicio"
+	help
+	  Servicio de espacio de usuario del HPS (TCP -> /dev/gpu2d).
+	  Fuente local: ejemplos/servicio.

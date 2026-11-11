@@ -1,0 +1,7 @@
+config BR2_PACKAGE_GPU2D_DRIVER
+	bool "gpu2d-driver"
+	depends on BR2_LINUX_KERNEL
+	help
+	  Driver de kernel del puente ligero HPS-FPGA para la unidad
+	  gráfica 2D. Fuente local: ejemplos/driver (cambiable con
+	  GPU2D_DRIVER_OVERRIDE_SRCDIR en local.mk).

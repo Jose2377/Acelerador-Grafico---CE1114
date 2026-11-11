@@ -1,0 +1,6 @@
+# Los scripts de Linux deben quedar con LF aunque se hagan commit desde Windows
+*.sh        text eol=lf
+Linux/br2-external/board/de1soc/rootfs-overlay/** text eol=lf
+*.bat       text eol=crlf
+*.rbf       binary
+*.sof       binary

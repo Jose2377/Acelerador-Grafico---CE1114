@@ -1,0 +1,10 @@
+# IP fija para conectar la placa directo a la PC (o a la red del laboratorio).
+# PC: 192.168.10.1/24   Placa: 192.168.10.2/24
+# Para DHCP: reemplaza el bloque eth0 por "iface eth0 inet dhcp".
+auto lo
+iface lo inet loopback
+
+auto eth0
+iface eth0 inet static
+    address 192.168.10.2
+    netmask 255.255.255.0

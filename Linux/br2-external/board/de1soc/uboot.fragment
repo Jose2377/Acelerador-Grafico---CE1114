@@ -1,0 +1,5 @@
+# Arranque: U-Boot carga boot.scr de la partición FAT (que programa la FPGA,
+# habilita los puentes y arranca Linux). Si no lo encuentra, cae al escaneo estándar.
+CONFIG_USE_BOOTCOMMAND=y
+CONFIG_BOOTCOMMAND="if load mmc 0:1 ${scriptaddr} boot.scr; then source ${scriptaddr}; else bootflow scan -lb; fi"
+CONFIG_BOOTDELAY=3

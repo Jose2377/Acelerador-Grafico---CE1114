@@ -1,0 +1,2 @@
+Aqui va soc_system.rbf (comprimido). Se versiona en git para llevarlo de Windows a Linux.
+Lo genera windows/generar-rbf.bat a partir de FPGA/output_files/Acelerador_Grafico.sof.

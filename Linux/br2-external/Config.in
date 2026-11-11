@@ -1,0 +1,2 @@
+source "$BR2_EXTERNAL_DE1SOC_PATH/package/gpu2d-driver/Config.in"
+source "$BR2_EXTERNAL_DE1SOC_PATH/package/gpu2d-servicio/Config.in"
