@@ -75,3 +75,7 @@ Interfaz/**/__pycache__/
 Interfaz/**/*.pyc
 Interfaz/reportes/*.csv
 Interfaz/reportes/*.log
+
+# Servicio compilado en la PC
+Linux/ejemplos/servicio/gpu2d-servicio
+Linux/ejemplos/servicio/gpu2d-servicio-sim

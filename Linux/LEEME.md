@@ -65,8 +65,8 @@ Linux/
       qts/                           handoff del preloader
       rootfs-overlay/                IP fija, arranque del servicio (S90gpu2d)
     package/gpu2d-driver, gpu2d-servicio
-  ejemplos/driver/gpu2d.c          driver /dev/gpu2d
-  ejemplos/servicio/               servicio TCP (esqueleto; ver sección 8)
+  ejemplos/driver/                 driver /dev/gpu2d (gpu2d.c) e interfaz común (gpu2d_ioctl.h)
+  ejemplos/servicio/               servicio TCP con PROTOCOLO.md (ver sección 7)
 ```
 
 | Componente | Versión |
@@ -189,16 +189,41 @@ Con Linux corriendo, **no reprogrames la FPGA por JTAG** sin antes ejecutar `/et
 
 ## 7. Fase E: interfaz Python por red
 
-1. En `Interfaz/config.json` pon `"host": "192.168.10.2"` (hoy dice `192.168.1.100`), o cámbialo en la barra superior de `gfxgui.py`.
-2. `python gfxgui.py escenas/ejemplo.gfx` → *Enviar*.
+1. `Interfaz/config.json` ya apunta a `192.168.10.2:5000`. Para probar sin la placa con `servidor_simulado.py`, cambia el host a `127.0.0.1` en la barra superior de la GUI.
+2. Pon la PC en `192.168.10.1/24`, conecta el cable directo y comprueba con `ping 192.168.10.2`.
+3. `python gfxgui.py escenas/ejemplo.gfx` → *Enviar*, o `python gfxcli.py send escenas/ejemplo.gfx`. Con `inf` al final, la escena devuelve el reporte de rendimiento y lo anexa a `reportes/rendimiento.csv`.
+4. Para ver en vivo lo que recibe la placa: `ssh root@192.168.10.2`, luego `/etc/init.d/S90gpu2d stop` y `gpu2d-servicio 5000 -v`.
+
+### Cómo se reparte el trabajo
+
+| Pieza | Archivo | Qué hace |
+|---|---|---|
+| Servicio (nivel 2) | `ejemplos/servicio/gpu2d-servicio.c` | Implementa `Interfaz/PROTOCOLO.md`: valida el encabezado (EC-05 y cierra si es inválido), escribe los LOTE, abre la ventana solo con `INICIO_VENTANA` y responde la SOLICITUD con el REPORTE de la misma secuencia |
+| Acceso al hardware | `hw_dev.c` (placa) / `hw_sim.c` (PC) | Mismas 6 funciones; `make sim` arma el servicio con un acelerador simulado en memoria |
+| Driver | `ejemplos/driver/gpu2d.c` | `write()` espera espacio en la cola antes de cada paquete (no se pierde ninguno); ioctl `VENTANA`, `ACK` y `ESPERAR` |
+| Interfaz común | `ejemplos/driver/gpu2d_ioctl.h` | Lo incluyen el driver y el servicio; si cambias uno, recompila los dos (`bash scripts/04-compilar-modulo.sh`) |
+
+**Qué errores se envían como ERROR:**
+- **EC-05:** mensaje mal formado, fallo de `/dev/gpu2d`, o el hardware no terminó en 4 s.
+- **EC-08:** la cola del hardware descartó paquetes.
+- **EC-06 y EC-07** (comando inválido en hardware) **no** se envían como ERROR. El hardware los ignora (RF-20) y se cuentan en el campo `errores` del REPORTE, que es por ventana. Así un error de hardware no aborta la espera del reporte en el cliente.
+
+### Probar el servicio en la PC (Ubuntu), sin la placa
+
+```bash
+cd Linux/ejemplos/servicio && make sim
+./gpu2d-servicio-sim 5000 x -v          # otra terminal:
+cd ../../../Interfaz && python3 gfxcli.py send escenas/ejemplo.gfx   # con host 127.0.0.1
+```
 
 ---
 
 ## 8. Pendientes conocidos
 
-- **El servicio no habla el protocolo de la interfaz.** `ejemplos/servicio/gpu2d-servicio.c` usa un formato provisional (`u32 n` + `n*24` bytes). La GUI usa `Interfaz/PROTOCOLO.md` (encabezado de 8 bytes; LOTE, SOLICITUD, REPORTE, ERROR), así que la fase E no funciona hasta reemplazarlo. La referencia es `Interfaz/servidor_simulado.py`.
-- **El driver abre la ventana de medición en cada `write()`.** El protocolo la abre solo cuando el LOTE trae `INICIO_VENTANA`.
-- **Los tiempos no cierran:** `clk_sys` (100 MHz) tiene slack −7,1 ns y TNS −9105 ns. Si los dibujos salen corruptos, revisa *Report Top Failing Paths*. Para descartarlo, prueba con 50 MHz en el PLL.
+- **Los tiempos no cierran:** `clk_sys` (100 MHz) tiene slack −7,1 ns y TNS −9105 ns. Si los dibujos salen corruptos, revisa *Report Top Failing Paths*. Para descartarlo, prueba con 50 MHz en el PLL. La solución que prevé el `.sdc` es un `sdram_controller.sv` propio.
+- **RF-23:** verifica en la placa que el framebuffer arranca en negro.
+- **Interrupción FPGA→HPS:** no está conectada, así que el driver consulta `STATUS` periódicamente.
+- **Validación:** falta ejecutar en la placa la tabla de pruebas RF-01..RF-23 y la comparación CPU vs FPGA (CU-04).
 
 ---
 

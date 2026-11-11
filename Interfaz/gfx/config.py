@@ -5,7 +5,7 @@ import json
 import os
 
 PREDETERMINADO = {
-    "host": "192.168.1.100",
+    "host": "192.168.10.2",
     "puerto": 5000,
     "tam_lote": 256,
     "ruta_reportes": "reportes/rendimiento.csv",

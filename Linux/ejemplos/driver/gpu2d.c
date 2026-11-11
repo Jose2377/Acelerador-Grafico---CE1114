@@ -3,12 +3,15 @@
  * gpu2d.c - Driver del puente ligero HPS-FPGA para la unidad de aceleración
  * gráfica 2D (DE1-SoC). Mapa de registros tomado de avalon_reg_file.sv.
  *
- * /dev/gpu2d
- *   write(): un lote de N paquetes de 24 bytes (N*24 bytes, N <= 256).
- *            Abre una ventana de medición (CONTROL.perf_window) y escribe las
- *            seis palabras W0..W5 de cada paquete en CMD_FIFO_W (0x0C).
- *   read():  devuelve los 16 registros (0x00..0x3C) como u32 little-endian,
- *            en el orden del mapa: ID, CONTROL, STATUS, 0, ERR_INFO, PERF_*...
+ * /dev/gpu2d (interfaz completa en gpu2d_ioctl.h)
+ *   write(): N paquetes de 24 bytes (N <= 256). Antes de cada paquete espera
+ *            a que la cola del hardware tenga espacio (STATUS.fifo_full = 0),
+ *            asi no se pierde ninguno (RF-08, RF-12). Luego escribe las seis
+ *            palabras W0..W5 en CMD_FIFO_W (0x0C). Ya NO abre la ventana de
+ *            medicion: eso lo pide el servicio con GPU2D_IOC_VENTANA solo
+ *            cuando el LOTE trae INICIO_VENTANA (PROTOCOLO.md).
+ *   read():  los 16 registros (0x00..0x3C) como u32 little-endian.
+ *   ioctl(): GPU2D_IOC_VENTANA, GPU2D_IOC_ACK, GPU2D_IOC_ESPERAR.
  */
 #include <linux/module.h>
 #include <linux/platform_device.h>
@@ -18,11 +21,14 @@
 #include <linux/uaccess.h>
 #include <linux/of.h>
 #include <linux/mutex.h>
+#include <linux/delay.h>
+#include <linux/jiffies.h>
+#include <linux/sched/signal.h>
 
-#define GPU2D_PKT_BYTES		24
+#include "gpu2d_ioctl.h"
+
 #define GPU2D_PKT_WORDS		(GPU2D_PKT_BYTES / 4)
-#define GPU2D_MAX_BATCH		256		/* Acelerador_pkg::FIFO_DEPTH */
-#define GPU2D_NREGS		16
+#define GPU2D_TIMEOUT_COLA_MS	2000	/* sin espacio en la cola tras esto: se devuelve lo escrito */
 
 /* --- Mapa de registros (avalon_reg_file.sv) --- */
 #define REG_ID			0x00		/* R  0xACE1_1140 */
@@ -44,7 +50,9 @@
 #define CTRL_IRQ_INF		BIT(4)		/* W1C */
 #define CTRL_IRQ_ERR		BIT(5)		/* W1C */
 
+#define STATUS_BUSY		BIT(0)
 #define STATUS_FIFO_FULL	BIT(4)
+#define STATUS_FIFO_EMPTY	BIT(5)
 #define STATUS_OVERFLOW		BIT(6)
 
 struct gpu2d {
@@ -60,13 +68,32 @@ static inline void gpu2d_ctrl(struct gpu2d *g, u32 pulses)
 	iowrite32(g->ctrl_level | pulses, g->base + REG_CONTROL);
 }
 
+/*
+ * Espera hasta que (STATUS & mask) == want o venza timeout_ms.
+ * Devuelve 0, -ETIMEDOUT o -ERESTARTSYS (senal).
+ */
+static int gpu2d_esperar_status(struct gpu2d *g, u32 mask, u32 want,
+				unsigned int timeout_ms)
+{
+	unsigned long limite = jiffies + msecs_to_jiffies(timeout_ms);
+
+	while ((ioread32(g->base + REG_STATUS) & mask) != want) {
+		if (time_after(jiffies, limite))
+			return -ETIMEDOUT;
+		if (signal_pending(current))
+			return -ERESTARTSYS;
+		usleep_range(20, 50);
+	}
+	return 0;
+}
+
 static ssize_t gpu2d_write(struct file *f, const char __user *buf,
 			   size_t len, loff_t *off)
 {
 	struct gpu2d *g = container_of(f->private_data, struct gpu2d, misc);
 	u32 pkt[GPU2D_PKT_WORDS];
 	size_t done = 0;
-	int i;
+	int i, ret = 0;
 
 	if (len == 0 || len % GPU2D_PKT_BYTES ||
 	    len > GPU2D_MAX_BATCH * GPU2D_PKT_BYTES)
@@ -75,20 +102,53 @@ static ssize_t gpu2d_write(struct file *f, const char __user *buf,
 	if (mutex_lock_interruptible(&g->lock))
 		return -ERESTARTSYS;
 
-	gpu2d_ctrl(g, CTRL_PERF_WINDOW);	/* nueva ventana de medición */
-
 	while (done < len) {
 		if (copy_from_user(pkt, buf + done, GPU2D_PKT_BYTES)) {
-			mutex_unlock(&g->lock);
-			return done ? done : -EFAULT;
+			ret = -EFAULT;
+			break;
 		}
-		/* Escritura diferida: la FIFO descarta (y cuenta) si se desborda. */
+		/* Contrapresion: el ensamblador encola al recibir W5, de modo que
+		 * basta con que haya un lugar libre antes de empezar el paquete. */
+		ret = gpu2d_esperar_status(g, STATUS_FIFO_FULL, 0,
+					   GPU2D_TIMEOUT_COLA_MS);
+		if (ret)
+			break;
 		for (i = 0; i < GPU2D_PKT_WORDS; i++)
 			iowrite32(pkt[i], g->base + REG_CMD_FIFO_W);
 		done += GPU2D_PKT_BYTES;
 	}
 	mutex_unlock(&g->lock);
-	return done;
+	return done ? done : ret;
+}
+
+static long gpu2d_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
+{
+	struct gpu2d *g = container_of(f->private_data, struct gpu2d, misc);
+	u32 v;
+	int ret = 0;
+
+	switch (cmd) {
+	case GPU2D_IOC_VENTANA:
+		if (mutex_lock_interruptible(&g->lock))
+			return -ERESTARTSYS;
+		gpu2d_ctrl(g, CTRL_PERF_WINDOW | CTRL_IRQ_INF);
+		mutex_unlock(&g->lock);
+		break;
+	case GPU2D_IOC_ACK:
+		if (get_user(v, (u32 __user *)arg))
+			return -EFAULT;
+		gpu2d_ctrl(g, v & (CTRL_IRQ_INF | CTRL_IRQ_ERR));
+		break;
+	case GPU2D_IOC_ESPERAR:
+		if (get_user(v, (u32 __user *)arg))
+			return -EFAULT;
+		ret = gpu2d_esperar_status(g, STATUS_FIFO_EMPTY | STATUS_BUSY,
+					   STATUS_FIFO_EMPTY, v);
+		break;
+	default:
+		ret = -ENOTTY;
+	}
+	return ret;
 }
 
 static ssize_t gpu2d_read(struct file *f, char __user *buf,
@@ -112,6 +172,7 @@ static const struct file_operations gpu2d_fops = {
 	.owner	= THIS_MODULE,
 	.write	= gpu2d_write,
 	.read	= gpu2d_read,
+	.unlocked_ioctl	= gpu2d_ioctl,
 	.llseek	= noop_llseek,
 };
 
