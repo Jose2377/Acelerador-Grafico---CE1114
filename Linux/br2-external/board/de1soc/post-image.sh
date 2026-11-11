@@ -1,9 +1,18 @@
 #!/bin/sh
-# Arma sdcard.img: p1 FAT (boot), p2 ext4 (rootfs), p3 tipo A2 (SPL + U-Boot).
+# Arma sdcard.img:
+#   256 KiB  u-boot.img en crudo, fuera de la tabla de particiones (lo lee el SPL)
+#   p1 FAT (boot, desde 4 MiB) | p2 ext4 (rootfs) | p3 tipo A2 (SPL para la BootROM)
 set -e
 BINARIES_DIR="$1"
 BOARD_DIR="$(dirname "$0")"
 CFG="${BINARIES_DIR}/genimage.cfg"
+
+[ -f "${BINARIES_DIR}/u-boot.img" ] || {
+    echo ">>> DE1-SoC: ERROR, falta u-boot.img en ${BINARIES_DIR}."
+    echo "    Vuelve a aplicar la configuracion: bash scripts/01-preparar-buildroot.sh"
+    echo "    y luego: make -C <output> uboot-dirclean all"
+    exit 1
+}
 
 # Bitstream de la FPGA (opcional): board/de1soc/fpga/soc_system.rbf
 RBF_LINE=""
@@ -28,12 +37,22 @@ image sdcard.img {
 	hdimage {
 	}
 
-	# Empieza en 1 MiB: el entorno de U-Boot vive en el offset 0x4400 de la SD.
+	# El SPL de U-Boot 2026.01 (socfpga_de1_soc_defconfig) arranca en modo raw
+	# por sector: lee u-boot.img del sector 0x200 del DISCO (256 KiB), no de la
+	# particion A2. Por eso va aqui, en crudo y fuera de la tabla. El entorno de
+	# U-Boot ocupa 0x4400-0x6400, antes de esta zona.
+	partition uboot-img {
+		in-partition-table = "no"
+		image = "u-boot.img"
+		offset = 256K
+	}
+
+	# La FAT empieza en 4 MiB para dejar espacio a u-boot.img (hasta ~3,7 MiB).
 	partition boot {
 		partition-type = 0xC
 		bootable = "true"
 		image = "boot.vfat"
-		offset = 1M
+		offset = 4M
 	}
 
 	partition rootfs {
@@ -41,7 +60,7 @@ image sdcard.img {
 		image = "rootfs.ext4"
 	}
 
-	# La BootROM del Cyclone V busca el preloader en la partición tipo A2.
+	# La BootROM del Cyclone V busca el preloader (SPL) en la particion tipo A2.
 	partition uboot {
 		partition-type = 0xA2
 		image = "u-boot-with-spl.sfp"

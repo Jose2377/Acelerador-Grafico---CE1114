@@ -60,7 +60,7 @@ Linux/
     board/de1soc/
       socfpga_cyclone5_de1_soc.dts   DTS del kernel (nodo gpu2d@ff200000)
       boot.cmd                       fpga load + bridge enable + bootz
-      post-image.sh                  arma sdcard.img (p1 FAT | p2 ext4 | p3 tipo A2)
+      post-image.sh                  arma sdcard.img (u-boot.img en 256 KiB | p1 FAT | p2 ext4 | p3 tipo A2)
       fpga/soc_system.rbf            bitstream (llega por git)
       qts/                           handoff del preloader
       rootfs-overlay/                IP fija, arranque del servicio (S90gpu2d)
@@ -140,7 +140,11 @@ bash scripts/03-compilar.sh                # compilación completa
 
 Resultado en `~/de1soc/output/images/`: `sdcard.img` (más `u-boot-with-spl.sfp`, `zImage`, `socfpga_cyclone5_de1_soc.dtb`, `boot.scr` y `rootfs.ext4`).
 
-Revisión rápida: `sfdisk -l ~/de1soc/output/images/sdcard.img` debe mostrar p1 FAT, p2 Linux y p3 tipo `a2`.
+Revisión rápida: `sfdisk -l ~/de1soc/output/images/sdcard.img` debe mostrar p1 FAT (empieza en el sector 8192 = 4 MiB), p2 Linux y p3 tipo `a2`.
+
+**Cómo arranca la SD.**
+1. La BootROM carga el SPL desde la partición tipo A2.
+2. El SPL de U-Boot 2026.01 (`socfpga_de1_soc_defconfig`) busca `u-boot.img` en crudo, en el sector 0x200 del disco (256 KiB), fuera de cualquier partición. Por eso `post-image.sh` lo escribe ahí y la FAT empieza en 4 MiB.
 
 ### Ciclos siguientes (minutos, no horas)
 
@@ -155,7 +159,7 @@ Si el `.rbf` llega por otra vía (por ejemplo, una memoria USB): `bash scripts/0
 
 **Preloader (`br2-external/board/de1soc/qts/`, ver `qts/LEEME.txt`):**
 - `pll_config.h` y `sdram_config.h` vienen del proyecto (relojes del HPS y DDR3 CL11).
-- `pinmux_config.h` e `iocsr_config.h` son los **oficiales de Terasic**, porque describen el cableado de la placa. Los generados del proyecto dejaban la SD sin leer en SPL y el Ethernet sin multiplexar.
+- `pinmux_config.h` e `iocsr_config.h` son los **oficiales de Terasic**, porque describen el cableado de la placa. Los generados del proyecto dejaban el Ethernet sin multiplexar.
 - `qts-handoff.sh` solo regenera los dos primeros.
 
 ---
@@ -235,7 +239,7 @@ cd ../../../Interfaz && python3 gfxcli.py send escenas/ejemplo.gfx   # con host 
 | Síntoma | Causa / acción |
 |---|---|
 | La consola muestra `Poky ... (Yocto Project 1.3) socfpga login:` | La SD tiene la imagen de fábrica de Terasic: no se grabó `sdcard.img`. Repite `06-grabar-sd.sh` con el dispositivo correcto (en lectores internos es `/dev/mmcblk0`, no `/dev/sdX`) y revisa que la partición FAT tenga `boot.scr` y `socfpga_cyclone5_de1_soc.dtb` |
-| SPL repite `mmc_load_image_raw_sector: mmc block read error` / `Error: -38` / `Trying to boot from UART` | `pinmux_config.h` o `iocsr_config.h` no son los de Terasic. Restáuralos (ver `qts/LEEME.txt`), corre `make -C ~/de1soc/output uboot-dirclean all` y vuelve a grabar la SD |
+| SPL repite `mmc_load_image_raw_sector: mmc block read error` / `Error: -38` | El SPL no encuentra `u-boot.img` en el sector 0x200 (256 KiB). La imagen se armó sin él: `bash scripts/01-preparar-buildroot.sh`, luego `make -C ~/de1soc/output uboot-dirclean all`, y vuelve a grabar |
 | `Permission denied` al ejecutar un script | Ejecútalo con `bash scripts/...`. Los scripts arreglan solos los permisos de `post-image.sh` |
 | `/bin/bash^M: bad interpreter` | Finales de línea CRLF de Windows. Ejecuta con `bash scripts/...` (se corrigen solos). `.gitattributes` evita que vuelva a pasar |
 | `no existe .../output/.config` | Falta `bash scripts/01-preparar-buildroot.sh` |
