@@ -1,5 +1,5 @@
 Timing Analyzer report for Acelerador_Grafico
-Tue Nov 10 20:27:04 2026
+Wed Nov 11 01:21:06 2026
 Quartus Prime Version 18.1.0 Build 625 09/12/2018 SJ Lite Edition
 
 
@@ -682,22 +682,22 @@ refer to the applicable agreement for further details.
 ; Number detected on machine ; 12          ;
 ; Maximum allowed            ; 12          ;
 ;                            ;             ;
-; Average used               ; 1.99        ;
+; Average used               ; 2.04        ;
 ; Maximum used               ; 12          ;
 ;                            ;             ;
 ; Usage by Processor         ; % Time Used ;
 ;     Processor 1            ; 100.0%      ;
-;     Processor 2            ;  13.4%      ;
-;     Processor 3            ;  13.2%      ;
-;     Processor 4            ;  12.9%      ;
-;     Processor 5            ;   7.5%      ;
-;     Processor 6            ;   7.5%      ;
-;     Processor 7            ;   7.5%      ;
-;     Processor 8            ;   7.5%      ;
-;     Processor 9            ;   7.4%      ;
-;     Processor 10           ;   7.4%      ;
-;     Processor 11           ;   7.4%      ;
-;     Processor 12           ;   7.4%      ;
+;     Processor 2            ;  14.1%      ;
+;     Processor 3            ;  13.9%      ;
+;     Processor 4            ;  13.6%      ;
+;     Processor 5            ;   7.8%      ;
+;     Processor 6            ;   7.8%      ;
+;     Processor 7            ;   7.8%      ;
+;     Processor 8            ;   7.8%      ;
+;     Processor 9            ;   7.8%      ;
+;     Processor 10           ;   7.8%      ;
+;     Processor 11           ;   7.8%      ;
+;     Processor 12           ;   7.8%      ;
 +----------------------------+-------------+
 
 
@@ -706,10 +706,10 @@ refer to the applicable agreement for further details.
 +---------------------------------------------------------------------------+--------+--------------------------+
 ; SDC File Path                                                             ; Status ; Read at                  ;
 +---------------------------------------------------------------------------+--------+--------------------------+
-; Platform_Designer/synthesis/submodules/altera_reset_controller.sdc        ; OK     ; Tue Nov 10 20:26:35 2026 ;
-; Platform_Designer/synthesis/submodules/hps_sdram_p0.sdc                   ; OK     ; Tue Nov 10 20:26:35 2026 ;
-; Platform_Designer/synthesis/submodules/soc_system_hps_0_hps_io_border.sdc ; OK     ; Tue Nov 10 20:26:35 2026 ;
-; Acelerador_Grafico.sdc                                                    ; OK     ; Tue Nov 10 20:26:35 2026 ;
+; Platform_Designer/synthesis/submodules/altera_reset_controller.sdc        ; OK     ; Wed Nov 11 01:20:39 2026 ;
+; Platform_Designer/synthesis/submodules/hps_sdram_p0.sdc                   ; OK     ; Wed Nov 11 01:20:39 2026 ;
+; Platform_Designer/synthesis/submodules/soc_system_hps_0_hps_io_border.sdc ; OK     ; Wed Nov 11 01:20:39 2026 ;
+; Acelerador_Grafico.sdc                                                    ; OK     ; Wed Nov 11 01:20:39 2026 ;
 +---------------------------------------------------------------------------+--------+--------------------------+
 
 
@@ -47391,7 +47391,7 @@ No non-DPA dedicated SERDES Receiver circuitry present in device or used in desi
 Info: *******************************************************************
 Info: Running Quartus Prime Timing Analyzer
     Info: Version 18.1.0 Build 625 09/12/2018 SJ Lite Edition
-    Info: Processing started: Tue Nov 10 20:26:28 2026
+    Info: Processing started: Wed Nov 11 01:20:33 2026
 Info: Command: quartus_sta Acelerador_Grafico -c Acelerador_Grafico
 Info: qsta_default_script.tcl version: #1
 Warning (18236): Number of processors has not been specified which may cause overloading on shared machines.  Set the global assignment NUM_PARALLEL_PROCESSORS in your QSF to an appropriate value for best performance.
@@ -48215,9 +48215,9 @@ Info: Write (Fast 1100mV 0C Model)                          |  0.321  0.321
 Info (332102): Design is not fully constrained for setup requirements
 Info (332102): Design is not fully constrained for hold requirements
 Info: Quartus Prime Timing Analyzer was successful. 0 errors, 67 warnings
-    Info: Peak virtual memory: 5956 megabytes
-    Info: Processing ended: Tue Nov 10 20:27:04 2026
-    Info: Elapsed time: 00:00:36
-    Info: Total CPU time (on all processors): 00:00:55
+    Info: Peak virtual memory: 5941 megabytes
+    Info: Processing ended: Wed Nov 11 01:21:06 2026
+    Info: Elapsed time: 00:00:33
+    Info: Total CPU time (on all processors): 00:00:54
 
 

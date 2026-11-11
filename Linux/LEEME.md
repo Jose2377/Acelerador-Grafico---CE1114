@@ -103,6 +103,8 @@ El monitor debe detectar 640×480 a 60 Hz. La imagen puede salir negra o con bas
 
 ## 4. Fase B (Windows): generar el `.rbf` y subirlo
 
+**Una sola vez, antes del primer `.rbf`:** en Quartus abre *Assignments → Device → Device and Pin Options → Configuration* y pon *Configuration scheme* = **Passive Parallel x16**. Luego recompila. Con *Passive Serial* (el valor por defecto) el HPS no puede configurar la FPGA: U-Boot muestra `fpga load ... Error -6`.
+
 Repite esta fase cada vez que recompiles el hardware.
 
 1. Doble clic en `Linux\windows\generar-rbf.bat`. Calcula las rutas solo y deja `Linux\br2-external\board\de1soc\fpga\soc_system.rbf`. Si Quartus no está en `C:\intelFPGA_lite\18.1\quartus\bin64`, edita `QBIN` al inicio del archivo.
@@ -176,7 +178,7 @@ Si el `.rbf` llega por otra vía (por ejemplo, una memoria USB): `bash scripts/0
 | Mensaje | Si se detiene aquí |
 |---|---|
 | `U-Boot SPL 2026.01` | Revisa `qts/` (ver `qts/LEEME.txt`) y que la SD tenga la partición A2 |
-| `Programando FPGA con soc_system.rbf` | Revisa MSEL y que el `.rbf` sea comprimido |
+| `Programando FPGA con soc_system.rbf` → `FPGA programada y puentes habilitados.` | Si sale `ERROR: fpga load fallo`, ver *Problemas comunes* (Error -6) |
 | `AVISO: no hay soc_system.rbf` | Falta la fase B y `05-actualizar-rbf.sh` |
 | `de1soc login:` | Entra con `root` / `de1soc` |
 
@@ -191,6 +193,8 @@ Si el `.rbf` llega por otra vía (por ejemplo, una memoria USB): `bash scripts/0
 6. **Red:** PC en `192.168.10.1/24` con cable directo, luego `ssh root@192.168.10.2`.
 
 Con Linux corriendo, **no reprogrames la FPGA por JTAG** sin antes ejecutar `/etc/init.d/S90gpu2d stop; rmmod gpu2d`. Lo normal es actualizar el `.rbf` y reiniciar.
+
+**Protección del arranque.** `boot.scr` agrega `gpu2d.fpga=1` a la línea de órdenes del kernel solo si `fpga load` funcionó y habilitó los puentes. Con `gpu2d.fpga=0`, el driver no toca `0xFF200000` (leerlo sin FPGA cuelga el sistema), y `S90gpu2d` no inicia el servicio. Compruébalo con `cat /proc/cmdline`. Si programaste por JTAG y habilitaste los puentes a mano, carga el driver con `modprobe gpu2d fpga=1`.
 
 ---
 
@@ -240,6 +244,8 @@ cd ../../../Interfaz && python3 gfxcli.py send escenas/ejemplo.gfx   # con host 
 |---|---|
 | La consola muestra `Poky ... (Yocto Project 1.3) socfpga login:` | La SD tiene la imagen de fábrica de Terasic: no se grabó `sdcard.img`. Repite `06-grabar-sd.sh` con el dispositivo correcto (en lectores internos es `/dev/mmcblk0`, no `/dev/sdX`) y revisa que la partición FAT tenga `boot.scr` y `socfpga_cyclone5_de1_soc.dtb` |
 | SPL repite `mmc_load_image_raw_sector: mmc block read error` / `Error: -38` | El SPL no encuentra `u-boot.img` en el sector 0x200 (256 KiB). La imagen se armó sin él: `bash scripts/01-preparar-buildroot.sh`, luego `make -C ~/de1soc/output uboot-dirclean all`, y vuelve a grabar |
+| U-Boot: `Command 'load' failed: Error -6` tras `Programando FPGA` | La FPGA recibió el `.rbf` pero no terminó de inicializar. Revisa 1) *Configuration scheme* = Passive Parallel x16 (fase B), recompila y regenera el `.rbf`; 2) SW10: en U-Boot (pulsa una tecla durante la cuenta atrás) ejecuta `md.l 0xff706000 1`; `(valor & 0xF8) >> 3` es MSEL y debe ser `0x0A` (01010). Mientras falle, Linux arranca sin el acelerador |
+| El arranque se congela en `gpu2d: loading out-of-tree module` | Versión vieja del driver con la FPGA sin programar. La actual solo toca el puente si U-Boot pasa `gpu2d.fpga=1` |
 | `Permission denied` al ejecutar un script | Ejecútalo con `bash scripts/...`. Los scripts arreglan solos los permisos de `post-image.sh` |
 | `/bin/bash^M: bad interpreter` | Finales de línea CRLF de Windows. Ejecuta con `bash scripts/...` (se corrigen solos). `.gitattributes` evita que vuelva a pasar |
 | `no existe .../output/.config` | Falta `bash scripts/01-preparar-buildroot.sh` |

@@ -2,6 +2,10 @@
 # Carga el driver y lanza el servicio TCP de la unidad gráfica.
 case "$1" in
   start)
+    if ! grep -q "gpu2d.fpga=1" /proc/cmdline; then
+        echo "gpu2d: la FPGA no se programo en el arranque (ver consola de U-Boot); servicio no iniciado"
+        exit 0
+    fi
     modprobe gpu2d 2>/dev/null
     if [ -c /dev/gpu2d ] && [ -x /usr/bin/gpu2d-servicio ]; then
         start-stop-daemon -S -b -m -p /var/run/gpu2d.pid -x /usr/bin/gpu2d-servicio -- 5000

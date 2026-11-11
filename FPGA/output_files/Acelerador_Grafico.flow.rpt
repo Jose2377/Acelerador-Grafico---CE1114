@@ -1,5 +1,5 @@
 Flow report for Acelerador_Grafico
-Tue Nov 10 20:27:12 2026
+Wed Nov 11 01:21:13 2026
 Quartus Prime Version 18.1.0 Build 625 09/12/2018 SJ Lite Edition
 
 
@@ -40,7 +40,7 @@ refer to the applicable agreement for further details.
 +-------------------------------------------------------------------------------+
 ; Flow Summary                                                                  ;
 +---------------------------------+---------------------------------------------+
-; Flow Status                     ; Successful - Tue Nov 10 20:27:12 2026       ;
+; Flow Status                     ; Successful - Wed Nov 11 01:21:13 2026       ;
 ; Quartus Prime Version           ; 18.1.0 Build 625 09/12/2018 SJ Lite Edition ;
 ; Revision Name                   ; Acelerador_Grafico                          ;
 ; Top-level Entity Name           ; DE1_SoC_top_level                           ;
@@ -67,7 +67,7 @@ refer to the applicable agreement for further details.
 +-------------------+---------------------+
 ; Option            ; Setting             ;
 +-------------------+---------------------+
-; Start date & time ; 11/10/2026 20:19:08 ;
+; Start date & time ; 11/11/2026 01:13:57 ;
 ; Main task         ; Compilation         ;
 ; Revision Name     ; Acelerador_Grafico  ;
 +-------------------+---------------------+
@@ -78,7 +78,7 @@ refer to the applicable agreement for further details.
 +---------------------------------------+---------------------------------------------------------------------------------+--------------------+--------------------------------+----------------+
 ; Assignment Name                       ; Value                                                                           ; Default Value      ; Entity Name                    ; Section Id     ;
 +---------------------------------------+---------------------------------------------------------------------------------+--------------------+--------------------------------+----------------+
-; COMPILER_SIGNATURE_ID                 ; 277751330096363.179436354225312                                                 ; --                 ; --                             ; --             ;
+; COMPILER_SIGNATURE_ID                 ; 277751330096363.179438123309488                                                 ; --                 ; --                             ; --             ;
 ; ECO_REGENERATE_REPORT                 ; On                                                                              ; Off                ; --                             ; --             ;
 ; EDA_OUTPUT_DATA_FORMAT                ; Systemverilog Hdl                                                               ; --                 ; --                             ; eda_simulation ;
 ; EDA_SIMULATION_TOOL                   ; ModelSim-Altera (SystemVerilog)                                                 ; <None>             ; --                             ; --             ;
@@ -117,6 +117,10 @@ refer to the applicable agreement for further details.
 ; MISC_FILE                             ; Platform_Designer/synthesis/submodules/sequencer/tclrpt.pre.c                   ; --                 ; --                             ; --             ;
 ; MISC_FILE                             ; Platform_Designer/synthesis/submodules/sequencer/tclrpt.pre.h                   ; --                 ; --                             ; --             ;
 ; MISC_FILE                             ; Platform_Designer/synthesis/submodules/hps.pre.xml                              ; --                 ; --                             ; --             ;
+; OUTPUT_IO_TIMING_FAR_END_VMEAS        ; Half Signal Swing                                                               ; --                 ; --                             ; --             ;
+; OUTPUT_IO_TIMING_FAR_END_VMEAS        ; Half Signal Swing                                                               ; --                 ; --                             ; --             ;
+; OUTPUT_IO_TIMING_NEAR_END_VMEAS       ; Half Vccio                                                                      ; --                 ; --                             ; --             ;
+; OUTPUT_IO_TIMING_NEAR_END_VMEAS       ; Half Vccio                                                                      ; --                 ; --                             ; --             ;
 ; PARTITION_COLOR                       ; -- (Not supported for targeted family)                                          ; --                 ; DE1_SoC_top_level              ; Top            ;
 ; PARTITION_FITTER_PRESERVATION_LEVEL   ; -- (Not supported for targeted family)                                          ; --                 ; DE1_SoC_top_level              ; Top            ;
 ; PARTITION_NETLIST_TYPE                ; -- (Not supported for targeted family)                                          ; --                 ; DE1_SoC_top_level              ; Top            ;
@@ -138,12 +142,12 @@ refer to the applicable agreement for further details.
 +----------------------+--------------+-------------------------+---------------------+------------------------------------+
 ; Module Name          ; Elapsed Time ; Average Processors Used ; Peak Virtual Memory ; Total CPU Time (on all processors) ;
 +----------------------+--------------+-------------------------+---------------------+------------------------------------+
-; Analysis & Synthesis ; 00:00:41     ; 1.0                     ; 5179 MB             ; 00:00:43                           ;
-; Fitter               ; 00:03:43     ; 1.2                     ; 8527 MB             ; 00:14:55                           ;
-; Assembler            ; 00:00:13     ; 1.0                     ; 4934 MB             ; 00:00:11                           ;
-; Timing Analyzer      ; 00:00:35     ; 2.0                     ; 5956 MB             ; 00:00:54                           ;
-; EDA Netlist Writer   ; 00:00:06     ; 1.0                     ; 5011 MB             ; 00:00:06                           ;
-; Total                ; 00:05:18     ; --                      ; --                  ; 00:16:49                           ;
+; Analysis & Synthesis ; 00:00:34     ; 1.0                     ; 5182 MB             ; 00:00:37                           ;
+; Fitter               ; 00:03:15     ; 1.3                     ; 8532 MB             ; 00:14:56                           ;
+; Assembler            ; 00:00:13     ; 1.0                     ; 4935 MB             ; 00:00:10                           ;
+; Timing Analyzer      ; 00:00:32     ; 2.0                     ; 5941 MB             ; 00:00:54                           ;
+; EDA Netlist Writer   ; 00:00:05     ; 1.0                     ; 5006 MB             ; 00:00:05                           ;
+; Total                ; 00:04:39     ; --                      ; --                  ; 00:16:42                           ;
 +----------------------+--------------+-------------------------+---------------------+------------------------------------+
 
 

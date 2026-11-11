@@ -27,6 +27,16 @@
 
 #include "gpu2d_ioctl.h"
 
+/*
+ * Leer el puente ligero con la FPGA sin programar o con el puente cerrado
+ * cuelga el bus (y con el todo el sistema). boot.scr pasa gpu2d.fpga=1 en la
+ * linea de ordenes del kernel solo si "fpga load" y "bridge enable" funcionaron.
+ * Tras programar a mano por JTAG y habilitar los puentes: modprobe gpu2d fpga=1
+ */
+static bool fpga;
+module_param(fpga, bool, 0444);
+MODULE_PARM_DESC(fpga, "La FPGA esta programada y el puente ligero habilitado (lo pone boot.scr)");
+
 #define GPU2D_PKT_WORDS		(GPU2D_PKT_BYTES / 4)
 #define GPU2D_TIMEOUT_COLA_MS	2000	/* sin espacio en la cola tras esto: se devuelve lo escrito */
 
@@ -180,6 +190,12 @@ static int gpu2d_probe(struct platform_device *pdev)
 {
 	struct gpu2d *g;
 	u32 id;
+
+	if (!fpga) {
+		dev_warn(&pdev->dev,
+			 "FPGA sin programar (gpu2d.fpga=0): no se accede al puente ligero\n");
+		return -ENODEV;
+	}
 
 	g = devm_kzalloc(&pdev->dev, sizeof(*g), GFP_KERNEL);
 	if (!g)
