@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Servidor que simula el servicio del HPS, para probar la interfaz sin
 la tarjeta. Habla el mismo protocolo (PROTOCOLO.md): recibe lotes,
-decodifica los paquetes, lleva contadores aproximados y responde las
+decodifica los paquetes, los dibuja con RasterizadorCPU y responde las
 solicitudes de reporte.
 
 Uso:
@@ -12,56 +12,69 @@ Uso:
 Para usarlo, poner "host": "127.0.0.1" en config.json (o en la barra de
 la ventana).
 
-Los contadores son estimaciones, no los del hardware: sirven para
-comprobar el camino de ida y vuelta, no para medir rendimiento.
+Contadores:
+  comandos, pixeles, errores  exactos: salen del modelo de referencia, que
+                              reproduce el RTL pixel a pixel
+  ciclos                      ESTIMACION a partir de las maquinas de estado
+                              del RTL, sin la contrapresion de la SDRAM; sirve
+                              para probar el camino de vuelta, no para medir
 """
 
 import argparse
-import math
 import socket
 import threading
 
 from gfx import constantes as K
 from gfx import protocolo as P
 from gfx.codificador import decodificar
+from gfx.raster_cpu import RasterizadorCPU, Ventana
 
-AREA = K.ANCHO_PANTALLA * K.ALTO_PANTALLA
-CICLOS_POR_COMANDO = 8       # costo fijo estimado de decodificacion
-
-
-def _recorte(x0, y0, x1, y1):
-    """Area visible de un rectangulo, en pixeles."""
-    xa, xb = sorted((x0, x1))
-    ya, yb = sorted((y0, y1))
-    ancho = min(xb, K.ANCHO_PANTALLA - 1) - max(xa, 0) + 1
-    alto = min(yb, K.ALTO_PANTALLA - 1) - max(ya, 0) + 1
-    return max(ancho, 0) * max(alto, 0)
+# Estimacion de ciclos (reloj de 100 MHz, sin esperas de SDRAM)
+SOBRECARGA = 5          # decoder_fsm + arranque de processor_raster
+SPAN = 8                # pixeles por tramo en rect_fill / clear (BURST_LEN)
+# SWAP espera el flanco de VSYNC con busy en alto, y esos ciclos cuentan
+# en PERF_CYCLES. En promedio, medio cuadro: 800*525/2 relojes de pixel
+# de 25,175 MHz, pasados a ciclos de 100 MHz.
+CICLOS_SWAP = int(800 * 525 / 2 * 100e6 / 25.175e6)
 
 
-def pixeles_estimados(d):
-    """Pixeles que escribiria el comando (aprox., sin recorte fino)."""
+def ciclos_estimados(d, emitidos, ancho, alto):
+    """Ciclos de un comando ya ejecutado; 'emitidos' son los pixeles que
+    genero (escritos + recortados)."""
     op = d["opcode"]
-    x0, y0, x1, y1, x2, y2 = (d[k] for k in ("x0", "y0", "x1", "y1", "x2", "y2"))
-    if op == K.OP_DRAW_PIXEL:
-        return 1 if 0 <= x0 < K.ANCHO_PANTALLA and 0 <= y0 < K.ALTO_PANTALLA else 0
-    if op == K.OP_DRAW_LINE:
-        return max(abs(x1 - x0), abs(y1 - y0)) + 1
-    if op == K.OP_DRAW_RECT:
-        return 2 * (abs(x1 - x0) + abs(y1 - y0))
-    if op == K.OP_DRAW_RECT_FILL:
-        return _recorte(x0, y0, x1, y1)
-    if op == K.OP_DRAW_TRIA:
-        return sum(max(abs(a - c), abs(b - e)) for a, b, c, e in
-                   ((x0, y0, x1, y1), (x1, y1, x2, y2), (x2, y2, x0, y0)))
-    if op == K.OP_DRAW_TRIA_FILL:
-        return abs((x1 - x0) * (y2 - y0) - (x2 - x0) * (y1 - y0)) // 2
-    if op == K.OP_DRAW_CIRC:
-        return int(2 * math.pi * d["param"])
-    if op == K.OP_DRAW_CIRC_FILL:
-        return int(math.pi * d["param"] ** 2)
-    if op == K.OP_CLEAR:
-        return AREA
-    return 0
+    if op == K.OP_NOP:
+        m = 0
+    elif op == K.OP_DRAW_PIXEL:
+        m = 2                                   # P_OUT, P_DONE
+    elif op == K.OP_DRAW_LINE:
+        m = emitidos + 2                        # L_SETUP, L_RUN x n, L_DONE
+    elif op == K.OP_DRAW_RECT:
+        m = emitidos + 1                        # un pixel por ciclo
+    elif op in (K.OP_DRAW_RECT_FILL, K.OP_CLEAR):
+        if op == K.OP_CLEAR:
+            xa, xb, ya, yb = 0, ancho - 1, 0, alto - 1
+        else:
+            xa, xb = sorted((d["x0"], d["x1"]))
+            ya, yb = sorted((d["y0"], d["y1"]))
+        tramos = (xb // SPAN) - (xa // SPAN) + 1     # grupos alineados
+        m = (yb - ya + 1) * tramos + 1
+    elif op == K.OP_DRAW_CIRC:
+        m = 2 + (emitidos // 8) * 9             # 8 octantes + K_UPD
+    elif op == K.OP_DRAW_CIRC_FILL:
+        m = (2 * d["param"] + 1) ** 2 + 2       # cuadrado completo
+    elif op == K.OP_DRAW_TRIA:
+        m = 2 + emitidos + 3 * 3 + 1            # tres draw_line
+    elif op == K.OP_DRAW_TRIA_FILL:
+        xs = (d["x0"], d["x1"], d["x2"])
+        ys = (d["y0"], d["y1"], d["y2"])
+        w = min(max(xs), ancho - 1) - max(min(xs), 0) + 1
+        h = min(max(ys), alto - 1) - max(min(ys), 0) + 1
+        m = 6 + max(w, 0) * max(h, 0)           # preparacion + caja
+    elif op == K.OP_SWAP_BUFFER:
+        m = CICLOS_SWAP
+    else:
+        m = 0
+    return m + SOBRECARGA
 
 
 class ServidorSimulado:
@@ -77,14 +90,12 @@ class ServidorSimulado:
         self.sock.listen(1)
         self.host, self.puerto = self.sock.getsockname()
         self._parar = threading.Event()
-        self._reiniciar_ventana()
-        self.publicado = dict(self.ventana)
+        self.raster = RasterizadorCPU()
+        self.ciclos = 0
+        self.publicado = dict(ciclos=0, comandos=0, pixeles=0,
+                              errores=0, descartados=0)
         self.lotes_recibidos = 0
         self.historial = []          # (opcode, seq_id) de cada paquete
-
-    def _reiniciar_ventana(self):
-        self.ventana = dict(ciclos=0, comandos=0, pixeles=0,
-                            errores=0, descartados=0)
 
     def _log(self, texto):
         if self.verboso:
@@ -93,22 +104,31 @@ class ServidorSimulado:
     # -- procesamiento ----------------------------------------------------
 
     def procesar_lote(self, banderas, carga):
+        ras = self.raster
         if banderas & K.BANDERA_INICIO_VENTANA:
-            self._reiniciar_ventana()
+            ras.ventana = Ventana()
+            self.ciclos = 0
         for i in range(0, len(carga), K.TAM_PAQUETE):
             d = decodificar(carga[i:i + K.TAM_PAQUETE])
             self.historial.append((d["opcode"], d["seq_id"]))
-            v = self.ventana
-            if d["opcode"] > K.OP_INF:                       # EC-06
-                v["errores"] += 1
-                continue
+            v = ras.ventana
+            antes = v.pixeles + v.recortados
+            errores = v.errores
+            ras.ejecutar_campos(d["opcode"], d["x0"], d["y0"], d["x1"],
+                                d["y1"], d["x2"], d["y2"], d["param"],
+                                d["r"], d["g"], d["b"])
             if d["opcode"] == K.OP_INF:
-                self.publicado = dict(self.ventana)
-                continue
-            px = pixeles_estimados(d)
-            v["comandos"] += 1
-            v["pixeles"] += px
-            v["ciclos"] += px + CICLOS_POR_COMANDO
+                c = ras.informes[-1]
+                self.publicado = dict(ciclos=self.ciclos,
+                                      comandos=c.comandos, pixeles=c.pixeles,
+                                      errores=c.errores, descartados=0)
+                self.ciclos = 0
+            elif v.errores > errores:
+                self.ciclos += 3                         # PROC + MOE-06
+            else:
+                self.ciclos += ciclos_estimados(
+                    d, v.pixeles + v.recortados - antes,
+                    ras.ancho, ras.alto)
 
     def atender(self, conn):
         with conn:

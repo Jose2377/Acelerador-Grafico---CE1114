@@ -11,6 +11,7 @@ Compilado:
   python -m PyInstaller --onefile gfxgui.py
 """
 
+import base64
 import os
 import queue
 import sys
@@ -23,7 +24,6 @@ from gfx import constantes as K
 from gfx.interprete import InterpreteComandos
 from gfx.codificador import tabla_paquetes
 from gfx import operaciones
-from gfx.raster_cpu import RasterizadorCPU
 
 
 class VentanaInterfaz(tk.Tk):
@@ -79,8 +79,12 @@ class VentanaInterfaz(tk.Tk):
         m.add_command(label="Enviar", accelerator="Ctrl+F", command=self.enviar)
         m.add_command(label="Ver paquetes (W0..W5)",
                       command=self.ver_paquetes)
-        m.add_command(label="Ejecutar en CPU (referencia)",
-                      command=self.ejecutar_cpu)
+        m.add_command(label="Ejecutar en CPU (tramos)",
+                      command=lambda: self.ejecutar_cpu("tramos"))
+        m.add_command(label="Ejecutar en CPU (pixel)",
+                      command=lambda: self.ejecutar_cpu("pixel"))
+        m.add_command(label="Comparar CPU vs FPGA",
+                      command=self.comparar)
         m.add_separator()
         m.add_command(label="Solicitar reporte (INF)",
                       command=self.solicitar_inf)
@@ -339,7 +343,8 @@ class VentanaInterfaz(tk.Tk):
         if res is None or res.rechazados:
             return
         self._en_segundo_plano(operaciones.enviar_escena,
-                               res.comandos, self._config_viva())
+                               res.comandos, self._config_viva(),
+                               self._nombre_escena())
 
     def ver_paquetes(self):
         res = self._analizar()
@@ -348,15 +353,60 @@ class VentanaInterfaz(tk.Tk):
         self._ventana_texto("Paquetes codificados",
                             tabla_paquetes(res.comandos), ancho="820x480")
 
-    def ejecutar_cpu(self):
+    def _nombre_escena(self):
+        if not self.ruta_actual:
+            return ""
+        return os.path.splitext(os.path.basename(self.ruta_actual))[0]
+
+    def ejecutar_cpu(self, modo="tramos"):
+        """Escena en RasterizadorCPU: reporte en la salida e imagen en una
+        ventana aparte."""
+        if self._ocupado:
+            return
         res = self._analizar()
         if res is None or res.rechazados:
             return
-        try:
-            RasterizadorCPU().ejecutar(res.comandos)
-            self.log("Ejecucion en CPU completada.", "ok")
-        except NotImplementedError as e:
-            self.log("[pendiente] {}".format(e), "pend")
+        cfg, escena = self._config_viva(), self._nombre_escena()
+
+        def trabajo(log):
+            ras, _ = operaciones.ejecutar_cpu(res.comandos, cfg, log,
+                                              modo, escena)
+            self._mostrar_imagen_desde_hilo(ras, "CPU ({})".format(modo))
+            return True
+
+        self._en_segundo_plano(trabajo, mensaje="Rasterizando en CPU...")
+
+    def comparar(self):
+        """Caso de uso CU-04: la misma escena en CPU y en el acelerador."""
+        if self._ocupado:
+            return
+        res = self._analizar()
+        if res is None or res.rechazados:
+            return
+        cfg, escena = self._config_viva(), self._nombre_escena()
+
+        def trabajo(log):
+            ras, _, hw = operaciones.comparar(res.comandos, cfg, log,
+                                              "tramos", escena)
+            self._mostrar_imagen_desde_hilo(ras, "CPU (referencia)")
+            return hw is not None
+
+        self._en_segundo_plano(trabajo,
+                               mensaje="Comparando CPU y FPGA...")
+
+    def _mostrar_imagen_desde_hilo(self, ras, origen):
+        titulo = "{} - {}".format(
+            origen, "buffer delantero" if ras.swaps
+            else "buffer trasero (sin swap)")
+        self._cola_log.put(("img", ras.png_bytes(), titulo))
+
+    def _ventana_imagen(self, png, titulo):
+        v = tk.Toplevel(self)
+        v.title(titulo)
+        img = tk.PhotoImage(data=base64.b64encode(png))
+        v.imagen = img                       # que no la recolecte el GC
+        tk.Label(v, image=img, bd=0).pack()
+        v.resizable(False, False)
 
     def solicitar_inf(self):
         if self._ocupado:
@@ -366,10 +416,11 @@ class VentanaInterfaz(tk.Tk):
 
     # -- trabajo en segundo plano: la red no congela la ventana
 
-    def _en_segundo_plano(self, funcion, *args):
+    def _en_segundo_plano(self, funcion, *args,
+                          mensaje="Comunicando con el HPS..."):
         self._ocupado = True
         self.config(cursor="watch")
-        self.var_estado.set("Comunicando con el HPS...")
+        self.var_estado.set(mensaje)
 
         def log_hilo(texto, tag=None):
             self._cola_log.put(("log", texto, tag))
@@ -390,11 +441,13 @@ class VentanaInterfaz(tk.Tk):
                 tipo, a, b = self._cola_log.get_nowait()
                 if tipo == "log":
                     self.log(a, b)
+                elif tipo == "img":
+                    self._ventana_imagen(a, b)
                 else:
                     self._ocupado = False
                     self.config(cursor="")
                     self.var_estado.set("Listo." if a else
-                                        "Fallo la comunicacion con el HPS.")
+                                        "Fallo la operacion; ver la salida.")
         except queue.Empty:
             pass
         self.after(100, self._atender_cola_log)

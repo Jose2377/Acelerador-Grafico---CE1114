@@ -3,10 +3,10 @@
 Interfaz en Python 3 del proyecto *Integracion de unidad de aceleracion
 grafica para plataformas a la medida en FPGA (DE1-SoC)*.
 
-Esta entrega contiene **solo la interfaz**: estructura de modulos, CLI,
-constantes, tipos y configuracion. El interprete, el codificador de paquetes y el transporte TCP
-estan implementados; el rasterizador de referencia queda como stub
-marcado `PENDIENTE`.
+Nivel 1 completo: interprete, codificador de paquetes, transporte TCP,
+reporte de rendimiento y el rasterizador de referencia en CPU, que
+reproduce el RTL pixel a pixel y sirve para comparar contra el acelerador
+(caso de uso CU-04).
 
 ## Estructura
 
@@ -27,12 +27,14 @@ Interfaz/
     transporte.py      ClienteTransporte (socket TCP, IF-03)    [listo]
     reporte.py         ReporteRendimiento (CSV acumulativo)     [listo]
     protocolo.py       encabezado TCP de 8 bytes y cargas       [listo]
-    operaciones.py     flujo enviar/reporte (CLI y ventana)     [listo]
-    raster_cpu.py      RasterizadorCPU (referencia)             [PENDIENTE]
+    operaciones.py     flujos enviar/reporte/cpu/comparar       [listo]
+    raster_cpu.py      RasterizadorCPU (referencia en CPU)      [listo]
   escenas/ejemplo.gfx  escena de ejemplo
   escenas/con_errores.gfx  escena con errores para probar la validacion
-  tests/               pruebas del interprete, codificador y transporte
-  reportes/            salida CSV y log de errores de sesion
+  tests/               pruebas (interprete, codificador, transporte,
+                       rasterizador contra el RTL, operaciones)
+  tests/datos/         fotogramas de ModelSim usados como referencia
+  reportes/            CSV de rendimiento, imagenes de CPU y log de errores
 ```
 
 ## Uso
@@ -45,9 +47,11 @@ python3 gfxgui.py escenas/ejemplo.gfx       abre la ventana con un script
 ```
 
 La ventana tiene el editor del script arriba (con numeros de linea) y el
-panel de salida abajo. Los botones Validar (F5), Enviar (F6), CPU e INF
-usan el mismo nucleo que el CLI; las lineas rechazadas se resaltan en el
-editor y el error se detalla en la salida. El host y el puerto del HPS se
+panel de salida abajo. Los botones Validar (Ctrl+D), Enviar (Ctrl+F), CPU
+e INF usan el mismo nucleo que el CLI; las lineas rechazadas se resaltan
+en el editor y el error se detalla en la salida. CPU abre ademas una
+ventana con la imagen resultante. En el menu Ejecucion estan los dos
+modos de CPU y "Comparar CPU vs FPGA". El host y el puerto del HPS se
 pueden cambiar en la barra superior sin editar `config.json`.
 
 Requiere tkinter, incluido en la instalacion estandar de Python 3 en
@@ -61,6 +65,8 @@ python3 gfxcli.py check escenas/ejemplo.gfx valida sin transmitir
 python3 gfxcli.py send  escenas/ejemplo.gfx valida y transmite
 python3 gfxcli.py paquetes escenas/ejemplo.gfx  muestra W0..W5 en hex
 python3 gfxcli.py cpu   escenas/ejemplo.gfx ejecuta en CPU (referencia)
+python3 gfxcli.py cpu --modo pixel escenas/ejemplo.gfx
+python3 gfxcli.py comparar escenas/ejemplo.gfx  misma escena en CPU y FPGA
 python3 gfxcli.py inf                       solicita el reporte
 ```
 
@@ -149,8 +155,10 @@ python gfxcli.py --host 127.0.0.1 send escenas/ejemplo.gfx
 ```
 
 Si la escena termina en `inf`, la interfaz pide el reporte, lo muestra y lo
-anexa a `reportes/rendimiento.csv`. Los contadores del simulador son
-estimaciones; solo sirven para probar el camino de ida y vuelta.
+anexa a `reportes/rendimiento.csv`. El simulador dibuja con
+RasterizadorCPU, asi que comandos y pixeles son exactos; los ciclos son
+una estimacion sacada de las maquinas de estado del RTL, sin la espera de
+la SDRAM.
 `--fallar-lote N` hace que el simulador responda EC-05 al N-esimo lote.
 
 ## Protocolo TCP
@@ -159,7 +167,59 @@ Encabezado de 8 bytes en orden de red: tipo (uint8), banderas (uint8),
 longitud (uint16), secuencia (uint32). Detalle completo, cargas y ejemplo
 en `PROTOCOLO.md`.
 
+## Rasterizador de referencia en CPU
+
+`gfx/raster_cpu.py` reproduce los algoritmos del RTL (processor_raster y
+los draw_*): Bresenham para lineas, punto medio con simetria de ocho para
+la circunferencia, cuadrado circunscrito para el disco y funciones de
+arista con regla top-left para el triangulo, con el mismo recorte, la
+misma conversion RGB565 y el mismo doble buffer. Para un mismo script da
+el mismo framebuffer y los mismos contadores que el hardware: comandos
+(incluye NOP y SWAP, no INF), pixeles escritos (los repetidos del contorno
+del circulo cuentan, como en el hardware) y pixeles recortados.
+
+Se verifica en `tests/test_raster_cpu.py` contra fotogramas de ModelSim,
+contra las comprobaciones de `tb_Acelerador_Grafico_Top.sv` y contra una
+traduccion literal de las maquinas de estado con comandos al azar.
+
+Dos modos, mismo resultado y distinto tiempo:
+
+| Modo | Que hace | Para que |
+|---|---|---|
+| `tramos` (por omision) | los rellenos escriben cada fila de una vez | software razonable |
+| `pixel` | el mismo trabajo que el hardware: un pixel por paso, el cuadrado entero en `circ_fill`, cada pixel de la caja en `tria_fill` | algoritmo identico |
+
+Lineas, contornos y pixeles sueltos son iguales en los dos modos.
+
+### Comparacion CPU vs FPGA (CU-04)
+
+```
+python gfxcli.py comparar escenas/ejemplo.gfx
+```
+
+Ejecuta la escena en CPU y en el acelerador (agrega `inf` si falta),
+muestra los dos reportes, la razon de tiempos CPU / FPGA y comprueba que
+comandos y pixeles coincidan. Las dos filas quedan en el CSV con
+`origen` = `cpu-tramos` / `cpu-pixel` / `fpga`.
+
+Al interpretar los tiempos:
+
+- **SWAP en el hardware cuenta la espera de VSYNC.** En el RTL,
+  `rasterizando = busy && enable` y `busy` sigue alto en MOE_SWAP, de modo
+  que cada `swap` suma hasta un cuadro (16,7 ms) a PERF_CYCLES. En CPU el
+  swap es instantaneo. Para comparar el rasterizado, usar escenas sin
+  `swap` o restar ese tiempo.
+- **`errores` del hardware es acumulado** desde el ultimo reinicio
+  (ERR_INFO), no de la ventana; por eso la comparacion no lo exige igual.
+- **Mismo procesador.** El diseno pide correr la referencia en el HPS
+  (ARM Cortex-A9); los tiempos de una PC no son comparables. El modulo
+  solo usa la biblioteca estandar, para poder llevarlo al HPS tal cual.
+- El reloj del acelerador es de 100 MHz (`Acelerador_pkg::SYS_CLK_HZ`);
+  `sys_clk_hz` en `config.json` debe coincidir.
+
 ## Siguiente paso
 
-Implementar `RasterizadorCPU` en `gfx/raster_cpu.py` (implementacion de
-referencia en CPU para comparar contra el acelerador).
+Del lado de la interfaz no queda nada pendiente. Lo siguiente es el
+servicio del HPS (nivel 2), que debe hablar el protocolo de
+`PROTOCOLO.md`; `servidor_simulado.py` es la referencia de su
+comportamiento.

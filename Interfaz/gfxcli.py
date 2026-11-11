@@ -6,11 +6,14 @@ Uso:
   python3 gfxcli.py send   escenas/ejemplo.gfx      valida y transmite
   python3 gfxcli.py paquetes escenas/ejemplo.gfx    muestra los paquetes W0..W5
   python3 gfxcli.py cpu    escenas/ejemplo.gfx      ejecuta en CPU (referencia)
+  python3 gfxcli.py cpu --modo pixel escenas/ejemplo.gfx
+  python3 gfxcli.py comparar escenas/ejemplo.gfx    CPU vs FPGA (caso CU-04)
   python3 gfxcli.py inf                             pide el reporte al hardware
   python3 gfxcli.py comandos                        tabla de comandos
 """
 
 import argparse
+import os
 import sys
 
 from gfx import config as cfgmod
@@ -73,7 +76,9 @@ def orden_send(args, cfg):
         return 2
     if res.rechazados:
         return 1                     # no se transmite nada
-    return 0 if operaciones.enviar_escena(res.comandos, cfg, log_consola) else 2
+    ok = operaciones.enviar_escena(res.comandos, cfg, log_consola,
+                                   nombre_escena(args.script))
+    return 0 if ok else 2
 
 
 def orden_paquetes(args, cfg):
@@ -91,16 +96,32 @@ def orden_inf(args, cfg):
     return 0 if operaciones.pedir_reporte(cfg, log_consola) else 2
 
 
+def nombre_escena(ruta):
+    return os.path.splitext(os.path.basename(ruta))[0]
+
+
 def orden_cpu(args, cfg):
     res = analizar(args.script, cfg)
     if res is None or res.rechazados:
         return 1
-    try:
-        RasterizadorCPU().ejecutar(res.comandos)
-    except NotImplementedError as e:
-        print("[pendiente] {}".format(e))
-        return 2
+    escena = nombre_escena(args.script)
+    png = args.png
+    if png is None:
+        carpeta = os.path.dirname(cfg["ruta_reportes"]) or "."
+        os.makedirs(carpeta, exist_ok=True)
+        png = os.path.join(carpeta, "{}_cpu.png".format(escena))
+    operaciones.ejecutar_cpu(res.comandos, cfg, log_consola, args.modo,
+                             escena, png or None)
     return 0
+
+
+def orden_comparar(args, cfg):
+    res = analizar(args.script, cfg)
+    if res is None or res.rechazados:
+        return 1
+    _, _, hw = operaciones.comparar(res.comandos, cfg, log_consola,
+                                    args.modo, nombre_escena(args.script))
+    return 0 if hw else 2
 
 
 def orden_comandos(args, cfg):
@@ -143,7 +164,17 @@ def main(argv=None):
 
     s = sub.add_parser("cpu", help="ejecuta el script en CPU (referencia)")
     s.add_argument("script")
+    s.add_argument("--modo", choices=RasterizadorCPU.MODOS, default="tramos",
+                   help="tramos (por omision) o pixel, ver gfx/raster_cpu.py")
+    s.add_argument("--png", help="ruta de la imagen (por omision "
+                   "reportes/<escena>_cpu.png; '' para no guardar)")
     s.set_defaults(func=orden_cpu)
+
+    s = sub.add_parser("comparar",
+                       help="misma escena en CPU y en FPGA (caso CU-04)")
+    s.add_argument("script")
+    s.add_argument("--modo", choices=RasterizadorCPU.MODOS, default="tramos")
+    s.set_defaults(func=orden_comparar)
 
     s = sub.add_parser("inf", help="solicita el reporte de rendimiento")
     s.set_defaults(func=orden_inf)
