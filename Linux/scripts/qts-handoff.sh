@@ -1,5 +1,5 @@
 #!/bin/bash
-# Regenera los encabezados del preloader (SPL) desde FPGA/hps_isw_handoff/ con
+# Regenera pll_config.h y sdram_config.h del preloader (SPL) desde FPGA/hps_isw_handoff/ con
 # el generador incluido en U-Boot (tools/cv_bsp_generator). No necesita SoC EDS.
 # Solo hace falta si cambias el HPS en Platform Designer.
 # Uso, desde <repositorio>/Linux:   bash scripts/qts-handoff.sh   [carpeta del proyecto Quartus]
@@ -15,7 +15,13 @@ if [ -z "$UBOOT_SRC" ]; then
     UBOOT_SRC="$(ls -d "$OUT"/build/uboot-*/ | head -1)"
 fi
 QTS_OUT="$EXT/board/de1soc/qts"
+TMP="$(mktemp -d)"
 ( cd "$UBOOT_SRC/tools/cv_bsp_generator" && \
-  python3 cv_bsp_generator.py -i "$HANDOFF" -o "$QTS_OUT" )
+  python3 cv_bsp_generator.py -i "$HANDOFF" -o "$TMP" )
+# Solo relojes y DDR vienen del proyecto. pinmux_config.h e iocsr_config.h se
+# quedan con los oficiales de Terasic (ver qts/LEEME.txt): los generados
+# rompen la lectura de la SD en SPL y el Ethernet.
+cp -v "$TMP/pll_config.h" "$TMP/sdram_config.h" "$QTS_OUT/"
+rm -rf "$TMP"
 ls -l "$QTS_OUT"
 echo "Ahora: make -C $OUT uboot-dirclean all"

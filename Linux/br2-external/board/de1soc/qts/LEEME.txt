@@ -1,0 +1,13 @@
+Encabezados del preloader (SPL) que se copian sobre board/terasic/de1-soc/qts de U-Boot.
+
+  pll_config.h, sdram_config.h   generados del proyecto (FPGA/hps_isw_handoff):
+                                 relojes del HPS y DDR3 (CL11, MPU 925 MHz).
+  pinmux_config.h, iocsr_config.h  los OFICIALES de Terasic (U-Boot v2026.01,
+                                 board/terasic/de1-soc/qts). Describen el cableado
+                                 y la parte electrica de los pines de la placa.
+                                 Los generados del proyecto dejaban la SD sin leer
+                                 en SPL ("mmc_load_image_raw_sector: mmc block read
+                                 error") y el Ethernet sin multiplexar (EMACIO = 0).
+
+scripts/qts-handoff.sh regenera solo pll_config.h y sdram_config.h.
+Despues de cambiar cualquiera: make -C ~/de1soc/output uboot-dirclean all

@@ -1,8 +1,4 @@
-/* SPDX-License-Identifier: GPL-2.0 OR BSD-3-Clause */
-/*
- * Copyright (C) 2022 Intel Corporation <www.intel.com>
- *
- */
+/* SPDX-License-Identifier: BSD-3-Clause */
 /*
  * Altera SoCFPGA PinMux configuration
  */
@@ -12,19 +8,19 @@
 
 const u8 sys_mgr_init_table[] = {
 	0, /* EMACIO0 */
-	0, /* EMACIO1 */
-	0, /* EMACIO2 */
-	0, /* EMACIO3 */
-	0, /* EMACIO4 */
-	0, /* EMACIO5 */
-	0, /* EMACIO6 */
-	0, /* EMACIO7 */
-	0, /* EMACIO8 */
+	2, /* EMACIO1 */
+	2, /* EMACIO2 */
+	2, /* EMACIO3 */
+	2, /* EMACIO4 */
+	2, /* EMACIO5 */
+	2, /* EMACIO6 */
+	2, /* EMACIO7 */
+	2, /* EMACIO8 */
 	0, /* EMACIO9 */
-	0, /* EMACIO10 */
-	0, /* EMACIO11 */
-	0, /* EMACIO12 */
-	0, /* EMACIO13 */
+	2, /* EMACIO10 */
+	2, /* EMACIO11 */
+	2, /* EMACIO12 */
+	2, /* EMACIO13 */
 	0, /* EMACIO14 */
 	0, /* EMACIO15 */
 	0, /* EMACIO16 */
@@ -46,22 +42,22 @@ const u8 sys_mgr_init_table[] = {
 	0, /* GENERALIO0 */
 	1, /* GENERALIO1 */
 	1, /* GENERALIO2 */
-	0, /* GENERALIO3 */
-	0, /* GENERALIO4 */
+	1, /* GENERALIO3 */
+	1, /* GENERALIO4 */
 	0, /* GENERALIO5 */
 	0, /* GENERALIO6 */
-	0, /* GENERALIO7 */
-	0, /* GENERALIO8 */
+	1, /* GENERALIO7 */
+	1, /* GENERALIO8 */
 	0, /* GENERALIO9 */
 	0, /* GENERALIO10 */
 	0, /* GENERALIO11 */
 	0, /* GENERALIO12 */
 	0, /* GENERALIO13 */
 	0, /* GENERALIO14 */
-	0, /* GENERALIO15 */
-	0, /* GENERALIO16 */
-	0, /* GENERALIO17 */
-	0, /* GENERALIO18 */
+	1, /* GENERALIO15 */
+	1, /* GENERALIO16 */
+	1, /* GENERALIO17 */
+	1, /* GENERALIO18 */
 	0, /* GENERALIO19 */
 	0, /* GENERALIO20 */
 	0, /* GENERALIO21 */
@@ -90,12 +86,12 @@ const u8 sys_mgr_init_table[] = {
 	2, /* MIXED1IO12 */
 	2, /* MIXED1IO13 */
 	0, /* MIXED1IO14 */
-	0, /* MIXED1IO15 */
-	0, /* MIXED1IO16 */
-	0, /* MIXED1IO17 */
-	0, /* MIXED1IO18 */
-	0, /* MIXED1IO19 */
-	0, /* MIXED1IO20 */
+	3, /* MIXED1IO15 */
+	3, /* MIXED1IO16 */
+	3, /* MIXED1IO17 */
+	3, /* MIXED1IO18 */
+	3, /* MIXED1IO19 */
+	3, /* MIXED1IO20 */
 	0, /* MIXED1IO21 */
 	0, /* MIXED2IO0 */
 	0, /* MIXED2IO1 */

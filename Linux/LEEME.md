@@ -153,22 +153,25 @@ Revisión rápida: `sfdisk -l ~/de1soc/output/images/sdcard.img` debe mostrar p1
 
 Si el `.rbf` llega por otra vía (por ejemplo, una memoria USB): `bash scripts/05-actualizar-rbf.sh /media/$USER/USB/soc_system.rbf`.
 
-El handoff de `qts/` coincide con `FPGA/hps_isw_handoff` al 10/11/2026: git solo muestra cambios de finales de línea. No hace falta regenerarlo.
+**Preloader (`br2-external/board/de1soc/qts/`, ver `qts/LEEME.txt`):**
+- `pll_config.h` y `sdram_config.h` vienen del proyecto (relojes del HPS y DDR3 CL11).
+- `pinmux_config.h` e `iocsr_config.h` son los **oficiales de Terasic**, porque describen el cableado de la placa. Los generados del proyecto dejaban la SD sin leer en SPL y el Ethernet sin multiplexar.
+- `qts-handoff.sh` solo regenera los dos primeros.
 
 ---
 
 ## 6. Fase D: grabar la SD y arrancar la placa
 
-1. **Graba la SD** desde Ubuntu: `lsblk` para ver el nombre del lector y luego `bash scripts/06-grabar-sd.sh /dev/sdX`.
+1. **Graba la SD** desde Ubuntu: `lsblk` para ver el nombre del lector y luego `bash scripts/06-grabar-sd.sh /dev/sdX`. Con el lector interno de una laptop, el nombre es `/dev/mmcblk0`. Usa siempre el disco completo, sin `p1`. Para verificar, saca y vuelve a meter la SD: la partición FAT debe tener `boot.scr`, `zImage`, `socfpga_cyclone5_de1_soc.dtb` y `soc_system.rbf`.
 2. **SW10 (MSEL[4:0]) = `01010`**, con la placa apagada. En SW10, ON = 0; revisa la serigrafía.
 3. **Consola serie:**
    - Ubuntu: `sudo picocom -b 115200 /dev/ttyUSB0`.
    - Windows: PuTTY → *Serial*, el COM del Administrador de dispositivos, 115200.
-4. Inserta la SD, enciende y verifica esta secuencia:
+4. Abre la consola **antes** de encender. Inserta la SD, enciende y verifica esta secuencia:
 
 | Mensaje | Si se detiene aquí |
 |---|---|
-| `U-Boot SPL 2026.01` | Revisa `qts/` y que la SD tenga la partición A2 |
+| `U-Boot SPL 2026.01` | Revisa `qts/` (ver `qts/LEEME.txt`) y que la SD tenga la partición A2 |
 | `Programando FPGA con soc_system.rbf` | Revisa MSEL y que el `.rbf` sea comprimido |
 | `AVISO: no hay soc_system.rbf` | Falta la fase B y `05-actualizar-rbf.sh` |
 | `de1soc login:` | Entra con `root` / `de1soc` |
@@ -231,6 +234,8 @@ cd ../../../Interfaz && python3 gfxcli.py send escenas/ejemplo.gfx   # con host 
 
 | Síntoma | Causa / acción |
 |---|---|
+| La consola muestra `Poky ... (Yocto Project 1.3) socfpga login:` | La SD tiene la imagen de fábrica de Terasic: no se grabó `sdcard.img`. Repite `06-grabar-sd.sh` con el dispositivo correcto (en lectores internos es `/dev/mmcblk0`, no `/dev/sdX`) y revisa que la partición FAT tenga `boot.scr` y `socfpga_cyclone5_de1_soc.dtb` |
+| SPL repite `mmc_load_image_raw_sector: mmc block read error` / `Error: -38` / `Trying to boot from UART` | `pinmux_config.h` o `iocsr_config.h` no son los de Terasic. Restáuralos (ver `qts/LEEME.txt`), corre `make -C ~/de1soc/output uboot-dirclean all` y vuelve a grabar la SD |
 | `Permission denied` al ejecutar un script | Ejecútalo con `bash scripts/...`. Los scripts arreglan solos los permisos de `post-image.sh` |
 | `/bin/bash^M: bad interpreter` | Finales de línea CRLF de Windows. Ejecuta con `bash scripts/...` (se corrigen solos). `.gitattributes` evita que vuelva a pasar |
 | `no existe .../output/.config` | Falta `bash scripts/01-preparar-buildroot.sh` |
