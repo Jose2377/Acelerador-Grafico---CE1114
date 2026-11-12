@@ -10,6 +10,17 @@ module soc_system (
 	avm_regs_read,
 	avm_regs_byteenable,
 	avm_regs_debugaccess,
+	avm_sdram_waitrequest,
+	avm_sdram_readdata,
+	avm_sdram_readdatavalid,
+	avm_sdram_burstcount,
+	avm_sdram_writedata,
+	avm_sdram_address,
+	avm_sdram_write,
+	avm_sdram_read,
+	avm_sdram_byteenable,
+	avm_sdram_debugaccess,
+	clk_100_clk,
 	clk_50_clk,
 	hps_io_hps_io_emac1_inst_TX_CLK,
 	hps_io_hps_io_emac1_inst_TXD0,
@@ -50,6 +61,8 @@ module soc_system (
 	memory_mem_dm,
 	memory_oct_rzqin,
 	pll_0_reset_reset,
+	pll_0_sdram_clk,
+	pll_0_vga_clk,
 	sdram_controller_0_wire_addr,
 	sdram_controller_0_wire_ba,
 	sdram_controller_0_wire_cas_n,
@@ -58,19 +71,7 @@ module soc_system (
 	sdram_controller_0_wire_dq,
 	sdram_controller_0_wire_dqm,
 	sdram_controller_0_wire_ras_n,
-	sdram_controller_0_wire_we_n,
-	pll_0_sdram_clk,
-	avm_sdram_waitrequest,
-	avm_sdram_readdata,
-	avm_sdram_readdatavalid,
-	avm_sdram_burstcount,
-	avm_sdram_writedata,
-	avm_sdram_address,
-	avm_sdram_write,
-	avm_sdram_read,
-	avm_sdram_byteenable,
-	avm_sdram_debugaccess,
-	pll_0_vga_clk);	
+	sdram_controller_0_wire_we_n);	
 
 	input		avm_regs_waitrequest;
 	input	[31:0]	avm_regs_readdata;
@@ -82,6 +83,17 @@ module soc_system (
 	output		avm_regs_read;
 	output	[3:0]	avm_regs_byteenable;
 	output		avm_regs_debugaccess;
+	output		avm_sdram_waitrequest;
+	output	[15:0]	avm_sdram_readdata;
+	output		avm_sdram_readdatavalid;
+	input	[3:0]	avm_sdram_burstcount;
+	input	[15:0]	avm_sdram_writedata;
+	input	[25:0]	avm_sdram_address;
+	input		avm_sdram_write;
+	input		avm_sdram_read;
+	input	[1:0]	avm_sdram_byteenable;
+	input		avm_sdram_debugaccess;
+	output		clk_100_clk;
 	input		clk_50_clk;
 	output		hps_io_hps_io_emac1_inst_TX_CLK;
 	output		hps_io_hps_io_emac1_inst_TXD0;
@@ -122,6 +134,8 @@ module soc_system (
 	output	[3:0]	memory_mem_dm;
 	input		memory_oct_rzqin;
 	input		pll_0_reset_reset;
+	output		pll_0_sdram_clk;
+	output		pll_0_vga_clk;
 	output	[12:0]	sdram_controller_0_wire_addr;
 	output	[1:0]	sdram_controller_0_wire_ba;
 	output		sdram_controller_0_wire_cas_n;
@@ -131,16 +145,4 @@ module soc_system (
 	output	[1:0]	sdram_controller_0_wire_dqm;
 	output		sdram_controller_0_wire_ras_n;
 	output		sdram_controller_0_wire_we_n;
-	output		pll_0_sdram_clk;
-	output		avm_sdram_waitrequest;
-	output	[15:0]	avm_sdram_readdata;
-	output		avm_sdram_readdatavalid;
-	input	[3:0]	avm_sdram_burstcount;
-	input	[15:0]	avm_sdram_writedata;
-	input	[25:0]	avm_sdram_address;
-	input		avm_sdram_write;
-	input		avm_sdram_read;
-	input	[1:0]	avm_sdram_byteenable;
-	input		avm_sdram_debugaccess;
-	output		pll_0_vga_clk;
 endmodule

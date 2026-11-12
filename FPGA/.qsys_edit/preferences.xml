@@ -8,8 +8,7 @@
    <inputclock preferredWidth="256" />
   </columns>
  </systemtable>
- <library
-   expandedCategories="Library/Basic Functions/Bridges and Adaptors,Library/Processors and Peripherals,Library/Processors and Peripherals/Peripherals,Library/Basic Functions,Project,Library,Library/Basic Functions/Bridges and Adaptors/Memory Mapped" />
- <window width="1920" height="1020" x="0" y="0" />
+ <library expandedCategories="Project,Library" />
+ <window width="1920" height="1020" x="0" y="62" />
  <generation path="Platform_Designer/" simulation="VERILOG" block_symbol_file="0" />
 </preferences>

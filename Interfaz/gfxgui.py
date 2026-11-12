@@ -342,9 +342,13 @@ class VentanaInterfaz(tk.Tk):
         res = self._analizar()
         if res is None or res.rechazados:
             return
-        self._en_segundo_plano(operaciones.enviar_escena,
-                               res.comandos, self._config_viva(),
-                               self._nombre_escena())
+        cfg, escena = self._config_viva(), self._nombre_escena()
+
+        def trabajo(log):
+            # enviar_escena(comandos, cfg, log, escena): log va antes que escena
+            return operaciones.enviar_escena(res.comandos, cfg, log, escena)
+
+        self._en_segundo_plano(trabajo)
 
     def ver_paquetes(self):
         res = self._analizar()

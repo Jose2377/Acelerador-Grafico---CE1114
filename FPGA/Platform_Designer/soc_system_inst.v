@@ -9,6 +9,17 @@
 		.avm_regs_read                   (<connected-to-avm_regs_read>),                   //                        .read
 		.avm_regs_byteenable             (<connected-to-avm_regs_byteenable>),             //                        .byteenable
 		.avm_regs_debugaccess            (<connected-to-avm_regs_debugaccess>),            //                        .debugaccess
+		.avm_sdram_waitrequest           (<connected-to-avm_sdram_waitrequest>),           //               avm_sdram.waitrequest
+		.avm_sdram_readdata              (<connected-to-avm_sdram_readdata>),              //                        .readdata
+		.avm_sdram_readdatavalid         (<connected-to-avm_sdram_readdatavalid>),         //                        .readdatavalid
+		.avm_sdram_burstcount            (<connected-to-avm_sdram_burstcount>),            //                        .burstcount
+		.avm_sdram_writedata             (<connected-to-avm_sdram_writedata>),             //                        .writedata
+		.avm_sdram_address               (<connected-to-avm_sdram_address>),               //                        .address
+		.avm_sdram_write                 (<connected-to-avm_sdram_write>),                 //                        .write
+		.avm_sdram_read                  (<connected-to-avm_sdram_read>),                  //                        .read
+		.avm_sdram_byteenable            (<connected-to-avm_sdram_byteenable>),            //                        .byteenable
+		.avm_sdram_debugaccess           (<connected-to-avm_sdram_debugaccess>),           //                        .debugaccess
+		.clk_100_clk                     (<connected-to-clk_100_clk>),                     //                 clk_100.clk
 		.clk_50_clk                      (<connected-to-clk_50_clk>),                      //                  clk_50.clk
 		.hps_io_hps_io_emac1_inst_TX_CLK (<connected-to-hps_io_hps_io_emac1_inst_TX_CLK>), //                  hps_io.hps_io_emac1_inst_TX_CLK
 		.hps_io_hps_io_emac1_inst_TXD0   (<connected-to-hps_io_hps_io_emac1_inst_TXD0>),   //                        .hps_io_emac1_inst_TXD0
@@ -49,6 +60,8 @@
 		.memory_mem_dm                   (<connected-to-memory_mem_dm>),                   //                        .mem_dm
 		.memory_oct_rzqin                (<connected-to-memory_oct_rzqin>),                //                        .oct_rzqin
 		.pll_0_reset_reset               (<connected-to-pll_0_reset_reset>),               //             pll_0_reset.reset
+		.pll_0_sdram_clk                 (<connected-to-pll_0_sdram_clk>),                 //             pll_0_sdram.clk
+		.pll_0_vga_clk                   (<connected-to-pll_0_vga_clk>),                   //               pll_0_vga.clk
 		.sdram_controller_0_wire_addr    (<connected-to-sdram_controller_0_wire_addr>),    // sdram_controller_0_wire.addr
 		.sdram_controller_0_wire_ba      (<connected-to-sdram_controller_0_wire_ba>),      //                        .ba
 		.sdram_controller_0_wire_cas_n   (<connected-to-sdram_controller_0_wire_cas_n>),   //                        .cas_n
@@ -57,18 +70,6 @@
 		.sdram_controller_0_wire_dq      (<connected-to-sdram_controller_0_wire_dq>),      //                        .dq
 		.sdram_controller_0_wire_dqm     (<connected-to-sdram_controller_0_wire_dqm>),     //                        .dqm
 		.sdram_controller_0_wire_ras_n   (<connected-to-sdram_controller_0_wire_ras_n>),   //                        .ras_n
-		.sdram_controller_0_wire_we_n    (<connected-to-sdram_controller_0_wire_we_n>),    //                        .we_n
-		.pll_0_sdram_clk                 (<connected-to-pll_0_sdram_clk>),                 //             pll_0_sdram.clk
-		.avm_sdram_waitrequest           (<connected-to-avm_sdram_waitrequest>),           //               avm_sdram.waitrequest
-		.avm_sdram_readdata              (<connected-to-avm_sdram_readdata>),              //                        .readdata
-		.avm_sdram_readdatavalid         (<connected-to-avm_sdram_readdatavalid>),         //                        .readdatavalid
-		.avm_sdram_burstcount            (<connected-to-avm_sdram_burstcount>),            //                        .burstcount
-		.avm_sdram_writedata             (<connected-to-avm_sdram_writedata>),             //                        .writedata
-		.avm_sdram_address               (<connected-to-avm_sdram_address>),               //                        .address
-		.avm_sdram_write                 (<connected-to-avm_sdram_write>),                 //                        .write
-		.avm_sdram_read                  (<connected-to-avm_sdram_read>),                  //                        .read
-		.avm_sdram_byteenable            (<connected-to-avm_sdram_byteenable>),            //                        .byteenable
-		.avm_sdram_debugaccess           (<connected-to-avm_sdram_debugaccess>),           //                        .debugaccess
-		.pll_0_vga_clk                   (<connected-to-pll_0_vga_clk>)                    //               pll_0_vga.clk
+		.sdram_controller_0_wire_we_n    (<connected-to-sdram_controller_0_wire_we_n>)     //                        .we_n
 	);
 

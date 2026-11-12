@@ -95,7 +95,14 @@ package Acelerador_pkg;
   // millones de ciclos por destello). PIX_CLK_HZ es solo documentacion:
   // ningun modulo lo lee, porque la temporizacion se expresa en ciclos de
   // clk_pix y no en hercios.
-  parameter int SYS_CLK_HZ = 100_000_000;
+  //
+  // 11/11/2026: clk_sys baja a 50 MHz. A 100 MHz la cadena combinacional
+  // draw_rect -> clip_scissor -> framebuffer_controller.px_ready -> rasterizador
+  // necesita 16,6 ns (Fmax 58,3 MHz) y la falla de tiempo colgaba la lectura del
+  // framebuffer. Debe coincidir con outclk0 de pll_0 en soc_system.qsys y con
+  // "sys_clk_hz" de Interfaz/config.json. Para volver a 100 MHz hay que cortar
+  // esa cadena con un registro (skid buffer) antes del framebuffer_controller.
+  parameter int SYS_CLK_HZ = 50_000_000;
   parameter int PIX_CLK_HZ =  25_175_000;
 
   //------------------------------------------------------- Framebuffer

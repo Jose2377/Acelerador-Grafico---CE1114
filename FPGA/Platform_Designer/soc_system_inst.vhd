@@ -10,6 +10,17 @@
 			avm_regs_read                   : out   std_logic;                                        -- read
 			avm_regs_byteenable             : out   std_logic_vector(3 downto 0);                     -- byteenable
 			avm_regs_debugaccess            : out   std_logic;                                        -- debugaccess
+			avm_sdram_waitrequest           : out   std_logic;                                        -- waitrequest
+			avm_sdram_readdata              : out   std_logic_vector(15 downto 0);                    -- readdata
+			avm_sdram_readdatavalid         : out   std_logic;                                        -- readdatavalid
+			avm_sdram_burstcount            : in    std_logic_vector(3 downto 0)  := (others => 'X'); -- burstcount
+			avm_sdram_writedata             : in    std_logic_vector(15 downto 0) := (others => 'X'); -- writedata
+			avm_sdram_address               : in    std_logic_vector(25 downto 0) := (others => 'X'); -- address
+			avm_sdram_write                 : in    std_logic                     := 'X';             -- write
+			avm_sdram_read                  : in    std_logic                     := 'X';             -- read
+			avm_sdram_byteenable            : in    std_logic_vector(1 downto 0)  := (others => 'X'); -- byteenable
+			avm_sdram_debugaccess           : in    std_logic                     := 'X';             -- debugaccess
+			clk_100_clk                     : out   std_logic;                                        -- clk
 			clk_50_clk                      : in    std_logic                     := 'X';             -- clk
 			hps_io_hps_io_emac1_inst_TX_CLK : out   std_logic;                                        -- hps_io_emac1_inst_TX_CLK
 			hps_io_hps_io_emac1_inst_TXD0   : out   std_logic;                                        -- hps_io_emac1_inst_TXD0
@@ -50,6 +61,8 @@
 			memory_mem_dm                   : out   std_logic_vector(3 downto 0);                     -- mem_dm
 			memory_oct_rzqin                : in    std_logic                     := 'X';             -- oct_rzqin
 			pll_0_reset_reset               : in    std_logic                     := 'X';             -- reset
+			pll_0_sdram_clk                 : out   std_logic;                                        -- clk
+			pll_0_vga_clk                   : out   std_logic;                                        -- clk
 			sdram_controller_0_wire_addr    : out   std_logic_vector(12 downto 0);                    -- addr
 			sdram_controller_0_wire_ba      : out   std_logic_vector(1 downto 0);                     -- ba
 			sdram_controller_0_wire_cas_n   : out   std_logic;                                        -- cas_n
@@ -58,19 +71,7 @@
 			sdram_controller_0_wire_dq      : inout std_logic_vector(15 downto 0) := (others => 'X'); -- dq
 			sdram_controller_0_wire_dqm     : out   std_logic_vector(1 downto 0);                     -- dqm
 			sdram_controller_0_wire_ras_n   : out   std_logic;                                        -- ras_n
-			sdram_controller_0_wire_we_n    : out   std_logic;                                        -- we_n
-			pll_0_sdram_clk                 : out   std_logic;                                        -- clk
-			avm_sdram_waitrequest           : out   std_logic;                                        -- waitrequest
-			avm_sdram_readdata              : out   std_logic_vector(15 downto 0);                    -- readdata
-			avm_sdram_readdatavalid         : out   std_logic;                                        -- readdatavalid
-			avm_sdram_burstcount            : in    std_logic_vector(3 downto 0)  := (others => 'X'); -- burstcount
-			avm_sdram_writedata             : in    std_logic_vector(15 downto 0) := (others => 'X'); -- writedata
-			avm_sdram_address               : in    std_logic_vector(25 downto 0) := (others => 'X'); -- address
-			avm_sdram_write                 : in    std_logic                     := 'X';             -- write
-			avm_sdram_read                  : in    std_logic                     := 'X';             -- read
-			avm_sdram_byteenable            : in    std_logic_vector(1 downto 0)  := (others => 'X'); -- byteenable
-			avm_sdram_debugaccess           : in    std_logic                     := 'X';             -- debugaccess
-			pll_0_vga_clk                   : out   std_logic                                         -- clk
+			sdram_controller_0_wire_we_n    : out   std_logic                                         -- we_n
 		);
 	end component soc_system;
 
@@ -86,6 +87,17 @@
 			avm_regs_read                   => CONNECTED_TO_avm_regs_read,                   --                        .read
 			avm_regs_byteenable             => CONNECTED_TO_avm_regs_byteenable,             --                        .byteenable
 			avm_regs_debugaccess            => CONNECTED_TO_avm_regs_debugaccess,            --                        .debugaccess
+			avm_sdram_waitrequest           => CONNECTED_TO_avm_sdram_waitrequest,           --               avm_sdram.waitrequest
+			avm_sdram_readdata              => CONNECTED_TO_avm_sdram_readdata,              --                        .readdata
+			avm_sdram_readdatavalid         => CONNECTED_TO_avm_sdram_readdatavalid,         --                        .readdatavalid
+			avm_sdram_burstcount            => CONNECTED_TO_avm_sdram_burstcount,            --                        .burstcount
+			avm_sdram_writedata             => CONNECTED_TO_avm_sdram_writedata,             --                        .writedata
+			avm_sdram_address               => CONNECTED_TO_avm_sdram_address,               --                        .address
+			avm_sdram_write                 => CONNECTED_TO_avm_sdram_write,                 --                        .write
+			avm_sdram_read                  => CONNECTED_TO_avm_sdram_read,                  --                        .read
+			avm_sdram_byteenable            => CONNECTED_TO_avm_sdram_byteenable,            --                        .byteenable
+			avm_sdram_debugaccess           => CONNECTED_TO_avm_sdram_debugaccess,           --                        .debugaccess
+			clk_100_clk                     => CONNECTED_TO_clk_100_clk,                     --                 clk_100.clk
 			clk_50_clk                      => CONNECTED_TO_clk_50_clk,                      --                  clk_50.clk
 			hps_io_hps_io_emac1_inst_TX_CLK => CONNECTED_TO_hps_io_hps_io_emac1_inst_TX_CLK, --                  hps_io.hps_io_emac1_inst_TX_CLK
 			hps_io_hps_io_emac1_inst_TXD0   => CONNECTED_TO_hps_io_hps_io_emac1_inst_TXD0,   --                        .hps_io_emac1_inst_TXD0
@@ -126,6 +138,8 @@
 			memory_mem_dm                   => CONNECTED_TO_memory_mem_dm,                   --                        .mem_dm
 			memory_oct_rzqin                => CONNECTED_TO_memory_oct_rzqin,                --                        .oct_rzqin
 			pll_0_reset_reset               => CONNECTED_TO_pll_0_reset_reset,               --             pll_0_reset.reset
+			pll_0_sdram_clk                 => CONNECTED_TO_pll_0_sdram_clk,                 --             pll_0_sdram.clk
+			pll_0_vga_clk                   => CONNECTED_TO_pll_0_vga_clk,                   --               pll_0_vga.clk
 			sdram_controller_0_wire_addr    => CONNECTED_TO_sdram_controller_0_wire_addr,    -- sdram_controller_0_wire.addr
 			sdram_controller_0_wire_ba      => CONNECTED_TO_sdram_controller_0_wire_ba,      --                        .ba
 			sdram_controller_0_wire_cas_n   => CONNECTED_TO_sdram_controller_0_wire_cas_n,   --                        .cas_n
@@ -134,18 +148,6 @@
 			sdram_controller_0_wire_dq      => CONNECTED_TO_sdram_controller_0_wire_dq,      --                        .dq
 			sdram_controller_0_wire_dqm     => CONNECTED_TO_sdram_controller_0_wire_dqm,     --                        .dqm
 			sdram_controller_0_wire_ras_n   => CONNECTED_TO_sdram_controller_0_wire_ras_n,   --                        .ras_n
-			sdram_controller_0_wire_we_n    => CONNECTED_TO_sdram_controller_0_wire_we_n,    --                        .we_n
-			pll_0_sdram_clk                 => CONNECTED_TO_pll_0_sdram_clk,                 --             pll_0_sdram.clk
-			avm_sdram_waitrequest           => CONNECTED_TO_avm_sdram_waitrequest,           --               avm_sdram.waitrequest
-			avm_sdram_readdata              => CONNECTED_TO_avm_sdram_readdata,              --                        .readdata
-			avm_sdram_readdatavalid         => CONNECTED_TO_avm_sdram_readdatavalid,         --                        .readdatavalid
-			avm_sdram_burstcount            => CONNECTED_TO_avm_sdram_burstcount,            --                        .burstcount
-			avm_sdram_writedata             => CONNECTED_TO_avm_sdram_writedata,             --                        .writedata
-			avm_sdram_address               => CONNECTED_TO_avm_sdram_address,               --                        .address
-			avm_sdram_write                 => CONNECTED_TO_avm_sdram_write,                 --                        .write
-			avm_sdram_read                  => CONNECTED_TO_avm_sdram_read,                  --                        .read
-			avm_sdram_byteenable            => CONNECTED_TO_avm_sdram_byteenable,            --                        .byteenable
-			avm_sdram_debugaccess           => CONNECTED_TO_avm_sdram_debugaccess,           --                        .debugaccess
-			pll_0_vga_clk                   => CONNECTED_TO_pll_0_vga_clk                    --               pll_0_vga.clk
+			sdram_controller_0_wire_we_n    => CONNECTED_TO_sdram_controller_0_wire_we_n     --                        .we_n
 		);
 
