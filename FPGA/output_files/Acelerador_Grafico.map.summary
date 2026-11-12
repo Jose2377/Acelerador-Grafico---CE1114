@@ -1,10 +1,10 @@
-Analysis & Synthesis Status : Successful - Wed Nov 11 18:21:10 2026
+Analysis & Synthesis Status : Successful - Wed Nov 11 18:02:07 2026
 Quartus Prime Version : 18.1.0 Build 625 09/12/2018 SJ Lite Edition
 Revision Name : Acelerador_Grafico
 Top-level Entity Name : DE1_SoC_top_level
 Family : Cyclone V
 Logic utilization (in ALMs) : N/A
-Total registers : 4360
+Total registers : 4444
 Total pins : 177
 Total virtual pins : 0
 Total block memory bits : 80,704

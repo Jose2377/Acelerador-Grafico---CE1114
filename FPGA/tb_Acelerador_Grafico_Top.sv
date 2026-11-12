@@ -763,13 +763,13 @@ module tb_Acelerador_Grafico_Top;
       int c0, bw0;
       // La rafaga incompleta del comando anterior puede seguir esperando
       // turno frente a las lecturas del barrido: no se cuenta como de CLEAR.
-      while ((dut.u_fbc.wr_cnt != 0) || (dut.u_fbc.wr_st != 0)) @(negedge clk);
+      while (dut.px_pend || (dut.u_fbc.wr_cnt != 0) || (dut.u_fbc.wr_st != 0)) @(negedge clk);
       c0  = ciclos_tb;
       bw0 = burst_writes;
       cmd(OPC_CLEAR, 0,0, 0,0, 0,0, 8'h00, 8'h00, 8'hFF, 0);
       $display("  CLEAR de %0d pixeles en %0d ciclos", W*H, ciclos_tb - c0);
       // Y la ultima rafaga del propio CLEAR puede salir despues de su done
-      while ((dut.u_fbc.wr_cnt != 0) || (dut.u_fbc.wr_st != 0)) @(negedge clk);
+      while (dut.px_pend || (dut.u_fbc.wr_cnt != 0) || (dut.u_fbc.wr_st != 0)) @(negedge clk);
       // Cada tramo es una rafaga entera: la memoria ve exactamente W*H/8
       // escrituras, todas de BURST_LEN palabras.
       chk("CLEAR en rafagas completas", int'(burst_writes) - bw0,

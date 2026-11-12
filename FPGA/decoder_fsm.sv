@@ -184,7 +184,8 @@ module decoder_fsm #(
     else                                modo = st;
   end
 
-  assign busy = (st != Acelerador_pkg::MOE_IDLE); // Si esta ocupado
+  // Ocupado tambien mientras queden pixeles camino al gestor (registro intermedio)
+  assign busy = (st != Acelerador_pkg::MOE_IDLE) || px_pend;
 
   // Sin comando en curso, sin done rezagado y sin pixel esperando al gestor
   assign ras_libre = !ras_busy && !ras_done && !px_pend;
@@ -294,7 +295,10 @@ module decoder_fsm #(
           Acelerador_pkg::MOE_IDLE: begin
             if (err_pend) begin // Si hay un desbordamiento sin senalizar y nada en curso: es el momento de pasar por MOE-06.
               st <= Acelerador_pkg::MOE_ERROR;
-            end else if (enable && !fifo_empty) begin // Si hay un comando en espera y nada en curso: es el momento de pasar a MOE-03
+            end else if (enable && !fifo_empty && !px_pend) begin // Si hay un comando en espera y nada en curso: es el momento de pasar a MOE-03
+              // !px_pend: los ultimos pixeles del comando anterior pueden seguir en el
+              // registro intermedio hacia el gestor (Acelerador_Grafico_Top). Un SWAP o
+              // un INF no deben adelantarseles: el SWAP los desviaria al otro buffer.
               fifo_rd <= 1'b1;
               st      <= Acelerador_pkg::MOE_PROC;
             end

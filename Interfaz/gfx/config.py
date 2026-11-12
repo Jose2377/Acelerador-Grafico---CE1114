@@ -10,7 +10,7 @@ PREDETERMINADO = {
     "tam_lote": 256,
     "ruta_reportes": "reportes/rendimiento.csv",
     "ruta_log_errores": "reportes/errores_sesion.log",
-    "sys_clk_hz": 50000000,   # Acelerador_pkg::SYS_CLK_HZ
+    "sys_clk_hz": 100000000,   # Acelerador_pkg::SYS_CLK_HZ
     "timeout_s": 5.0,
 }
 

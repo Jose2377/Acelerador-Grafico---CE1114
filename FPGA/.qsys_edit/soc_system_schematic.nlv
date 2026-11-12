@@ -1,7 +1,7 @@
 # # File gsaved with Nlview version 6.3.8  2013-12-19 bk=1.2992 VDI=34 GEI=35
 # 
 preplace inst soc_system.hps_0.uart0 -pg 1
-preplace inst soc_system.mm_bridge_0 -pg 1 -lvl 4 -y 50
+preplace inst soc_system.mm_bridge_0 -pg 1 -lvl 4 -y 30
 preplace inst soc_system.hps_0.gmac0 -pg 1
 preplace inst soc_system.hps_0.uart1 -pg 1
 preplace inst soc_system.hps_0.clkmgr -pg 1
@@ -56,19 +56,19 @@ preplace inst soc_system.hps_0.f2s_periph_ref_clk -pg 1
 preplace inst soc_system.hps_0.fpga_interfaces -pg 1
 preplace inst soc_system.pll_0 -pg 1 -lvl 1 -y 90
 preplace inst soc_system.hps_0.axi_sdram -pg 1
-preplace netloc EXPORT<net_container>soc_system</net_container>(MASTER)soc_system.clk_100,(MASTER)pll_0.outclk0) 1 4 1 N
 preplace netloc EXPORT<net_container>soc_system</net_container>(MASTER)soc_system.avm_regs,(MASTER)mm_bridge_0.m0) 1 4 1 NJ
-preplace netloc EXPORT<net_container>soc_system</net_container>(MASTER)pll_0.outclk1,(MASTER)soc_system.pll_0_sdram) 1 1 4 NJ 240 NJ 240 NJ 240 NJ
-preplace netloc EXPORT<net_container>soc_system</net_container>(SLAVE)soc_system.avm_sdram,(SLAVE)mm_bridge_sdram.s0) 1 0 3 NJ 180 NJ 180 NJ
-preplace netloc FAN_OUT<net_container>soc_system</net_container>(SLAVE)hps_0.h2f_lw_axi_clock,(SLAVE)mm_bridge_sdram.clk,(SLAVE)sdram_controller_0.clk,(SLAVE)mm_bridge_0.clk,(MASTER)pll_0.outclk0) 1 1 3 360 150 710 60 940
-preplace netloc EXPORT<net_container>soc_system</net_container>(SLAVE)hps_0.memory,(SLAVE)soc_system.memory) 1 0 2 NJ 80 NJ
-preplace netloc POINT_TO_POINT<net_container>soc_system</net_container>(SLAVE)sdram_controller_0.s1,(MASTER)mm_bridge_sdram.m0) 1 3 1 900
+preplace netloc EXPORT<net_container>soc_system</net_container>(SLAVE)soc_system.memory,(SLAVE)hps_0.memory) 1 0 2 NJ 80 NJ
+preplace netloc EXPORT<net_container>soc_system</net_container>(SLAVE)mm_bridge_sdram.s0,(SLAVE)soc_system.avm_sdram) 1 0 3 NJ 180 NJ 180 NJ
+preplace netloc EXPORT<net_container>soc_system</net_container>(SLAVE)sdram_controller_0.wire,(SLAVE)soc_system.sdram_controller_0_wire) 1 0 4 NJ 220 NJ 220 NJ 220 NJ
 preplace netloc EXPORT<net_container>soc_system</net_container>(SLAVE)soc_system.hps_io,(SLAVE)hps_0.hps_io) 1 0 2 NJ 60 NJ
-preplace netloc EXPORT<net_container>soc_system</net_container>(SLAVE)soc_system.clk_50,(SLAVE)pll_0.refclk) 1 0 1 NJ
-preplace netloc FAN_OUT<net_container>soc_system</net_container>(MASTER)hps_0.h2f_reset,(SLAVE)mm_bridge_sdram.reset,(SLAVE)sdram_controller_0.reset,(SLAVE)mm_bridge_0.reset) 1 2 2 730 80 920
-preplace netloc EXPORT<net_container>soc_system</net_container>(SLAVE)soc_system.sdram_controller_0_wire,(SLAVE)sdram_controller_0.wire) 1 0 4 NJ 200 NJ 200 NJ 200 NJ
-preplace netloc POINT_TO_POINT<net_container>soc_system</net_container>(MASTER)hps_0.h2f_lw_axi_master,(SLAVE)mm_bridge_0.s0) 1 2 2 690 100 NJ
+preplace netloc POINT_TO_POINT<net_container>soc_system</net_container>(MASTER)mm_bridge_sdram.m0,(SLAVE)sdram_controller_0.s1) 1 3 1 900
+preplace netloc EXPORT<net_container>soc_system</net_container>(MASTER)pll_0.outclk0,(MASTER)soc_system.clk_100) 1 4 1 N
+preplace netloc POINT_TO_POINT<net_container>soc_system</net_container>(SLAVE)mm_bridge_0.s0,(MASTER)hps_0.h2f_lw_axi_master) 1 2 2 710 80 NJ
+preplace netloc FAN_OUT<net_container>soc_system</net_container>(MASTER)pll_0.outclk0,(SLAVE)hps_0.h2f_lw_axi_clock,(SLAVE)mm_bridge_0.clk,(SLAVE)mm_bridge_sdram.clk,(SLAVE)sdram_controller_0.clk) 1 1 3 360 150 690 40 960
+preplace netloc EXPORT<net_container>soc_system</net_container>(MASTER)soc_system.pll_0_sdram,(MASTER)pll_0.outclk1) 1 1 4 NJ 200 NJ 200 NJ 120 NJ
 preplace netloc EXPORT<net_container>soc_system</net_container>(MASTER)pll_0.outclk2,(MASTER)soc_system.pll_0_vga) 1 1 4 NJ 260 NJ 260 NJ 260 NJ
 preplace netloc EXPORT<net_container>soc_system</net_container>(SLAVE)soc_system.pll_0_reset,(SLAVE)pll_0.reset) 1 0 1 NJ
-levelinfo -pg 1 0 150 1230
-levelinfo -hier soc_system 160 190 500 790 1000 1130
+preplace netloc EXPORT<net_container>soc_system</net_container>(SLAVE)pll_0.refclk,(SLAVE)soc_system.clk_50) 1 0 1 NJ
+preplace netloc FAN_OUT<net_container>soc_system</net_container>(SLAVE)mm_bridge_sdram.reset,(SLAVE)sdram_controller_0.reset,(MASTER)hps_0.h2f_reset,(SLAVE)mm_bridge_0.reset) 1 2 2 730 60 940
+levelinfo -pg 1 0 150 1250
+levelinfo -hier soc_system 160 190 500 790 1020 1150

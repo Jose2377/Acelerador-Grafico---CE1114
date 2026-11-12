@@ -284,7 +284,7 @@ module Acelerador_Grafico_Top #(
     .ras_x0(ras_x0), .ras_y0(ras_y0), .ras_x1(ras_x1), .ras_y1(ras_y1),
     .ras_x2(ras_x2), .ras_y2(ras_y2), .ras_radius(ras_radius),
     .ras_r(ras_r), .ras_g(ras_g), .ras_b(ras_b),
-    .ras_busy(ras_busy), .ras_done(ras_done), .px_pend(px_valid),
+    .ras_busy(ras_busy), .ras_done(ras_done), .px_pend(px_pend),
     .vsync(vsync_sys), .buffer_sel(buffer_sel),
     .perf_latch(perf_latch), .perf_clear(perf_clear),
     .modo(modo), .busy(busy),
@@ -293,7 +293,8 @@ module Acelerador_Grafico_Top #(
 
   // Procesador de comandos y rasterizador 2D
   logic [31:0] pix_count;
-  logic        px_ready;
+  logic        px_ready;          // El registro intermedio acepta el pixel del rasterizador
+  logic        px_pend;           // Queda algun pixel en camino al gestor de framebuffer
 
   processor_raster #(.SCREEN_W(SCREEN_W), .SCREEN_H(SCREEN_H),
                      .PIXEL_BITS(PIXEL_BITS)) u_raster (
@@ -308,6 +309,57 @@ module Acelerador_Grafico_Top #(
     .px_valid(px_valid), .px_x(px_x), .px_y(px_y),
     .px_color(px_color), .px_addr(px_addr), .px_len(px_len),
     .pix_count(pix_count), .clip_count(clip_count));
+
+  // Registro intermedio entre el rasterizador y el gestor de framebuffer
+  //
+  // Sin el, px_ready del gestor dependia en el mismo ciclo del tramo que acababa
+  // de calcular el rasterizador (draw_rect -> clip_scissor -> region del gestor)
+  // y volvia como stall a todo el rasterizador y al medidor: 16,6 ns, que a
+  // 100 MHz no cierra (Fmax 58 MHz). Aqui se corta en dos con un skid buffer de
+  // dos entradas: los datos hacia el gestor salen de registros (q_*) y el ready
+  // hacia el rasterizador (px_ready) es un registro (!s_valid). No se pierde
+  // rendimiento: acepta un pixel por ciclo mientras el gestor tambien lo haga.
+  //
+  //   q_*  registro principal, lo que ve el gestor
+  //   s_*  registro de reserva, guarda el pixel que llego el ciclo en que el
+  //        gestor dejo de aceptar (el rasterizador aun no veia el stall)
+  localparam int PXAW_TOP = $clog2(SCREEN_W*SCREEN_H);
+  localparam int PXLW_TOP = $clog2(Acelerador_pkg::BURST_LEN+1);
+
+  logic                  fbc_px_ready;
+  logic                  q_valid, s_valid;
+  logic [PXAW_TOP-1:0]   q_addr,  s_addr;
+  logic [PXLW_TOP-1:0]   q_len,   s_len;
+  logic [PIXEL_BITS-1:0] q_color, s_color;
+
+  assign px_ready = !s_valid;
+  assign px_pend  = px_valid || q_valid || s_valid;
+
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      q_valid <= 1'b0;  s_valid <= 1'b0;
+      q_addr  <= '0;    s_addr  <= '0;
+      q_len   <= '0;    s_len   <= '0;
+      q_color <= '0;    s_color <= '0;
+    end else if (fbc_px_ready || !q_valid) begin
+      // El principal se libera (o estaba vacio): toma la reserva si la hay,
+      // si no, lo que presente el rasterizador.
+      if (s_valid) begin
+        q_valid <= 1'b1;
+        q_addr  <= s_addr;  q_len <= s_len;  q_color <= s_color;
+        s_valid <= 1'b0;
+      end else begin
+        q_valid <= px_valid;
+        if (px_valid) begin
+          q_addr <= px_addr;  q_len <= px_len;  q_color <= px_color;
+        end
+      end
+    end else if (px_valid && px_ready) begin
+      // El gestor no acepta y el principal esta ocupado: a la reserva.
+      s_valid <= 1'b1;
+      s_addr  <= px_addr;  s_len <= px_len;  s_color <= px_color;
+    end
+  end
 
   // Medidor de rendimiento
   //
@@ -326,6 +378,8 @@ module Acelerador_Grafico_Top #(
   // Un pixel cuenta cuando el gestor de framebuffer lo acepta, no cuando el rasterizador lo presenta.
   // Con contrapresion el mismo pixel se presenta varios ciclos seguidos.
   // Con el relleno por tramos se aceptan hasta BURST_LEN pixeles de una vez.
+  // Con el registro intermedio, "aceptado" es entrar en el: de ahi en adelante
+  // ningun pixel se descarta, y asi la cuenta queda en el mismo ciclo que antes.
   assign px_n = (px_valid && px_ready) ? 4'(px_len) : 4'd0;
 
   rend_counter u_rend (
@@ -410,10 +464,11 @@ module Acelerador_Grafico_Top #(
     .underrun(vga_underrun), .frame_count(vga_frames));
 
   // Gestor de framebuffer
-  // Con el rasterizador inactivo se fuerza la salida de la ultima rafaga
-  // incompleta, que de otro modo esperaria un pixel que ya no va a llegar.
+  // Con el rasterizador inactivo, y sin pixeles en el registro intermedio, se
+  // fuerza la salida de la ultima rafaga incompleta, que de otro modo esperaria
+  // un pixel que ya no va a llegar.
   logic vaciar_combinador;
-  assign vaciar_combinador = !ras_busy;
+  assign vaciar_combinador = !ras_busy && !q_valid && !s_valid;
 
   // Maestro de rafaga del gestor. Se mantiene como cable interno para que el
   // medio que lo atiende sea intercambiable sin tocar la instancia.
@@ -433,8 +488,8 @@ module Acelerador_Grafico_Top #(
     .FB_BASE_B(Acelerador_pkg::FB_BASE_B)
   ) u_fbc (
     .clk(clk), .rst_n(rst_n),
-    .px_valid(px_valid), .px_addr(px_addr), .px_len(px_len), .px_color(px_color),
-    .px_ready(px_ready),
+    .px_valid(q_valid), .px_addr(q_addr), .px_len(q_len), .px_color(q_color),
+    .px_ready(fbc_px_ready),
     .buffer_sel(buffer_sel), .vaciar(vaciar_combinador),
     .clk_pix(clk_pix), .rst_pix_n(rst_pix_n),
     .frame_buffer_req(fb_req), .frame_buffer_addr(fb_addr),
