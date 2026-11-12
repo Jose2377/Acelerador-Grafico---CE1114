@@ -160,18 +160,19 @@ module framebuffer_controller #(
 
   async_fifo #(.DATA_W(PXAW+1), .DEPTH(RD_FIFO_DEPTH)) u_arf (
     .wr_clk(clk_pix), .wr_rst_n(rst_pix_n),
-    .wr_ena(arf_wr), .data_in(arf_data_in), .full(arf_full),
+    .wr_ena(arf_wr), .data_in(arf_data_in), .full(arf_full), .libres(),
     .rd_clk(clk), .rd_rst_n(rst_n),
     .rd_ena(arf_rd), .data_out(arf_data_out), .empty(arf_empty));
 
   logic                  drf_wr, drf_full, drf_rd, drf_empty;
+  logic [$clog2(RD_FIFO_DEPTH):0] drf_libres;
   logic [PIXEL_BITS-1:0] drf_data_in;
 
   logic [PIXEL_BITS-1:0] drf_data_out;
 
   async_fifo #(.DATA_W(PIXEL_BITS), .DEPTH(RD_FIFO_DEPTH)) u_drf (
     .wr_clk(clk), .wr_rst_n(rst_n),
-    .wr_ena(drf_wr), .data_in(drf_data_in), .full(drf_full),
+    .wr_ena(drf_wr), .data_in(drf_data_in), .full(drf_full), .libres(drf_libres),
     .rd_clk(clk_pix), .rd_rst_n(rst_pix_n),
     .rd_ena(drf_rd), .data_out(drf_data_out), .empty(drf_empty));
 
@@ -242,7 +243,13 @@ module framebuffer_controller #(
                      && (arf_data_out[PXAW] == rd_buf);
   assign rd_frontera  = (((rd_base + PXAW'(rd_cnt)) % PXAW'(BURST_LEN)) == '0);
   assign rd_cabe      = (rd_cnt < BCW'(BURST_LEN));
-  assign rd_hay_sitio = !drf_full;
+  // La rafaga solo se pide si caben TODAS sus palabras en la cola de datos:
+  // async_fifo descarta en silencio lo que llega lleno, y vga_controller espera
+  // los H_VISIBLE pixeles de la linea, asi que un solo dato perdido detenia la
+  // prebusqueda para siempre (visto a 100 MHz: BURST_RD congelado en 0xDB62).
+  // Mientras haya una rafaga en vuelo no se pide otra, de modo que basta con
+  // mirarlo al arrancar.
+  assign rd_hay_sitio = (drf_libres >= ($clog2(RD_FIFO_DEPTH)+1)'(BURST_LEN));
 
   // La rafaga esta lista para emitirse cuando ya no puede crecer
   // O cuando se agote la espera por direcciones nuevas.

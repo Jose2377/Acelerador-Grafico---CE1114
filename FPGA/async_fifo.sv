@@ -53,6 +53,7 @@ module async_fifo #(
   input  logic                wr_ena,   // Permiso de escritura de un dato en el dominio de escritura
   input  logic [DATA_W-1:0]   data_in,  // Dato a escribir en el dominio de escritura
   output logic                full,     // No caben mas datos; visto desde el dominio de escritura
+  output logic [$clog2(DEPTH):0] libres, // Lugares libres vistos desde el dominio de escritura (conservador)
 
   // Dominio de lectura
   input  logic                rd_clk,   // Reloj del dominio de lectura
@@ -106,6 +107,15 @@ module async_fifo #(
   // Lleno: Los dos punteros apuntan a la misma posicion pero con los dos bits altos invertidos. 
   // Significando que el de escritura ha dado una vuelta mas.
   assign full = (wr_gray == {~rd_gray_s2[PW:PW-1], rd_gray_s2[PW-2:0]});
+
+  // Lugares libres para el escritor. El puntero de lectura llega con dos ciclos
+  // de retraso, asi que el valor puede quedarse corto, nunca largo: sirve para
+  // decidir si cabe una rafaga entera antes de pedirla.
+  function automatic logic [PW:0] de_gray(input logic [PW:0] g);
+    de_gray[PW] = g[PW];
+    for (int i = PW - 1; i >= 0; i--) de_gray[i] = de_gray[i+1] ^ g[i];
+  endfunction
+  assign libres = (PW+1)'(DEPTH) - (wr_bin - de_gray(rd_gray_s2));
 
   // Lado de lectura
   always_ff @(posedge rd_clk or negedge rd_rst_n) begin
