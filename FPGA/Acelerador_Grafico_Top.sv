@@ -295,6 +295,7 @@ module Acelerador_Grafico_Top #(
   logic [31:0] pix_count;
   logic        px_ready;          // El registro intermedio acepta el pixel del rasterizador
   logic        px_pend;           // Queda algun pixel en camino al gestor de framebuffer
+  logic        ras_pend;          // Pixel en la etapa A dentro del rasterizador
 
   processor_raster #(.SCREEN_W(SCREEN_W), .SCREEN_H(SCREEN_H),
                      .PIXEL_BITS(PIXEL_BITS)) u_raster (
@@ -305,7 +306,7 @@ module Acelerador_Grafico_Top #(
     .x2(ras_x2), .y2(ras_y2), .radius(ras_radius),
     .color_r(ras_r), .color_g(ras_g), .color_b(ras_b),
     .clr_cnt(perf_clear || perf_window),
-    .busy(ras_busy), .done(ras_done),
+    .busy(ras_busy), .done(ras_done), .pend(ras_pend),
     .px_valid(px_valid), .px_x(px_x), .px_y(px_y),
     .px_color(px_color), .px_addr(px_addr), .px_len(px_len),
     .pix_count(pix_count), .clip_count(clip_count));
@@ -333,7 +334,7 @@ module Acelerador_Grafico_Top #(
   logic [PIXEL_BITS-1:0] q_color, s_color;
 
   assign px_ready = !s_valid;
-  assign px_pend  = px_valid || q_valid || s_valid;
+  assign px_pend  = ras_pend || px_valid || q_valid || s_valid;
 
   always_ff @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
@@ -468,7 +469,7 @@ module Acelerador_Grafico_Top #(
   // fuerza la salida de la ultima rafaga incompleta, que de otro modo esperaria
   // un pixel que ya no va a llegar.
   logic vaciar_combinador;
-  assign vaciar_combinador = !ras_busy && !q_valid && !s_valid;
+  assign vaciar_combinador = !ras_busy && !ras_pend && !q_valid && !s_valid;
 
   // Maestro de rafaga del gestor. Se mantiene como cable interno para que el
   // medio que lo atiende sea intercambiable sin tocar la instancia.

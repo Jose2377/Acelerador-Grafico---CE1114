@@ -77,6 +77,7 @@ module processor_raster #(
 
   output logic               busy,      // Señal de ocupado
   output logic               done,      // Señal de terminado
+  output logic               pend,      // Queda un pixel en la etapa A (salida de las primitivas)
 
   // Solicitud de pixel
   output logic               px_valid,                  // Si el pixel es valido
@@ -136,6 +137,11 @@ module processor_raster #(
   // Inicializacion de variables
   logic s_pix, s_rect, s_line, s_circ, s_tria;
 
+  // Stall que ven las primitivas: lo da la etapa A (un registro), no el gestor
+  // de framebuffer, asi que no hay camino combinacional del gestor hacia las
+  // maquinas de dibujo.
+  logic prim_stall;
+
   logic start_pend, start_ef, ocupado;
 
   always_ff @(posedge clk or negedge rst_n) begin
@@ -145,7 +151,7 @@ module processor_raster #(
   end
 
   // Start prinpical
-  assign start_ef = start_pend && !stall && !ocupado;
+  assign start_ef = start_pend && !prim_stall && !ocupado;
 	
   // Start segun comando actual
   assign s_pix  = start_ef &&  (op == OP_PIXEL);
@@ -166,32 +172,32 @@ module processor_raster #(
 
   // Llamados de modulos de dibujo.
   draw_pixel #(.PIXEL_BITS(PIXEL_BITS)) u_pix (
-    .clk(clk), .rst_n(rst_n), .start(s_pix), .stall(stall),
+    .clk(clk), .rst_n(rst_n), .start(s_pix), .stall(prim_stall),
     .x0(x0), .y0(y0), .color_in(color565),
     .busy(bp), .done(dp), .px_valid(vp),
     .px_x(xp), .px_y(yp), .px_color(cp));
 
   draw_rect #(.PIXEL_BITS(PIXEL_BITS)) u_rect (
-    .clk(clk), .rst_n(rst_n), .start(s_rect), .stall(stall), .fill(rfill),
+    .clk(clk), .rst_n(rst_n), .start(s_rect), .stall(prim_stall), .fill(rfill),
     .x0(rx0), .y0(ry0), .x1(rx1), .y1(ry1), .color_in(color565),
     .busy(br), .done(dr), .px_valid(vr),
     .px_x(xr), .px_y(yr), .px_len(lr), .px_color(cr));
 
   draw_line #(.PIXEL_BITS(PIXEL_BITS)) u_line (
-    .clk(clk), .rst_n(rst_n), .start(s_line), .stall(stall),
+    .clk(clk), .rst_n(rst_n), .start(s_line), .stall(prim_stall),
     .x0_in(x0), .y0_in(y0), .x1_in(x1), .y1_in(y1), .color_in(color565),
     .busy(bl), .done(dl), .px_valid(vl),
     .px_x(xl), .px_y(yl), .px_color(cl));
 
   draw_circle #(.PIXEL_BITS(PIXEL_BITS)) u_circ (
-    .clk(clk), .rst_n(rst_n), .start(s_circ), .stall(stall), .fill(op == OP_CIRC_FILL),
+    .clk(clk), .rst_n(rst_n), .start(s_circ), .stall(prim_stall), .fill(op == OP_CIRC_FILL),
     .cx_in(x0), .cy_in(y0), .r_in(radius), .color_in(color565),
     .busy(bc), .done(dc), .px_valid(vc),
     .px_x(xc), .px_y(yc), .px_color(cc));
 
   draw_trian #(.SCREEN_W(SCREEN_W), .SCREEN_H(SCREEN_H),
                .PIXEL_BITS(PIXEL_BITS)) u_tria (
-    .clk(clk), .rst_n(rst_n), .start(s_tria), .stall(stall), .fill(op == OP_TRIA_FILL),
+    .clk(clk), .rst_n(rst_n), .start(s_tria), .stall(prim_stall), .fill(op == OP_TRIA_FILL),
     .x0(x0), .y0(y0), .x1(x1), .y1(y1), .x2(x2), .y2(y2),
     .color_in(color565),
     .busy(bt), .done(dt), .px_valid(vt),
@@ -216,11 +222,51 @@ module processor_raster #(
     endcase
   end
 
-  // Generador de pixeles usando los valores del multiplexor de salida
+  // Etapa A: registro entre el multiplexor de primitivas y pixel_gen
+  //
+  // A 100 MHz el tramo de draw_rect (fin_tramo, px_len) seguido del recorte
+  // (clip_scissor), la direccion (addr_calc) y los contadores no cabia en un
+  // ciclo. Este skid buffer de dos entradas lo corta: las primitivas escriben
+  // aqui y pixel_gen trabaja sobre registros. Un pixel por ciclo mientras el
+  // gestor acepte. Un pixel que el recorte descarta entero tambien sale de aqui
+  // con !stall, igual que antes salia de la primitiva.
+  //   aq_*  principal, lo que ve pixel_gen
+  //   as_*  reserva, el pixel que llego el ciclo en que el gestor se detuvo
+  logic                  aq_v, as_v;
+  logic signed [15:0]    aq_x, aq_y, as_x, as_y;
+  logic [LW-1:0]         aq_l, as_l;
+  logic [PIXEL_BITS-1:0] aq_k, as_k;
+
+  assign prim_stall = as_v;
+  assign pend       = aq_v || as_v;
+
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      aq_v <= 1'b0;  as_v <= 1'b0;
+      aq_x <= '0;  aq_y <= '0;  aq_l <= '0;  aq_k <= '0;
+      as_x <= '0;  as_y <= '0;  as_l <= '0;  as_k <= '0;
+    end else if (!stall || !aq_v) begin
+      if (as_v) begin
+        aq_v <= 1'b1;
+        aq_x <= as_x;  aq_y <= as_y;  aq_l <= as_l;  aq_k <= as_k;
+        as_v <= 1'b0;
+      end else begin
+        aq_v <= v_raw;
+        if (v_raw) begin
+          aq_x <= x_raw;  aq_y <= y_raw;  aq_l <= l_raw;  aq_k <= k_raw;
+        end
+      end
+    end else if (v_raw && !prim_stall) begin
+      as_v <= 1'b1;
+      as_x <= x_raw;  as_y <= y_raw;  as_l <= l_raw;  as_k <= k_raw;
+    end
+  end
+
+  // Generador de pixeles sobre la etapa A
   pixel_gen #(.SCREEN_W(SCREEN_W), .SCREEN_H(SCREEN_H),
               .PIXEL_BITS(PIXEL_BITS)) u_pxgen (
     .clk(clk), .rst_n(rst_n), .clr_cnt(clr_cnt), .px_ready(!stall),
-    .valid_in(v_raw), .x_in(x_raw), .y_in(y_raw), .len_in(l_raw), .color_in(k_raw),
+    .valid_in(aq_v), .x_in(aq_x), .y_in(aq_y), .len_in(aq_l), .color_in(aq_k),
     .px_valid(px_valid), .px_x(px_x), .px_y(px_y), .px_len(px_len),
     .px_color(px_color), .px_addr(px_addr),
     .pix_count(pix_count), .clip_count(clip_count));
