@@ -70,7 +70,10 @@ module vga_controller #(
   parameter bit H_POL      = 1'b0,
   parameter bit V_POL      = 1'b0,
   parameter int PIXEL_BITS = 16,
-  parameter int LINES      = 4        // Potencia de 2
+  parameter int LINES      = 4,       // Potencia de 2
+  // Con menos de URGENTE lineas completas en el buffer, la lectura pasa a ser
+  // urgente y el gestor de framebuffer deja de intercalar escrituras.
+  parameter int URGENTE    = 2
 )(
   input  logic clk_pix,
   input  logic rst_n,
@@ -95,6 +98,7 @@ module vga_controller #(
 
   // Estado
   output logic        vsync_act,      // Sincronizacion vertical activo en alto, para el cruce
+  output logic        lectura_urgente,// Prebusqueda en riesgo: el gestor debe dar el bus solo a la lectura
   output logic        underrun,       // El barrido alcanzo una linea vacia
   output logic [31:0] frame_count
 );
@@ -131,6 +135,10 @@ module vga_controller #(
   logic [XW:0]      pedidos, recibidos;
   logic [LINES-1:0] lista;             // Ranuras con una linea completa
   logic             reiniciar;
+  // Linea que el barrido esta mostrando (o la proxima, en el intervalo vertical).
+  // Sirve para no pedir mas de LINES-1 lineas por delante y para no marcar como
+  // lista una linea que el barrido ya dejo atras.
+  logic [VCW-1:0]   lin_mostrando;
 
   logic [SW-1:0] ranura_pide, ranura_lee;
 
@@ -139,7 +147,17 @@ module vga_controller #(
 
   // Una ranura se puede llenar si no guarda ya una linea sin mostrar.
   logic hay_hueco;
-  assign hay_hueco = !lista[ranura_pide] && (lin_pide < VCW'(V_VISIBLE));
+  assign hay_hueco = !lista[ranura_pide] && (lin_pide < VCW'(V_VISIBLE))
+                  && (lin_pide < lin_mostrando + VCW'(LINES));
+  // Lineas completas en el buffer (incluida la que se esta mostrando).
+  logic [SW:0] listas;
+  always_comb begin
+    listas = '0;
+    for (int i = 0; i < LINES; i++) listas = listas + (SW+1)'(lista[i]);
+  end
+  always_ff @(posedge clk_pix or negedge rst_n)
+    if (!rst_n) lectura_urgente <= 1'b0;
+    else        lectura_urgente <= (fst != F_LIBRE) && (listas < (SW+1)'(URGENTE));
 
   assign frame_buffer_req   = (fst == F_PIDE);
   assign frame_buffer_addr  = AW'(lin_pide * H_VISIBLE + pedidos);
@@ -160,7 +178,11 @@ module vga_controller #(
       recibidos <= '0;
       lista     <= '0;
       reiniciar <= 1'b0;
+      lin_mostrando <= '0;
     end else begin
+      if (cuadro_inicio)  lin_mostrando <= '0;
+      else if (linea_fin) lin_mostrando <= lin_mostrando + 1'b1;
+
       // El cuadro nuevo empieza en el intervalo vertical. 
 		// No se corta un llenado a medias: se anota y se aplica al volver a F_LIBRE, 
 		// mucho antes de que termine el intervalo.
@@ -199,8 +221,15 @@ module vga_controller #(
       // La recepcion avanza en paralelo al envio de peticiones.
       if (lb_wr) begin
         if (recibidos == (XW+1)'(H_VISIBLE - 1)) begin
-          lista[ranura_pide] <= 1'b1;
-          lin_pide  <= lin_pide + 1'b1;
+          // Si el barrido ya paso esta linea no se marca: la ranura se reutilizaria
+          // cuatro lineas despues con contenido viejo. El motor salta a la siguiente
+          // que todavia se puede mostrar.
+          if (lin_pide >= lin_mostrando) begin
+            lista[ranura_pide] <= 1'b1;
+            lin_pide <= lin_pide + 1'b1;
+          end else begin
+            lin_pide <= lin_mostrando + 1'b1;
+          end
           recibidos <= '0;
           fst       <= F_LIBRE;
         end else begin

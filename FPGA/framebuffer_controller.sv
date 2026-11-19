@@ -115,6 +115,7 @@ module framebuffer_controller #(
   input  logic                                   frame_buffer_req,
   input  logic [$clog2(SCREEN_W*SCREEN_H)-1:0]   frame_buffer_addr,
   input  logic                                   frame_buffer_front,
+  input  logic                                   lectura_urgente, // dominio de pixel
   output logic                                   frame_buffer_ready,
   output logic [PIXEL_BITS-1:0]                  frame_buffer_data_in,
   output logic                                   frame_buffer_valid_in,
@@ -222,8 +223,18 @@ module framebuffer_controller #(
   assign escritura_activa  = (wr_st != W_LIBRE);
 
 
-  assign permiso_escritura = (rd_st == R_LIBRE)
-                          || ((rd_st == R_AGRUPA) && !rd_listo);
+  // Cuando al VGA le quedan pocas lineas listas, la escritura deja de entrar
+  // hasta que la prebusqueda se recupere. Cada cambio lectura/escritura cuesta
+  // precarga + activacion en el controlador SDRAM de Platform Designer, y la
+  // lectura de una linea solo tiene ~20 % de margen sobre lo que dura mostrarla:
+  // intercalando escrituras sin limite el barrido se queda sin datos (negro).
+  logic urgente_s1, urgente_s2;
+  always_ff @(posedge clk or negedge rst_n)
+    if (!rst_n) {urgente_s2, urgente_s1} <= '0;
+    else        {urgente_s2, urgente_s1} <= {urgente_s1, lectura_urgente};
+
+  assign permiso_escritura = !urgente_s2
+                          && ((rd_st == R_LIBRE) || ((rd_st == R_AGRUPA) && !rd_listo));
   assign permiso_lectura   = !escritura_activa;
 
 

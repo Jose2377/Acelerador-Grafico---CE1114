@@ -426,6 +426,7 @@ module Acelerador_Grafico_Top #(
   // efectivo el intercambio. Los buses cruzan por las async_fifo del gestor.
   logic front_buffer_pix;            // buffer_sel visto desde el dominio pixel
   logic vsync_pix;                    // VSYNC activo en alto, dominio de pixel
+  logic lectura_urgente;              // Al VGA le quedan pocas lineas listas (dominio de pixel)
 
   // Puerto de lectura del barrido, lo cierra el gestor de framebuffer. 
   // Vive entero en el dominio de pixel.
@@ -461,7 +462,7 @@ module Acelerador_Grafico_Top #(
     .vga_r(vga_r), .vga_g(vga_g), .vga_b(vga_b),
     .vga_hs(vga_hs), .vga_vs(vga_vs),
     .vga_blank_n(vga_blank_n), .vga_sync_n(vga_sync_n),
-    .vsync_act(vsync_pix),
+    .vsync_act(vsync_pix), .lectura_urgente(lectura_urgente),
     .underrun(vga_underrun), .frame_count(vga_frames));
 
   // Gestor de framebuffer
@@ -494,7 +495,8 @@ module Acelerador_Grafico_Top #(
     .buffer_sel(buffer_sel), .vaciar(vaciar_combinador),
     .clk_pix(clk_pix), .rst_pix_n(rst_pix_n),
     .frame_buffer_req(fb_req), .frame_buffer_addr(fb_addr),
-    .frame_buffer_front(fb_front), .frame_buffer_ready(fb_ready),
+    .frame_buffer_front(fb_front), .lectura_urgente(lectura_urgente),
+    .frame_buffer_ready(fb_ready),
     .frame_buffer_data_in(fb_data), .frame_buffer_valid_in(fb_valid),
     .sd_read(m_read), .sd_write(m_write), .sd_address(m_address),
     .sd_burstcount(m_burstcount), .sd_writedata(m_writedata),
