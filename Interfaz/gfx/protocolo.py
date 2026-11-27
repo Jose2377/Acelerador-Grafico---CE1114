@@ -58,7 +58,8 @@ def _validar(tipo, longitud):
                 "mide {}".format(K.TAM_PAQUETE, longitud))
     elif tipo == K.TIPO_SOLICITUD and longitud:
         raise ErrorProtocolo("La solicitud de reporte no lleva carga")
-    elif tipo == K.TIPO_REPORTE and longitud != K.TAM_REPORTE:
+    elif tipo == K.TIPO_REPORTE and longitud not in (K.TAM_REPORTE,
+                                                     K.TAM_REPORTE_V1):
         raise ErrorProtocolo("El reporte mide {} bytes, se recibieron {}"
                              .format(K.TAM_REPORTE, longitud))
 
@@ -85,16 +86,24 @@ def recibir_mensaje(sock):
 
 # ---------------------------------------------------------------- cargas
 
-CAMPOS_REPORTE = ("ciclos", "comandos", "pixeles", "errores", "descartados")
+CAMPOS_REPORTE = ("ciclos", "comandos", "pixeles", "errores", "descartados",
+                  "cpu_ns")
 
 
-def carga_reporte(ciclos, comandos, pixeles, errores, descartados):
+def carga_reporte(ciclos, comandos, pixeles, errores, descartados, cpu_ns=0):
     return struct.pack(K.FORMATO_REPORTE, ciclos & 0xFFFFFFFF,
                        comandos & 0xFFFFFFFF, pixeles & 0xFFFFFFFF,
-                       errores & 0xFFFF, descartados & 0xFFFF)
+                       errores & 0xFFFF, descartados & 0xFFFF,
+                       min(int(cpu_ns), 0xFFFFFFFF))
 
 
 def leer_reporte(carga):
+    """-> dict con CAMPOS_REPORTE. Un reporte viejo de 16 bytes (servicio
+    anterior al 26/11/2026) trae cpu_ns = None."""
+    if len(carga) == K.TAM_REPORTE_V1:
+        d = dict(zip(CAMPOS_REPORTE, struct.unpack(K.FORMATO_REPORTE_V1, carga)))
+        d["cpu_ns"] = None
+        return d
     return dict(zip(CAMPOS_REPORTE, struct.unpack(K.FORMATO_REPORTE, carga)))
 
 

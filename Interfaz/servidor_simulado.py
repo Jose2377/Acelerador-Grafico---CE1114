@@ -22,6 +22,9 @@ Contadores:
 Con la bandera CPU (0x02) en LOTE y SOLICITUD responde como la referencia en
 CPU del HPS (raster_ref.c): dibuja con su propio RasterizadorCPU y el campo
 ciclos del REPORTE trae el tiempo en nanosegundos.
+
+cpu_ns (carga de la CPU del HPS) es una ESTIMACION: NS_POR_PAQUETE por
+paquete entregado al acelerador, o el tiempo de rasterizar con la bandera CPU.
 """
 
 import argparse
@@ -32,6 +35,10 @@ from gfx import constantes as K
 from gfx import protocolo as P
 from gfx.codificador import decodificar
 from gfx.raster_cpu import RasterizadorCPU, Ventana
+
+# Carga de CPU estimada por paquete entregado al acelerador (seis escrituras
+# por el puente ligero mas la llamada al sistema). Solo para pruebas.
+NS_POR_PAQUETE = 2000
 
 # Estimacion de ciclos (reloj de 100 MHz, sin esperas de SDRAM)
 SOBRECARGA = 5          # decoder_fsm + arranque de processor_raster
@@ -104,7 +111,8 @@ class ServidorSimulado:
         self.raster = RasterizadorCPU()
         self.ciclos = 0
         self.publicado = dict(ciclos=0, comandos=0, pixeles=0,
-                              errores=0, descartados=0)
+                              errores=0, descartados=0, cpu_ns=0)
+        self.cpu_ns = 0
         # Referencia en CPU del HPS (bandera CPU)
         self.raster_cpu = RasterizadorCPU()
         self.publicado_cpu = dict(self.publicado)
@@ -129,10 +137,10 @@ class ServidorSimulado:
                                 d["r"], d["g"], d["b"])
             if d["opcode"] == K.OP_INF:
                 c = ras.informes[-1]
+                ns = min(int(c.tiempo_s * 1e9), 0xFFFFFFFF)
                 self.publicado_cpu = dict(
-                    ciclos=min(int(c.tiempo_s * 1e9), 0xFFFFFFFF),
-                    comandos=c.comandos, pixeles=c.pixeles,
-                    errores=c.errores, descartados=0)
+                    ciclos=ns, comandos=c.comandos, pixeles=c.pixeles,
+                    errores=c.errores, descartados=0, cpu_ns=ns)
 
     def procesar_lote(self, banderas, carga):
         if banderas & K.BANDERA_CPU:
@@ -141,6 +149,8 @@ class ServidorSimulado:
         if banderas & K.BANDERA_INICIO_VENTANA:
             ras.ventana = Ventana()
             self.ciclos = 0
+            self.cpu_ns = 0
+        self.cpu_ns += NS_POR_PAQUETE * (len(carga) // K.TAM_PAQUETE)
         for i in range(0, len(carga), K.TAM_PAQUETE):
             d = decodificar(carga[i:i + K.TAM_PAQUETE])
             self.historial.append((d["opcode"], d["seq_id"]))
@@ -154,7 +164,8 @@ class ServidorSimulado:
                 c = ras.informes[-1]
                 self.publicado = dict(ciclos=self.ciclos,
                                       comandos=c.comandos, pixeles=c.pixeles,
-                                      errores=c.errores, descartados=0)
+                                      errores=c.errores, descartados=0,
+                                      cpu_ns=self.cpu_ns)
                 self.ciclos = 0
             elif v.errores > errores:
                 self.ciclos += 3                         # PROC + MOE-06

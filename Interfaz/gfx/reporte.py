@@ -11,6 +11,12 @@ CU-04 en un mismo archivo:
 
 En las filas de CPU no hay ciclos de reloj: rasterizacion_s es el tiempo
 de CPU de los comandos de la ventana.
+
+cpu_hps_s (26/11/2026) es la carga de la CPU del HPS en la ventana: en las
+filas fpga, el tiempo de CPU que el servicio gasto en entregar los paquetes
+al acelerador; en las cpu-hps, el que gasto en rasterizar. Es la metrica del
+proposito del producto (cuanto trabajo se le quita a la CPU). Queda vacio con
+un servicio anterior a esa fecha y en las filas de la CPU de la PC.
 """
 
 import csv
@@ -19,7 +25,8 @@ from datetime import datetime
 
 CAMPOS = ["marca_tiempo", "origen", "escena", "ciclos", "comandos",
           "pixeles", "recortados", "errores", "descartados",
-          "rasterizacion_s", "extremo_a_extremo_s", "pixeles_por_s"]
+          "rasterizacion_s", "extremo_a_extremo_s", "pixeles_por_s",
+          "cpu_hps_s"]
 
 
 def _ahora():
@@ -54,6 +61,8 @@ class ReporteRendimiento:
             "rasterizacion_s": round(seg, 6),
             "extremo_a_extremo_s": contadores.get("extremo_a_extremo_s", ""),
             "pixeles_por_s": round(contadores["pixeles"] / seg) if seg else "",
+            "cpu_hps_s": ("" if contadores.get("cpu_ns") is None
+                          else round(contadores["cpu_ns"] / 1e9, 9)),
         }
 
     def desde_cpu(self, ventana, modo, escena=""):
@@ -72,6 +81,7 @@ class ReporteRendimiento:
             "rasterizacion_s": round(seg, 6),
             "extremo_a_extremo_s": "",
             "pixeles_por_s": round(ventana.pixeles / seg) if seg else "",
+            "cpu_hps_s": "",
         }
 
     def anexar(self, fila):

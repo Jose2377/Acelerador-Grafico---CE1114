@@ -207,6 +207,20 @@ comandos, pixeles y errores coincidan en la CPU, la FPGA y el modelo local
 (`RasterizadorCPU`, que ademas da la imagen esperada). Cada repeticion deja
 dos filas en el CSV, `origen` = `cpu-hps` y `fpga`.
 
+Informa dos metricas, cada una por repeticion y en promedio:
+
+| Metrica | Que compara | Columna del CSV |
+|---|---|---|
+| Velocidad de dibujo | tiempo de rasterizar en la CPU del HPS / en la FPGA | `rasterizacion_s` |
+| Carga de la CPU | tiempo de CPU del HPS sin acelerador (rasterizar) / con acelerador (entregar los paquetes a `/dev/gpu2d`) | `cpu_hps_s` |
+
+La carga de la CPU es la que corresponde al proposito del producto
+(documento de requerimientos, 1.1: reducir la carga de la CPU) y es la que se
+usa para evaluar RR-01. La velocidad de dibujo se informa aparte: la
+referencia en C dibuja en la DDR3 con cache y sin mostrar la imagen, mientras
+la FPGA comparte la SDRAM con el barrido de video, asi que en rellenos grandes
+la CPU puede ser mas rapida sin que eso contradiga la descarga.
+
 La referencia en C viaja por el mismo protocolo con la bandera `CPU` (ver
 `PROTOCOLO.md`) y se verifica contra `RasterizadorCPU` en
 `tests/test_raster_ref_c.py` (necesita un compilador de C en la PC; si no

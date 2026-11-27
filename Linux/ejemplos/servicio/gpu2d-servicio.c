@@ -12,8 +12,16 @@
  *                                 de medicion antes de escribir el lote.
  *   2 SOLICITUD  cliente -> HPS   Sin carga. Se responde REPORTE con la misma
  *                                 secuencia cuando el hardware publica (MOE-05).
- *   3 REPORTE    HPS -> cliente   16 bytes: ciclos, comandos, pixeles (u32),
- *                                 errores, descartados (u16), orden de red.
+ *   3 REPORTE    HPS -> cliente   20 bytes: ciclos, comandos, pixeles (u32),
+ *                                 errores, descartados (u16), cpu_ns (u32),
+ *                                 orden de red.
+ *
+ * cpu_ns (26/11/2026) es la carga de la CPU del HPS en la ventana: tiempo de
+ * CPU (usuario + nucleo, CLOCK_THREAD_CPUTIME_ID) que este proceso gasto en
+ * hacer dibujar la escena. Con el acelerador es entregar los paquetes a
+ * /dev/gpu2d; con la bandera CPU es rasterizarlos en raster_ref.c. Las esperas
+ * (el driver duerme si la cola esta llena) no cuentan. Es la metrica del
+ * proposito del producto: cuanto trabajo se le quita a la CPU.
  *   4 ERROR      HPS -> cliente   codigo (u8) | 0 | texto UTF-8.
  *
  * Bandera 0x02 CPU (en LOTE y SOLICITUD): el lote no va al acelerador sino a
@@ -71,9 +79,24 @@ enum { TIPO_LOTE = 1, TIPO_SOLICITUD = 2, TIPO_REPORTE = 3, TIPO_ERROR = 4 };
 
 /* Implementacion de referencia en CPU, compartida por todas las conexiones */
 static struct raster_ref ref;
+static uint64_t ref_cpu;	/* carga de CPU de la ventana de la referencia */
 #define OPCODE_INF		0x0B
 
 static int verboso;
+
+/* Tiempo de CPU de este hilo, en ns: solo lo que de verdad ejecuto */
+static uint64_t cpu_ns(void)
+{
+	struct timespec t;
+
+	clock_gettime(CLOCK_THREAD_CPUTIME_ID, &t);
+	return (uint64_t)t.tv_sec * 1000000000ull + (uint64_t)t.tv_nsec;
+}
+
+static uint32_t sat32(uint64_t v)
+{
+	return v > 0xFFFFFFFFull ? 0xFFFFFFFFu : (uint32_t)v;
+}
 static FILE *bitacora;
 
 /* Anota un evento en la bitacora (con fecha y hora) y, con -v, en la salida. */
@@ -210,6 +233,7 @@ struct sesion {
 	int inf_pendiente;	/* se envio un INF que aun no se reporta */
 	uint16_t err_base;	/* err_count al abrir la ventana */
 	uint32_t drop_base;	/* PERF_DROP visto por ultima vez */
+	uint64_t cpu;		/* carga de CPU de la ventana: entregar los paquetes */
 };
 
 /* Revisa irq_err tras un lote: informa EC-08 y registra EC-06/EC-07. */
@@ -241,10 +265,16 @@ static int atender_lote(int c, uint8_t banderas, uint32_t seq,
 {
 	size_t i, hecho = 0;
 
+	uint64_t t0;
+
 	if (banderas & BANDERA_CPU) {		/* referencia en CPU, no el acelerador */
-		if (banderas & BANDERA_INICIO_VENTANA)
+		if (banderas & BANDERA_INICIO_VENTANA) {
 			ref_abrir_ventana(&ref);
+			ref_cpu = 0;
+		}
+		t0 = cpu_ns();
 		ref_ejecutar(&ref, carga, len);
+		ref_cpu += cpu_ns() - t0;
 		return 0;
 	}
 
@@ -265,7 +295,11 @@ static int atender_lote(int c, uint8_t banderas, uint32_t seq,
 			s->drop_base = r[GPU2D_R_PERF_DROP];
 		}
 		s->inf_pendiente = 0;
+		s->cpu = 0;
 	}
+
+	/* Carga de CPU: desde aqui hasta que el ultimo paquete esta en la cola */
+	t0 = cpu_ns();
 
 	/* W0 en little-endian: el byte 3 es el OPCODE */
 	for (i = 0; i < len; i += GPU2D_PKT_BYTES)
@@ -283,6 +317,7 @@ static int atender_lote(int c, uint8_t banderas, uint32_t seq,
 				w < 0 ? strerror(errno) : "cola detenida");
 		hecho += (size_t)w;
 	}
+	s->cpu += cpu_ns() - t0;
 	return revisar_errores_hw(c, seq, s);
 }
 
@@ -292,7 +327,7 @@ static void be16(uint8_t *p, uint16_t v) { v = htons(v); memcpy(p, &v, 2); }
 static int atender_solicitud_cpu(int c, uint32_t seq)
 {
 	const struct ref_ventana *v = ref.hay_publicado ? &ref.publicado : &ref.ventana;
-	uint8_t rep[16];
+	uint8_t rep[20];
 	uint32_t ns = v->ns > 0xFFFFFFFFull ? 0xFFFFFFFFu : (uint32_t)v->ns;
 
 	be32(rep + 0, ns);
@@ -300,8 +335,9 @@ static int atender_solicitud_cpu(int c, uint32_t seq)
 	be32(rep + 8, v->pixeles);
 	be16(rep + 12, (uint16_t)v->errores);
 	be16(rep + 14, 0);
-	log_v("  -> REPORTE CPU seq=%u ns=%u comandos=%u pixeles=%u errores=%u",
-	      seq, ns, v->comandos, v->pixeles, v->errores);
+	be32(rep + 16, sat32(ref_cpu));
+	log_v("  -> REPORTE CPU seq=%u ns=%u comandos=%u pixeles=%u errores=%u cpu_ns=%u",
+	      seq, ns, v->comandos, v->pixeles, v->errores, sat32(ref_cpu));
 	ref.hay_publicado = 0;
 	return enviar_mensaje(c, TIPO_REPORTE, seq, rep, sizeof(rep));
 }
@@ -309,7 +345,7 @@ static int atender_solicitud_cpu(int c, uint32_t seq)
 static int atender_solicitud(int c, uint32_t seq, struct sesion *s)
 {
 	uint32_t r[GPU2D_NREGS];
-	uint8_t rep[16];
+	uint8_t rep[20];
 	uint16_t errores;
 
 	if (s->inf_pendiente) {
@@ -336,9 +372,11 @@ static int atender_solicitud(int c, uint32_t seq, struct sesion *s)
 	be32(rep + 8, r[GPU2D_R_PERF_PIXELS]);
 	be16(rep + 12, errores);
 	be16(rep + 14, (uint16_t)r[GPU2D_R_PERF_DROP]);
-	log_v("  -> REPORTE seq=%u ciclos=%u comandos=%u pixeles=%u errores=%u descartados=%u",
+	be32(rep + 16, sat32(s->cpu));
+	log_v("  -> REPORTE seq=%u ciclos=%u comandos=%u pixeles=%u errores=%u descartados=%u cpu_ns=%u",
 	      seq, r[GPU2D_R_PERF_CYCLES], r[GPU2D_R_PERF_CMDS],
-	      r[GPU2D_R_PERF_PIXELS], errores, r[GPU2D_R_PERF_DROP] & 0xFFFF);
+	      r[GPU2D_R_PERF_PIXELS], errores, r[GPU2D_R_PERF_DROP] & 0xFFFF,
+	      sat32(s->cpu));
 	return enviar_mensaje(c, TIPO_REPORTE, seq, rep, sizeof(rep));
 }
 

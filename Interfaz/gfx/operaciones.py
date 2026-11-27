@@ -135,9 +135,16 @@ def comparar(comandos, cfg, log, modo="tramos", escena="", repeticiones=3):
     """Caso de uso CU-04 y verificacion de RR-01: la misma escena en la
     referencia en CPU del HPS (raster_ref.c, el mismo procesador que el
     acelerador descarga) y en el acelerador, 'repeticiones' veces cada una
-    (al menos 3 segun RR-01). Informa la razon de tiempos CPU / FPGA de cada
-    repeticion y su promedio, y comprueba que los dos lados y el modelo
-    local (RasterizadorCPU) informen los mismos comandos y pixeles.
+    (al menos 3 segun RR-01). Informa dos metricas, cada repeticion y su
+    promedio, y comprueba que los dos lados y el modelo local
+    (RasterizadorCPU) informen los mismos comandos y pixeles:
+
+      velocidad de dibujo  tiempo de rasterizar en la CPU / en la FPGA
+      carga de la CPU      tiempo de CPU del HPS sin acelerador (rasterizar)
+                           / con acelerador (entregar los paquetes). Es la
+                           del proposito del producto: cuanto trabajo se le
+                           quita a la CPU. Necesita el servicio del 26/11/2026
+                           o posterior; con uno anterior se omite.
 
     Devuelve (rasterizador_local, fila_cpu, fila_fpga) de la ultima
     repeticion; las filas son None si ese lado fallo. El rasterizador local
@@ -187,17 +194,45 @@ def comparar(comandos, cfg, log, modo="tramos", escena="", repeticiones=3):
         lineas.append("  {:<18} CPU {:>10}   FPGA {:>10}   modelo {:>10}".format(
             k, filas_cpu[-1][k], filas_hw[-1][k], getattr(modelo, k)))
     log("\n".join(lineas), None)
+
+    # Carga de la CPU del HPS: tiempo de CPU sin acelerador / con acelerador
+    cargas = []
+    hay_carga = all(isinstance(f.get("cpu_hps_s"), (int, float))
+                    for f in filas_cpu + filas_hw)
+    if hay_carga:
+        lineas = ["--- Carga de la CPU del HPS (tiempo de CPU para dibujar la "
+                  "escena) ---",
+                  "  {:<6} {:>16} {:>16} {:>12}".format(
+                      "rep", "sin acel. (s)", "con acel. (s)", "sin / con")]
+        for i, (c, h) in enumerate(zip(filas_cpu, filas_hw), 1):
+            sin, con = c["cpu_hps_s"], h["cpu_hps_s"]
+            razon = sin / con if con else None
+            if razon is not None:
+                cargas.append(razon)
+            lineas.append("  {:<6} {:>16} {:>16} {:>12}".format(
+                i, sin, con, "-" if razon is None else "{:.1f}".format(razon)))
+        log("\n".join(lineas), None)
     log("Filas anexadas a {}".format(cfg["ruta_reportes"]), "ok")
 
     if razones:
         promedio = sum(razones) / len(razones)
-        log("Razon promedio de tiempos CPU / FPGA: {:.2f} ({})".format(
-            promedio, "RR-01 se cumple (> 2)" if promedio > 2
-            else "RR-01 no se cumple (debe ser > 2)"),
-            "ok" if promedio > 2 else "err")
+        log("Velocidad de dibujo, razon promedio CPU / FPGA: {:.2f} ({})".format(
+            promedio, "mayor que 2" if promedio > 2 else "no llega a 2"),
+            "ok" if promedio > 2 else None)
     else:
         log("El hardware informo 0 ciclos: no se puede calcular la razon.",
             "err")
+    if cargas:
+        prom_carga = sum(cargas) / len(cargas)
+        log("Carga de CPU, razon promedio sin / con acelerador: {:.1f} ({})"
+            .format(prom_carga,
+                    "RR-01 se cumple medido como carga de CPU (> 2)"
+                    if prom_carga > 2 else
+                    "RR-01 no se cumple medido como carga de CPU (debe ser > 2)"),
+            "ok" if prom_carga > 2 else "err")
+    elif not hay_carga:
+        log("El servicio del HPS no informa la carga de CPU (version anterior "
+            "al 26/11/2026): solo se compara la velocidad de dibujo.", None)
 
     dif = sorted({k for c, h in zip(filas_cpu, filas_hw)
                   for k in ("comandos", "pixeles", "errores")

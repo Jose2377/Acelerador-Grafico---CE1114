@@ -42,7 +42,7 @@ espera el esclavo Avalon-MM (palabras W0..W5 en little-endian).
 |---|---|---|---|
 | 1 LOTE | cliente -> HPS | N paquetes de 24 bytes, 1 <= N <= 256 (24 a 6144 bytes) | ninguna; solo ERROR si falla |
 | 2 SOLICITUD | cliente -> HPS | vacia (longitud 0) | REPORTE con la misma secuencia |
-| 3 REPORTE | HPS -> cliente | 16 bytes, ver abajo | - |
+| 3 REPORTE | HPS -> cliente | 20 bytes (16 en servicios anteriores al 26/11/2026), ver abajo | - |
 | 4 ERROR | HPS -> cliente | 2 bytes + texto, ver abajo | - |
 
 ### LOTE
@@ -72,7 +72,7 @@ servicio espera a que el hardware publique los resultados (MOE-05), lee
 los registros de rendimiento y responde REPORTE con la **misma secuencia**
 que la solicitud.
 
-Carga de REPORTE (16 bytes, orden de red):
+Carga de REPORTE (20 bytes, orden de red):
 
 | Bytes | Campo       | Tipo   | Registro |
 |-------|-------------|--------|----------|
@@ -81,6 +81,15 @@ Carga de REPORTE (16 bytes, orden de red):
 | 8-11  | pixeles     | uint32 | PERF_PIXELS (0x1C) |
 | 12-13 | errores     | uint16 | ERR_INFO.err_count (0x10) |
 | 14-15 | descartados | uint16 | PERF_DROPPED (0x20) |
+| 16-19 | cpu_ns      | uint32 | carga de la CPU del HPS en la ventana, en ns (ver abajo) |
+
+`cpu_ns` (desde el 26/11/2026) es el tiempo de CPU (usuario + nucleo,
+`CLOCK_THREAD_CPUTIME_ID`) que el servicio gasto en hacer dibujar la escena
+desde el LOTE con `INICIO_VENTANA`: con el acelerador, entregar los paquetes a
+`/dev/gpu2d`; con la bandera `CPU`, rasterizarlos en `raster_ref.c`. Las
+esperas no cuentan (el driver duerme si la cola del hardware esta llena).
+Satura en 2^32 - 1. Un cliente que reciba un REPORTE de 16 bytes (servicio
+anterior) debe tratar `cpu_ns` como desconocido.
 
 ### ERROR
 

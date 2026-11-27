@@ -104,12 +104,16 @@ class TestComparar(ConCarpeta):
         self.assertEqual(cpu["comandos"], hw["comandos"])
         textos = " ".join(t for t, _ in self.log)
         self.assertIn("Se agrego 'inf'", textos)
-        self.assertIn("Razon promedio de tiempos", textos)
+        self.assertIn("Velocidad de dibujo, razon promedio", textos)
+        self.assertIn("Carga de CPU, razon promedio", textos)
         self.assertIn("coinciden", textos)
         # RR-01: tres repeticiones, CPU del HPS y FPGA alternadas
         origenes = [f["origen"] for f in self.filas()]
         self.assertEqual(origenes, ["cpu-hps", "fpga"] * 3)
         self.assertGreater(float(cpu["rasterizacion_s"]), 0)
+        # La carga de CPU viaja en el reporte y queda en el CSV
+        self.assertGreater(float(hw["cpu_hps_s"]), 0)
+        self.assertTrue(all(f["cpu_hps_s"] != "" for f in self.filas()))
 
     def test_repeticiones(self):
         operaciones.comparar(comandos("clear"), self.cfg, self.registrar,

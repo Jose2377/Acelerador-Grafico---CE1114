@@ -85,8 +85,14 @@ BANDERA_CPU            = 0x02   # en LOTE y SOLICITUD: usar la referencia en
 # Carga de REPORTE: ContadoresRendimiento, orden de red, 16 bytes
 #   ciclos uint32, comandos uint32, pixeles uint32,
 #   errores uint16, descartados uint16
-FORMATO_REPORTE = ">IIIHH"
-TAM_REPORTE = 16
+# Desde el 26/11/2026 el servicio agrega al final cpu_ns uint32: la carga de
+# la CPU del HPS en la ventana (tiempo de CPU para entregar los paquetes al
+# acelerador, o para rasterizarlos con la bandera CPU). Se acepta tambien el
+# reporte viejo de 16 bytes, sin ese campo.
+FORMATO_REPORTE = ">IIIHHI"
+TAM_REPORTE = 20
+FORMATO_REPORTE_V1 = ">IIIHH"
+TAM_REPORTE_V1 = 16
 
 # Carga de ERROR: codigo uint8 (5 = EC-05 ... 8 = EC-08), reservado uint8,
 # seguido de un texto UTF-8 opcional con el detalle.

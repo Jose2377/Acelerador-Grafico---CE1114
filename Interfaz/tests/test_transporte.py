@@ -49,10 +49,19 @@ class TestProtocolo(unittest.TestCase):
             P.leer_encabezado(bytes([9, 0, 0, 0, 0, 0, 0, 0]))
 
     def test_reporte(self):
-        c = P.carga_reporte(1, 2, 3, 4, 5)
+        c = P.carga_reporte(1, 2, 3, 4, 5, 6)
         self.assertEqual(len(c), K.TAM_REPORTE)
         self.assertEqual(P.leer_reporte(c), dict(
-            ciclos=1, comandos=2, pixeles=3, errores=4, descartados=5))
+            ciclos=1, comandos=2, pixeles=3, errores=4, descartados=5,
+            cpu_ns=6))
+
+    def test_reporte_viejo_de_16_bytes(self):
+        # Un servicio anterior al 26/11/2026 no manda cpu_ns
+        import struct
+        c = struct.pack(K.FORMATO_REPORTE_V1, 1, 2, 3, 4, 5)
+        self.assertEqual(P.leer_encabezado(P.empaquetar(K.TIPO_REPORTE, c)[:8])[2], 16)
+        self.assertEqual(P.leer_reporte(c)["cpu_ns"], None)
+        self.assertEqual(P.leer_reporte(c)["pixeles"], 3)
 
     def test_error(self):
         self.assertEqual(P.leer_error(P.carga_error("EC-08", "cola llena")),
