@@ -9,15 +9,18 @@ script produce el mismo framebuffer RGB565 y los mismos contadores que el
 hardware:
 
   pixel      draw_pixel      un pixel
-  line       draw_line       Bresenham, ambos extremos incluidos
+  line       draw_line       Bresenham, ambos extremos incluidos; termina
+                             cuando sale de la pantalla alejandose
   rect       draw_rect       filas superior e inferior completas y aristas
-                             verticales sin las esquinas
-  rect_fill  draw_rect       relleno fila a fila
+                             verticales sin las esquinas; solo las aristas
+                             (y los tramos) que se ven
+  rect_fill  draw_rect       relleno fila a fila de la parte visible
   clear      draw_rect       rect_fill del tamano de la pantalla
   circ       draw_circle     punto medio con simetria de ocho; los puntos
                              sobre los ejes y la diagonal salen repetidos,
                              igual que en el hardware, y cuentan como pixeles
-  circ_fill  draw_circle     dx^2 + dy^2 <= r^2 sobre el cuadrado de lado 2r+1
+  circ_fill  draw_circle     dx^2 + dy^2 <= r^2 sobre la parte visible del
+                             cuadrado de lado 2r+1
   tria       draw_trian      orienta los vertices y traza A-B, B-C, C-A
                              con la misma linea de Bresenham
   tria_fill  draw_trian      funciones de arista con regla top-left sobre la
@@ -225,7 +228,9 @@ class RasterizadorCPU:
     # -- primitivas -------------------------------------------------------
 
     def _linea(self, x0, y0, x1, y1, color):
-        """draw_line: Bresenham para cualquier pendiente y sentido."""
+        """draw_line: Bresenham para cualquier pendiente y sentido. Como el
+        RTL, termina cuando la linea sale de la pantalla por un lado hacia el
+        que avanza: Bresenham es monotono y ya no puede volver."""
         w, h, fb = self.ancho, self.alto, self.trasero
         dx = abs(x1 - x0)
         dy = -abs(y1 - y0)
@@ -242,6 +247,10 @@ class RasterizadorCPU:
                 fuera += 1
             if x == x1 and y == y1:
                 break
+            if ((x >= w and (sx > 0 or dx == 0)) or (x < 0 and (sx < 0 or dx == 0))
+                    or (y >= h and (sy > 0 or dy == 0))
+                    or (y < 0 and (sy < 0 or dy == 0))):
+                break
             e2 = err + err
             if e2 >= dy:
                 err += dy
@@ -253,31 +262,33 @@ class RasterizadorCPU:
         self.ventana.recortados += fuera
 
     def _rect(self, x0, y0, x1, y1, color):
-        """draw_rect con fill = 0."""
+        """draw_rect con fill = 0: solo las aristas visibles (R_CLIP, R_SEL),
+        y de cada una solo su tramo visible. Nada se cuenta como recortado."""
+        w, h = self.ancho, self.alto
         xa, xb = min(x0, x1), max(x0, x1)
         ya, yb = min(y0, y1), max(y0, y1)
-        self._tramo(ya, xa, xb, color)                       # R_TOP
-        if yb == ya:
-            return
-        self._tramo(yb, xa, xb, color)                       # R_BOT
-        if yb <= ya + 1:
-            return
-        for y in range(ya + 1, yb):                          # R_LEFT
-            self._pixel(xa, y, color)
-        if xb == xa:
-            return
-        for y in range(ya + 1, yb):                          # R_RIGHT
-            self._pixel(xb, y, color)
+        vxa, vxb = max(xa, 0), min(xb, w - 1)
+        lya, lyb = max(ya + 1, 0), min(yb - 1, h - 1)
+        x_vis = vxa <= vxb
+        lados = yb > ya + 1 and lya <= lyb
+        if x_vis and 0 <= ya < h:                            # R_TOP
+            self._tramo(ya, vxa, vxb, color)
+        if x_vis and 0 <= yb < h and yb != ya:               # R_BOT
+            self._tramo(yb, vxa, vxb, color)
+        for xc, hay in ((xa, lados and 0 <= xa < w),         # R_LEFT
+                        (xb, lados and 0 <= xb < w and xb != xa)):  # R_RIGHT
+            if hay:
+                for y in range(lya, lyb + 1):
+                    self._pixel(xc, y, color)
 
     def _rect_fill(self, x0, y0, x1, y1, color):
         """draw_rect con fill = 1 (tambien CLEAR)."""
-        xa, xb = min(x0, x1), max(x0, x1)
-        ya, yb = min(y0, y1), max(y0, y1)
-        ancho_fila = xb - xa + 1
-        # Filas fuera de la pantalla: todo recortado, sin recorrerlas
-        vya, vyb = max(ya, 0), min(yb, self.alto - 1)
-        filas_vis = max(0, vyb - vya + 1)
-        self.ventana.recortados += ((yb - ya + 1) - filas_vis) * ancho_fila
+        # Como draw_rect (R_CLIP): solo se recorre la parte visible, asi que
+        # no hay pixeles recortados.
+        xa, xb = max(min(x0, x1), 0), min(max(x0, x1), self.ancho - 1)
+        vya, vyb = max(min(y0, y1), 0), min(max(y0, y1), self.alto - 1)
+        if xa > xb:
+            return
         for y in range(vya, vyb + 1):
             self._tramo(y, xa, xb, color)
 
@@ -314,21 +325,28 @@ class RasterizadorCPU:
                 return
 
     def _circ_fill(self, cx, cy, r, color):
-        """draw_circle con fill = 1: el hardware recorre el cuadrado de
-        lado 2r+1 y deja pasar dx^2 + dy^2 <= r^2. Aqui se calcula el
-        tramo de cada fila directamente; los pixeles son los mismos."""
+        """draw_circle con fill = 1: el hardware recorre la parte visible
+        del cuadrado de lado 2r+1 y deja pasar dx^2 + dy^2 <= r^2. En modo
+        "tramos" se calcula el tramo de cada fila directamente; los pixeles
+        son los mismos. Nada queda fuera de la pantalla."""
         r2 = r * r
+        dxi, dxf = max(-r, -cx), min(r, self.ancho - 1 - cx)
+        dyi, dyf = max(-r, -cy), min(r, self.alto - 1 - cy)
+        if dxi > dxf or dyi > dyf:
+            return
         if self.modo == "pixel":
             px = self._pixel
-            for dy in range(-r, r + 1):            # K_FILL, fila a fila
+            for dy in range(dyi, dyf + 1):         # K_FILL, fila a fila
                 dy2 = dy * dy
-                for dx in range(-r, r + 1):
+                for dx in range(dxi, dxf + 1):
                     if dx * dx + dy2 <= r2:
-                        px(_s16(cx + dx), _s16(cy + dy), color)
+                        px(cx + dx, cy + dy, color)
             return
-        for dy in range(-r, r + 1):
+        for dy in range(dyi, dyf + 1):
             m = isqrt(r2 - dy * dy)     # mayor dx con dx^2 <= r^2 - dy^2
-            self._tramo(cy + dy, cx - m, cx + m, color)
+            xa, xb = max(cx - m, cx + dxi), min(cx + m, cx + dxf)
+            if xa <= xb:
+                self._tramo(cy + dy, xa, xb, color)
 
     def _tria(self, x0, y0, x1, y1, x2, y2, color, relleno):
         """draw_trian: orientacion, luego contorno o relleno."""

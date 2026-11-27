@@ -23,6 +23,13 @@
 // Cuesta mas ciclos que el area real del circulo, pero garantiza un relleno sin huecos, 
 // que es lo que el reflejo del contorno no puede asegurar.
 //
+// Recorte del relleno (24/11/2026): el cuadrado se recorta contra la pantalla en
+// K_SETUP y solo se recorre su parte visible (filas dyi..dyf, columnas dxi..dxf),
+// de modo que un disco que se sale casi entero no cuesta ciclos fuera de pantalla.
+// Los cuadrados iniciales de las esquinas recortadas son las unicas
+// multiplicaciones (K_FSET), una vez por figura. Los pixeles escritos no cambian.
+// El contorno no se recorta: cuesta como mucho unos 8 * 1023 / raiz(2) ciclos.
+//
 // La validacion del radio distinto de cero la hace decoder_fsm antes de arrancar, 
 // y emite EC-07 si no se cumple.
 //
@@ -43,6 +50,8 @@
 //   px_color             Color de pixel
 //=============================================================================
 module draw_circle #(
+  parameter int SCREEN_W   = 64,
+  parameter int SCREEN_H   = 48,
   parameter int PIXEL_BITS = 16
 )(
   input  logic                    clk,          // Reloj del sistema
@@ -62,7 +71,7 @@ module draw_circle #(
 
   // Estados de dibujo
   // Espera, Preparacion de registros, Dibujado 8 puntos simetricos, Actualizacion de coordenadas, Relleno, Finalizado.
-  typedef enum logic [2:0] {K_IDLE, K_SETUP, K_OUT, K_UPD, K_FILL, K_DONE} kst_e;
+  typedef enum logic [2:0] {K_IDLE, K_SETUP, K_FSET, K_OUT, K_UPD, K_FILL, K_DONE} kst_e;
   kst_e st;
 
   // Registros
@@ -78,6 +87,35 @@ module draw_circle #(
   logic signed [21:0] err, r2, dx2, dy2;
   logic        [2:0]  oct;
   logic signed [15:0] ox, oy;
+
+  // Recorte del relleno
+  // dxi..dxf, dyi..dyf  Parte visible del cuadrado, como desplazamientos al centro
+  // dx2i                dxi^2, el valor de dx2 al volver al borde izquierdo
+  // En 17 bits: -cx con cx = -32768 no cabe en 16.
+  localparam logic signed [16:0] XMAX = 17'(SCREEN_W - 1);
+  localparam logic signed [16:0] YMAX = 17'(SCREEN_H - 1);
+  logic signed [16:0] dxi, dxf, dyi, dyf;
+  logic signed [21:0] dx2i;
+  logic signed [16:0] c_dxi, c_dxf, c_dyi, c_dyf, rr17;
+  assign rr17  = 17'(rr);
+  
+  logic signed [16:0] cx17, cy17;
+
+  assign cx17 = {cx[15], cx};
+  assign cy17 = {cy[15], cy};
+
+  assign c_dxi = (-rr17 > -cx17)       ? -rr17 : -cx17;
+  assign c_dxf = ( rr17 < XMAX - cx17) ?  rr17 : XMAX - cx17;
+  assign c_dyi = (-rr17 > -cy17)       ? -rr17 : -cy17;
+  assign c_dyf = ( rr17 < YMAX - cy17) ?  rr17 : YMAX - cy17;
+  // Con el recorte no vacio |dxi| y |dyi| no pasan del radio (1023): 12 bits
+  // con signo bastan para elevarlos al cuadrado con un multiplicador pequeno.
+  logic signed [11:0] dxi12, dyi12;
+  logic signed [23:0] dxi_sq, dyi_sq;
+  assign dxi12  = dxi[11:0];
+  assign dyi12  = dyi[11:0];
+  assign dxi_sq = dxi12 * dxi12;
+  assign dyi_sq = dyi12 * dyi12;
   logic [PIXEL_BITS-1:0] col;
 
   // Simetria de ocho. 
@@ -133,6 +171,7 @@ module draw_circle #(
       st <= K_IDLE;
       cx <= '0; cy <= '0; rr <= '0; x <= '0; y <= '0; oct <= '0;
       dx <= '0; dy <= '0; err <= '0; r2 <= '0; dx2 <= '0; dy2 <= '0;
+      dxi <= '0; dxf <= '0; dyi <= '0; dyf <= '0; dx2i <= '0;
       col <= '0;
     end else if (!stall) begin // Si no esta en Stall
       case (st)
@@ -145,15 +184,28 @@ module draw_circle #(
         // Preparacion comun de variables dependiendo del algoritmo,
 		  // ya sea para relleno o solo circunferencia.
         K_SETUP: begin
-          if (fill) begin // Relleno
+          if (fill) begin // Relleno: parte visible del cuadrado circunscrito
             r2  <= 22'(rr) * 22'(rr);
-            dx2 <= 22'(rr) * 22'(rr);
-            dy2 <= 22'(rr) * 22'(rr);
-            dx  <= -rr;  dy <= -rr;
-            st  <= K_FILL;
+            dxi <= c_dxi;  dxf <= c_dxf;
+            dyi <= c_dyi;  dyf <= c_dyf;
+            st  <= K_FSET;
           end else begin // Circunferencia
             x <= rr;  y <= '0;  err <= '0;  oct <= '0;
             st <= K_OUT;
+          end
+        end
+
+        // Cuadrados de la esquina recortada. Si el disco cae entero fuera de
+        // la pantalla no hay nada que recorrer.
+        K_FSET: begin
+          if ((dxi > dxf) || (dyi > dyf)) begin
+            st <= K_DONE;
+          end else begin
+            dx   <= dxi[15:0];  dy <= dyi[15:0];
+            dx2  <= dxi_sq[21:0];
+            dx2i <= dxi_sq[21:0];
+            dy2  <= dyi_sq[21:0];
+            st   <= K_FILL;
           end
         end
 
@@ -172,9 +224,9 @@ module draw_circle #(
         // Recorrido del cuadrado circunscrito. 
 		  // El criterio de pertenencia lo evalua el bloque combinacional de salida, no este.
         K_FILL: begin
-          if (dx == rr) begin // Recorre desde -rr a rr, fuera de aqui no existe pixel que pertenezca
-            dx <= -rr;  dx2 <= r2;
-            if (dy == rr) st <= K_DONE;
+          if (17'(dx) == dxf) begin // Fin de la fila visible: vuelve al borde izquierdo recortado
+            dx <= dxi[15:0];  dx2 <= dx2i;
+            if (17'(dy) == dyf) st <= K_DONE;
             else begin
               dy2 <= dy2 + 22'(dy) + 22'(dy) + 1;       // dy2 += 2*dy + 1
               dy  <= dy + 1;

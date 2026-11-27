@@ -84,7 +84,7 @@ module processor_raster #(
   output logic [$clog2(SCREEN_W)-1:0] px_x,             // Coordenada x del pixel
   output logic [$clog2(SCREEN_H)-1:0] px_y,             // Coordenada y del pixel
   output logic [PIXEL_BITS-1:0]       px_color,         // Color del pixel
-  output logic [LW-1:0]               px_len,           // Pixeles del tramo
+  output logic [$clog2(Acelerador_pkg::BURST_LEN + 1)-1:0] px_len,           // Pixeles del tramo
   output logic [$clog2(SCREEN_W*SCREEN_H)-1:0] px_addr, // Direccion de memoria del pixel
 
   // Instrumentacion
@@ -177,19 +177,22 @@ module processor_raster #(
     .busy(bp), .done(dp), .px_valid(vp),
     .px_x(xp), .px_y(yp), .px_color(cp));
 
-  draw_rect #(.PIXEL_BITS(PIXEL_BITS)) u_rect (
+  draw_rect #(.SCREEN_W(SCREEN_W), .SCREEN_H(SCREEN_H),
+              .PIXEL_BITS(PIXEL_BITS)) u_rect (
     .clk(clk), .rst_n(rst_n), .start(s_rect), .stall(prim_stall), .fill(rfill),
     .x0(rx0), .y0(ry0), .x1(rx1), .y1(ry1), .color_in(color565),
     .busy(br), .done(dr), .px_valid(vr),
     .px_x(xr), .px_y(yr), .px_len(lr), .px_color(cr));
 
-  draw_line #(.PIXEL_BITS(PIXEL_BITS)) u_line (
+  draw_line #(.SCREEN_W(SCREEN_W), .SCREEN_H(SCREEN_H),
+              .PIXEL_BITS(PIXEL_BITS)) u_line (
     .clk(clk), .rst_n(rst_n), .start(s_line), .stall(prim_stall),
     .x0_in(x0), .y0_in(y0), .x1_in(x1), .y1_in(y1), .color_in(color565),
     .busy(bl), .done(dl), .px_valid(vl),
     .px_x(xl), .px_y(yl), .px_color(cl));
 
-  draw_circle #(.PIXEL_BITS(PIXEL_BITS)) u_circ (
+  draw_circle #(.SCREEN_W(SCREEN_W), .SCREEN_H(SCREEN_H),
+                .PIXEL_BITS(PIXEL_BITS)) u_circ (
     .clk(clk), .rst_n(rst_n), .start(s_circ), .stall(prim_stall), .fill(op == OP_CIRC_FILL),
     .cx_in(x0), .cy_in(y0), .r_in(radius), .color_in(color565),
     .busy(bc), .done(dc), .px_valid(vc),

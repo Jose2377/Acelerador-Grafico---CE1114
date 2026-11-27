@@ -1,0 +1,18 @@
+# Prueba del recorte en hardware (24/11/2026).
+# Antes del recorte, el rect_fill de 65536 x 65536 tardaba ~5 s en la FPGA
+# y el servicio respondia EC-05 (4 s sin terminar). Ahora debe tardar
+# como un CLEAR, y la escena entera unas decenas de ms.
+color 0 0 0
+clear
+color 0 0 128
+rect_fill -32768 -32768 32767 32767
+color 255 255 0
+circ_fill -900 240 1000
+color 255 0 0
+line 10 240 32767 240
+rect -30000 100 600 30000
+color 0 255 0
+circ 320 240 1023
+tria -32768 -32768 32767 0 0 32767
+swap
+inf

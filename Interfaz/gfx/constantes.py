@@ -78,6 +78,9 @@ TIPO_ERROR     = 0x04
 FORMATO_ENCABEZADO = ">BBHI"
 LONGITUD_MAX = TAM_LOTE_MAX * TAM_PAQUETE          # 6144 bytes
 BANDERA_INICIO_VENTANA = 0x01   # en LOTE: reinicia la ventana de medicion
+BANDERA_CPU            = 0x02   # en LOTE y SOLICITUD: usar la referencia en
+                                # CPU del HPS (raster_ref.c) y no el acelerador;
+                                # su REPORTE trae el tiempo en ns en 'ciclos'
 
 # Carga de REPORTE: ContadoresRendimiento, orden de red, 16 bytes
 #   ciclos uint32, comandos uint32, pixeles uint32,

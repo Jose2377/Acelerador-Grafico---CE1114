@@ -4,6 +4,8 @@ Archivo CSV acumulativo, una fila por ventana de medicion.
 Las filas vienen de dos origenes, para la comparacion del caso de uso
 CU-04 en un mismo archivo:
   fpga         contadores devueltos por el hardware (camino de vuelta)
+  cpu-hps      referencia en C ejecutada en la CPU del HPS (raster_ref.c),
+               la que vale para RR-01: mismo procesador que el acelerador
   cpu-tramos   RasterizadorCPU en modo "tramos"
   cpu-pixel    RasterizadorCPU en modo "pixel"
 
@@ -30,15 +32,20 @@ class ReporteRendimiento:
         self.ruta_csv = ruta_csv
         self.sys_clk_hz = sys_clk_hz
 
-    def parsear_respuesta(self, contadores, escena=""):
-        """dict de ClienteTransporte.solicitar_reporte() -> fila del CSV."""
+    def parsear_respuesta(self, contadores, escena="", cpu=False):
+        """dict de ClienteTransporte.solicitar_reporte() -> fila del CSV.
+        Con cpu=True es el reporte de la referencia en CPU del HPS, cuyo
+        campo 'ciclos' trae el tiempo en nanosegundos."""
         ciclos = contadores["ciclos"]
-        seg = ciclos / self.sys_clk_hz if self.sys_clk_hz else 0.0
+        if cpu:
+            seg = ciclos / 1e9
+        else:
+            seg = ciclos / self.sys_clk_hz if self.sys_clk_hz else 0.0
         return {
             "marca_tiempo": _ahora(),
-            "origen": "fpga",
+            "origen": "cpu-hps" if cpu else "fpga",
             "escena": escena,
-            "ciclos": ciclos,
+            "ciclos": "" if cpu else ciclos,
             "comandos": contadores["comandos"],
             "pixeles": contadores["pixeles"],
             "recortados": "",          # CLIP_COUNT no viaja en el reporte

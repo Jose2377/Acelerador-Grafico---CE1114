@@ -134,7 +134,8 @@ module draw_trian #(
   logic signed [15:0] lg_x0, lg_y0, lg_x1, lg_y1, lg_px, lg_py;
   logic [PIXEL_BITS-1:0] lg_color;
 
-  draw_line #(.PIXEL_BITS(PIXEL_BITS)) u_gen (
+  draw_line #(.SCREEN_W(SCREEN_W), .SCREEN_H(SCREEN_H),
+              .PIXEL_BITS(PIXEL_BITS)) u_gen (
     .clk(clk), .rst_n(rst_n), .start(lg_start), .stall(stall),
     .x0_in(lg_x0), .y0_in(lg_y0), .x1_in(lg_x1), .y1_in(lg_y1),
     .color_in(col),

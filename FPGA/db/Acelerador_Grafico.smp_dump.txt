@@ -40,13 +40,14 @@ st.L_RUN 0 1 0 1
 st.L_DONE 1 0 0 1 
 
 State Machine - |DE1_SoC_top_level|Acelerador_Grafico_Top:u_acelerador|processor_raster:u_raster|draw_circle:u_circ|st
-Name st.K_DONE st.K_FILL st.K_UPD st.K_OUT st.K_SETUP st.K_IDLE 
-st.K_IDLE 0 0 0 0 0 0 
-st.K_SETUP 0 0 0 0 1 1 
-st.K_OUT 0 0 0 1 0 1 
-st.K_UPD 0 0 1 0 0 1 
-st.K_FILL 0 1 0 0 0 1 
-st.K_DONE 1 0 0 0 0 1 
+Name st.K_DONE st.K_FILL st.K_UPD st.K_OUT st.K_FSET st.K_SETUP st.K_IDLE 
+st.K_IDLE 0 0 0 0 0 0 0 
+st.K_SETUP 0 0 0 0 0 1 1 
+st.K_FSET 0 0 0 0 1 0 1 
+st.K_OUT 0 0 0 1 0 0 1 
+st.K_UPD 0 0 1 0 0 0 1 
+st.K_FILL 0 1 0 0 0 0 1 
+st.K_DONE 1 0 0 0 0 0 1 
 
 State Machine - |DE1_SoC_top_level|Acelerador_Grafico_Top:u_acelerador|processor_raster:u_raster|draw_line:u_line|st
 Name st.L_DONE st.L_RUN st.L_SETUP st.L_IDLE 
@@ -56,14 +57,16 @@ st.L_RUN 0 1 0 1
 st.L_DONE 1 0 0 1 
 
 State Machine - |DE1_SoC_top_level|Acelerador_Grafico_Top:u_acelerador|processor_raster:u_raster|draw_rect:u_rect|st
-Name st.R_DONE st.R_RIGHT st.R_LEFT st.R_BOT st.R_TOP st.R_FILL st.R_IDLE 
-st.R_IDLE 0 0 0 0 0 0 0 
-st.R_FILL 0 0 0 0 0 1 1 
-st.R_TOP 0 0 0 0 1 0 1 
-st.R_BOT 0 0 0 1 0 0 1 
-st.R_LEFT 0 0 1 0 0 0 1 
-st.R_RIGHT 0 1 0 0 0 0 1 
-st.R_DONE 1 0 0 0 0 0 1 
+Name st.R_RIGHT st.R_LEFT st.R_BOT st.R_TOP st.R_FILL st.R_SEL st.R_CLIP st.R_IDLE st.R_DONE 
+st.R_IDLE 0 0 0 0 0 0 0 0 0 
+st.R_CLIP 0 0 0 0 0 0 1 1 0 
+st.R_SEL 0 0 0 0 0 1 0 1 0 
+st.R_FILL 0 0 0 0 1 0 0 1 0 
+st.R_TOP 0 0 0 1 0 0 0 1 0 
+st.R_BOT 0 0 1 0 0 0 0 1 0 
+st.R_LEFT 0 1 0 0 0 0 0 1 0 
+st.R_RIGHT 1 0 0 0 0 0 0 1 0 
+st.R_DONE 0 0 0 0 0 0 0 1 1 
 
 State Machine - |DE1_SoC_top_level|Acelerador_Grafico_Top:u_acelerador|processor_raster:u_raster|draw_pixel:u_pix|st
 Name st.P_IDLE st.P_DONE st.P_OUT 

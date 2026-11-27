@@ -12,6 +12,9 @@
  *            cuando el LOTE trae INICIO_VENTANA (PROTOCOLO.md).
  *   read():  los 16 registros (0x00..0x3C) como u32 little-endian.
  *   ioctl(): GPU2D_IOC_VENTANA, GPU2D_IOC_ACK, GPU2D_IOC_ESPERAR.
+ *   open():  un solo descriptor abierto a la vez (documento de diseno, AD-2):
+ *            un segundo open() falla con EBUSY, de modo que dos clientes no
+ *            pueden intercalar paquetes en la cola.
  */
 #include <linux/module.h>
 #include <linux/platform_device.h>
@@ -24,6 +27,7 @@
 #include <linux/delay.h>
 #include <linux/jiffies.h>
 #include <linux/sched/signal.h>
+#include <linux/atomic.h>
 
 #include "gpu2d_ioctl.h"
 
@@ -69,6 +73,7 @@ struct gpu2d {
 	void __iomem *base;
 	struct miscdevice misc;
 	struct mutex lock;
+	atomic_t abierto;		/* 1 mientras haya un descriptor abierto */
 	u32 ctrl_level;			/* bits de nivel de CONTROL: enable, irq_en */
 };
 
@@ -178,8 +183,28 @@ static ssize_t gpu2d_read(struct file *f, char __user *buf,
 	return n;
 }
 
+static int gpu2d_open(struct inode *inode, struct file *f)
+{
+	/* misc_open ya dejo en private_data la miscdevice */
+	struct gpu2d *g = container_of(f->private_data, struct gpu2d, misc);
+
+	if (atomic_cmpxchg(&g->abierto, 0, 1) != 0)
+		return -EBUSY;
+	return 0;
+}
+
+static int gpu2d_release(struct inode *inode, struct file *f)
+{
+	struct gpu2d *g = container_of(f->private_data, struct gpu2d, misc);
+
+	atomic_set(&g->abierto, 0);
+	return 0;
+}
+
 static const struct file_operations gpu2d_fops = {
 	.owner	= THIS_MODULE,
+	.open	= gpu2d_open,
+	.release = gpu2d_release,
 	.write	= gpu2d_write,
 	.read	= gpu2d_read,
 	.unlocked_ioctl	= gpu2d_ioctl,
@@ -217,6 +242,7 @@ static int gpu2d_probe(struct platform_device *pdev)
 	}
 
 	mutex_init(&g->lock);
+	atomic_set(&g->abierto, 0);
 	g->ctrl_level = CTRL_ENABLE;
 	gpu2d_ctrl(g, CTRL_SOFT_RESET | CTRL_IRQ_INF | CTRL_IRQ_ERR);
 

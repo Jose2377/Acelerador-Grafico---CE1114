@@ -802,15 +802,16 @@ module tb_Acelerador_Grafico_Top;
       chk("relleno desalineado: pixeles emitidos", emitidos, 38*26);
     end
 
-    // Relleno que se sale por arriba y por la izquierda: el tramo se recorta
-    // entero y clip_count suma los pixeles descartados de cada tramo.
+    // Relleno que se sale por arriba y por la izquierda. Desde el 24/11/2026
+    // draw_rect recorre solo la parte visible: los pixeles de fuera ni se
+    // generan, asi que clip_count no suma nada.
     borrar_fb();
     begin : rect_recortado
       int clip0;
       clip0 = clip_count;
       cmd(OPC_RECT_FILL, -5,-3, 12,4, 0,0, 8'h00, 8'hFF, 8'h00, 0);
       chk("rect recortado: pixeles visibles", emitidos, 13*5);
-      chk("rect recortado: pixeles descartados", int'(clip_count - clip0), 18*8 - 13*5);
+      chk("rect recortado: no genera pixeles fuera", int'(clip_count - clip0), 0);
       chk_px("rect recortado: (0,0) dentro", 0, 0, 1'b1);
       chk_px("rect recortado: (12,4) dentro", 12, 4, 1'b1);
       chk_px("rect recortado: (13,0) fuera", 13, 0, 1'b0);
@@ -821,6 +822,51 @@ module tb_Acelerador_Grafico_Top;
     cmd(OPC_RECT_FILL, W-3, H-2, W+9, H+4, 0,0, 8'h00, 8'hFF, 8'h00, 0);
     chk("rect recortado abajo a la derecha: visibles", emitidos, 3*2);
     chk_px("esquina (63,47) dentro", W-1, H-1, 1'b1);
+
+    // Figuras enormes que se salen de la pantalla: con el recorte en hardware
+    // cuestan lo que su parte visible. Sin el, el relleno de 65536 x 65536
+    // tardaba unos 5 s a 100 MHz y la linea 65536 ciclos.
+    borrar_fb();
+    begin : figuras_enormes
+      int c0, clip0;
+      c0 = ciclos_tb;  clip0 = clip_count;
+      cmd(OPC_RECT_FILL, -32768,-32768, 32767,32767, 0,0, 8'h00, 8'h00, 8'hFF, 0);
+      chk("relleno enorme: toda la pantalla", emitidos, W*H);
+      chk_rango("relleno enorme: ciclos como un CLEAR", ciclos_tb - c0, 1, 8000);
+      chk("relleno enorme: nada fuera", int'(clip_count - clip0), 0);
+
+      borrar_fb();
+      c0 = ciclos_tb;  clip0 = clip_count;
+      cmd(OPC_RECT, -32768,-32768, 32767,32767, 0,0, 8'h00, 8'h00, 8'hFF, 0);
+      chk("contorno enorme: ninguna arista visible", emitidos, 0);
+      chk_rango("contorno enorme: ciclos", ciclos_tb - c0, 1, 100);
+
+      borrar_fb();
+      cmd(OPC_RECT, -5, 10, 20, 60, 0,0, 8'h00, 8'h00, 8'hFF, 0);
+      // Arista superior visible (x 0..20), inferior fuera (y 60), izquierda
+      // fuera (x -5), derecha (x 20) de y 11 a 47
+      chk("contorno recortado: pixeles", emitidos, 21 + (47 - 11 + 1));
+      chk_px("contorno recortado: (0,10)", 0, 10, 1'b1);
+      chk_px("contorno recortado: (20,47)", 20, 47, 1'b1);
+      chk_px("contorno recortado: (20,10) esquina", 20, 10, 1'b1);
+
+      borrar_fb();
+      c0 = ciclos_tb;
+      cmd(OPC_LINE, 10, 10, 32767, 10, 0,0, 8'h00, 8'hFF, 8'h00, 0);
+      chk("linea que sale: pixeles visibles", emitidos, W - 10);
+      chk_rango("linea que sale: ciclos", ciclos_tb - c0, 1, 300);
+
+      borrar_fb();
+      c0 = ciclos_tb;  clip0 = clip_count;
+      cmd(OPC_CIRC_FILL, 0, 0, 0,0, 0,0, 8'hFF, 8'hFF, 8'h00, 1000);
+      chk("disco enorme: toda la pantalla", emitidos, W*H);
+      chk_rango("disco enorme: ciclos", ciclos_tb - c0, 1, 4*W*H);
+      chk("disco enorme: nada fuera", int'(clip_count - clip0), 0);
+
+      borrar_fb();
+      cmd(OPC_CIRC_FILL, -500, 20, 0,0, 0,0, 8'hFF, 8'hFF, 8'h00, 100);
+      chk("disco fuera de pantalla: nada", emitidos, 0);
+    end
 
     //------------------------------------------------- 8. orden de la cola
     // Un lote entero se escribe de corrido, sin esperar entre comandos: es
@@ -1082,6 +1128,25 @@ module tb_Acelerador_Grafico_Top;
     chk("el intercambio cambio de buffer",
         int'(buffer_sel != buffer_antes), 1);
 
+    // El primer cuadro despues del intercambio ya tiene que salir entero del
+    // buffer nuevo. esperar_fin vuelve dentro del pulso de VSYNC en que se hizo
+    // el cambio, asi que este es exactamente ese cuadro. Antes del 24/11/2026 la
+    // prebusqueda arrancaba en el front porch, antes del intercambio, y sus
+    // primeras lineas se leian del buffer anterior.
+    @(posedge vga_vs);
+    borrar_captura();
+    @(negedge vga_vs);
+    difs = 0;
+    for (int y = 0; y < H; y++)
+      for (int x = 0; x < W; x++)
+        if (cap_fb[y][x] !== fb[y][x]) begin
+          if (difs < 4)
+            $display("      primer cuadro, dif en (%0d,%0d): barrido 0x%04h, rasterizado 0x%04h",
+                     x, y, cap_fb[y][x], fb[y][x]);
+          difs++;
+        end
+    chk("el primer cuadro tras el intercambio ya es el nuevo", difs, 0);
+
     capturar_cuadro();
     chk("pixeles capturados en un cuadro", cap_pixeles, W*H);
 
@@ -1139,6 +1204,19 @@ module tb_Acelerador_Grafico_Top;
     chk("el medidor ignora el tiempo en reposo",
         int'(perf_cycles < (ciclos_reales / 2)), 1);
     chk("pixeles de la ventana", int'(perf_pixels), 100);
+
+    // La espera de SWAP_BUFFER al flanco de VSYNC (MOE-04) tampoco es tiempo de
+    // rasterizacion: una ventana con solo un intercambio casi no suma ciclos,
+    // aunque haya transcurrido hasta un cuadro entero.
+    cmd(OPC_INF, 0,0, 0,0, 0,0, 8'h00, 8'h00, 8'h00, 0);
+    while (dut.vsync_sys) @(negedge clk);
+    ciclos_antes = ciclos_tb;
+    cmd(OPC_SWAP, 0,0, 0,0, 0,0, 8'h00, 8'h00, 8'h00, 0);
+    ciclos_reales = ciclos_tb - ciclos_antes;
+    cmd(OPC_INF, 0,0, 0,0, 0,0, 8'h00, 8'h00, 8'h00, 0);
+    chk_rango("el SWAP espero al flanco de VSYNC", ciclos_reales, 100, 100000);
+    chk_rango("el medidor no cuenta la espera de VSYNC", int'(perf_cycles), 0, 20);
+    chk("el SWAP cuenta como comando", int'(perf_commands), 1);
     // La foto se toma al decodificar INF, antes de contarlo: el comando que
     // cierra la ventana no forma parte de lo medido.
     chk("comandos de la ventana, sin contar el INF", int'(perf_commands), 1);

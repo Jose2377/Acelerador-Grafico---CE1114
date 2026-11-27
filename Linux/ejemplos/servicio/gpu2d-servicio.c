@@ -16,6 +16,11 @@
  *                                 errores, descartados (u16), orden de red.
  *   4 ERROR      HPS -> cliente   codigo (u8) | 0 | texto UTF-8.
  *
+ * Bandera 0x02 CPU (en LOTE y SOLICITUD): el lote no va al acelerador sino a
+ * la implementacion de referencia exclusivamente en CPU (raster_ref.c, CU-04),
+ * que corre en este mismo procesador; la solicitud devuelve su informe. En ese
+ * REPORTE el campo ciclos es el tiempo en nanosegundos (satura en 2^32 - 1).
+ *
  * Errores que se envian como mensaje ERROR:
  *   EC-05  mensaje mal formado (y se cierra la conexion), fallo al escribir en
  *          /dev/gpu2d o el hardware no publico el informe a tiempo.
@@ -28,8 +33,12 @@
  * Cola de espera (RF-12): los mensajes se atienden en orden de llegada; los
  * que llegan mientras se procesa uno quedan en el buffer del socket TCP.
  *
- * Uso:  gpu2d-servicio [puerto] [dispositivo] [-v]
- *       por defecto 5000 y /dev/gpu2d. -v escribe cada mensaje en la salida.
+ * Bitacora (RSH-03, CU-05): con -l RUTA cada evento (conexiones, lotes con sus
+ * comandos, errores del hardware y reportes) se anota con fecha y hora en RUTA.
+ * -v escribe lo mismo en la salida estandar.
+ *
+ * Uso:  gpu2d-servicio [puerto] [dispositivo] [-v] [-l bitacora]
+ *       por defecto 5000 y /dev/gpu2d.
  *
  * Para probar en una PC sin la placa:  make sim && ./gpu2d-servicio-sim 5000 x -v
  * (el dispositivo se reemplaza por un modelo en memoria; ver hw_sim.c).
@@ -41,6 +50,7 @@
 #include <string.h>
 #include <errno.h>
 #include <signal.h>
+#include <time.h>
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
@@ -48,6 +58,7 @@
 #include <sys/socket.h>
 
 #include "hw.h"
+#include "raster_ref.h"
 
 #define PUERTO_DEF		5000
 #define TAM_ENCABEZADO		8
@@ -56,21 +67,72 @@
 
 enum { TIPO_LOTE = 1, TIPO_SOLICITUD = 2, TIPO_REPORTE = 3, TIPO_ERROR = 4 };
 #define BANDERA_INICIO_VENTANA	0x01
+#define BANDERA_CPU		0x02
+
+/* Implementacion de referencia en CPU, compartida por todas las conexiones */
+static struct raster_ref ref;
 #define OPCODE_INF		0x0B
 
 static int verboso;
+static FILE *bitacora;
 
+/* Anota un evento en la bitacora (con fecha y hora) y, con -v, en la salida. */
 static void log_v(const char *fmt, ...)
 {
 	va_list ap;
 
-	if (!verboso)
+	if (verboso) {
+		va_start(ap, fmt);
+		vprintf(fmt, ap);
+		va_end(ap);
+		putchar('\n');
+		fflush(stdout);
+	}
+	if (bitacora) {
+		char fecha[32];
+		time_t t = time(NULL);
+		struct tm tm;
+
+		localtime_r(&t, &tm);
+		strftime(fecha, sizeof(fecha), "%Y-%m-%d %H:%M:%S", &tm);
+		fprintf(bitacora, "%s ", fecha);
+		va_start(ap, fmt);
+		vfprintf(bitacora, fmt, ap);
+		va_end(ap);
+		fputc('\n', bitacora);
+		fflush(bitacora);
+	}
+}
+
+static const char *nombre_opcode(unsigned int op)
+{
+	static const char *n[] = { "NOP", "PIXEL", "LINE", "TRIA", "TRIA_FILL",
+		"RECT", "RECT_FILL", "CIRC", "CIRC_FILL", "CLEAR", "SWAP", "INF" };
+
+	return op < sizeof(n) / sizeof(n[0]) ? n[op] : "DESCONOCIDO";
+}
+
+/* Una linea por lote: rango de SEQ_ID y cuantos comandos de cada tipo. */
+static void anotar_comandos(const uint8_t *carga, size_t len)
+{
+	unsigned int cuenta[13] = { 0 };
+	unsigned int seq_ini, seq_fin;
+	char linea[400];
+	size_t i, n = 0;
+
+	if (!verboso && !bitacora)
 		return;
-	va_start(ap, fmt);
-	vprintf(fmt, ap);
-	va_end(ap);
-	putchar('\n');
-	fflush(stdout);
+	for (i = 0; i < len; i += GPU2D_PKT_BYTES)
+		cuenta[carga[i + 3] <= 0x0B ? carga[i + 3] : 12]++;
+	/* W0 en little-endian: SEQ_ID en los bytes 0 y 1 */
+	seq_ini = carga[0] | (carga[1] << 8);
+	seq_fin = carga[len - GPU2D_PKT_BYTES] | (carga[len - GPU2D_PKT_BYTES + 1] << 8);
+	linea[0] = '\0';
+	for (i = 0; i < 13 && n < sizeof(linea) - 40; i++)
+		if (cuenta[i])
+			n += snprintf(linea + n, sizeof(linea) - n, " %s=%u",
+				      nombre_opcode((unsigned int)i), cuenta[i]);
+	log_v("    comandos SEQ_ID %u..%u:%s", seq_ini, seq_fin, linea);
 }
 
 /* ------------------------------------------------------------- socket */
@@ -169,7 +231,8 @@ static int revisar_errores_hw(int c, uint32_t seq, struct sesion *s)
 		s->drop_base = r[GPU2D_R_PERF_DROP];
 		return enviar_error(c, seq, 8, "La cola del hardware descarto paquetes");
 	}
-	log_v("  hardware: EC-%02u (se informa en el reporte)", ec);
+	log_v("  hardware: EC-%02u, %u errores desde el reinicio (se informa en el reporte)",
+	      ec, r[GPU2D_R_ERR_INFO] >> 16);
 	return 0;
 }
 
@@ -178,9 +241,22 @@ static int atender_lote(int c, uint8_t banderas, uint32_t seq,
 {
 	size_t i, hecho = 0;
 
+	if (banderas & BANDERA_CPU) {		/* referencia en CPU, no el acelerador */
+		if (banderas & BANDERA_INICIO_VENTANA)
+			ref_abrir_ventana(&ref);
+		ref_ejecutar(&ref, carga, len);
+		return 0;
+	}
+
 	if (banderas & BANDERA_INICIO_VENTANA) {
 		uint32_t r[GPU2D_NREGS];
 
+		/* La ventana nueva no debe recibir ciclos ni pixeles de una escena
+		 * anterior que el hardware aun este dibujando. */
+		if (hw_esperar(ESPERA_INFORME_MS))
+			return enviar_error(c, seq, 5,
+				"El acelerador no termino la escena anterior en %d ms",
+				ESPERA_INFORME_MS);
 		if (hw_abrir_ventana())
 			return enviar_error(c, seq, 5, "No se pudo abrir la ventana (%s)",
 					    strerror(errno));
@@ -212,6 +288,23 @@ static int atender_lote(int c, uint8_t banderas, uint32_t seq,
 
 static void be32(uint8_t *p, uint32_t v) { v = htonl(v); memcpy(p, &v, 4); }
 static void be16(uint8_t *p, uint16_t v) { v = htons(v); memcpy(p, &v, 2); }
+
+static int atender_solicitud_cpu(int c, uint32_t seq)
+{
+	const struct ref_ventana *v = ref.hay_publicado ? &ref.publicado : &ref.ventana;
+	uint8_t rep[16];
+	uint32_t ns = v->ns > 0xFFFFFFFFull ? 0xFFFFFFFFu : (uint32_t)v->ns;
+
+	be32(rep + 0, ns);
+	be32(rep + 4, v->comandos);
+	be32(rep + 8, v->pixeles);
+	be16(rep + 12, (uint16_t)v->errores);
+	be16(rep + 14, 0);
+	log_v("  -> REPORTE CPU seq=%u ns=%u comandos=%u pixeles=%u errores=%u",
+	      seq, ns, v->comandos, v->pixeles, v->errores);
+	ref.hay_publicado = 0;
+	return enviar_mensaje(c, TIPO_REPORTE, seq, rep, sizeof(rep));
+}
 
 static int atender_solicitud(int c, uint32_t seq, struct sesion *s)
 {
@@ -299,11 +392,13 @@ static void atender_conexion(int c)
 		if (tipo == TIPO_LOTE) {
 			log_v("  LOTE seq=%u paquetes=%u banderas=0x%02X",
 			      seq, len / GPU2D_PKT_BYTES, banderas);
+			anotar_comandos(carga, len);
 			if (atender_lote(c, banderas, seq, carga, len, &s))
 				return;
 		} else {
-			log_v("  SOLICITUD seq=%u", seq);
-			if (atender_solicitud(c, seq, &s))
+			log_v("  SOLICITUD seq=%u banderas=0x%02X", seq, banderas);
+			if (banderas & BANDERA_CPU ? atender_solicitud_cpu(c, seq)
+						   : atender_solicitud(c, seq, &s))
 				return;
 		}
 	}
@@ -318,12 +413,21 @@ int main(int argc, char **argv)
 	for (i = 1; i < argc; i++) {
 		if (!strcmp(argv[i], "-v"))
 			verboso = 1;
+		else if (!strcmp(argv[i], "-l") && i + 1 < argc) {
+			bitacora = fopen(argv[++i], "a");
+			if (!bitacora)
+				perror(argv[i]);
+		}
 		else if (pos++ == 0)
 			puerto = atoi(argv[i]);
 		else
 			dev = argv[i];
 	}
 	signal(SIGPIPE, SIG_IGN);
+	if (ref_iniciar(&ref, REF_ANCHO, REF_ALTO)) {
+		perror("raster_ref");
+		return 1;
+	}
 
 	if (hw_abrir(dev)) {
 		perror(dev);
@@ -346,6 +450,7 @@ int main(int argc, char **argv)
 	}
 	printf("gpu2d-servicio escuchando en el puerto %d (%s)\n", puerto, dev);
 	fflush(stdout);
+	log_v("Servicio iniciado: puerto %d, dispositivo %s", puerto, dev);
 
 	for (;;) {
 		struct sockaddr_in o;

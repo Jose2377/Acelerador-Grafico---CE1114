@@ -81,9 +81,10 @@ class ClienteTransporte:
 
     # -- camino de ida ----------------------------------------------------
 
-    def enviar_lote(self, paquetes, inicio_ventana=False):
+    def enviar_lote(self, paquetes, inicio_ventana=False, cpu=False):
         """Encola los paquetes (multiplo de 24 bytes) en lotes de hasta
-        tam_lote. No espera. Devuelve cuantos lotes encolo."""
+        tam_lote. No espera. Devuelve cuantos lotes encolo. Con cpu=True
+        los ejecuta la referencia en CPU del HPS y no el acelerador."""
         self._exigir_conexion()
         if not paquetes or len(paquetes) % K.TAM_PAQUETE:
             raise ValueError("Se esperaba un multiplo no nulo de {} bytes"
@@ -92,16 +93,18 @@ class ClienteTransporte:
         n = 0
         for i in range(0, len(paquetes), paso):
             banderas = K.BANDERA_INICIO_VENTANA if (inicio_ventana and i == 0) else 0
+            if cpu:
+                banderas |= K.BANDERA_CPU
             self._cola.put(self._mensaje(K.TIPO_LOTE, paquetes[i:i + paso],
                                          banderas))
             n += 1
         return n
 
-    def enviar_escena(self, paquetes):
+    def enviar_escena(self, paquetes, cpu=False):
         """Primer lote con la bandera de inicio de ventana de medicion;
         marca el inicio del tiempo de extremo a extremo."""
         self.t_inicio_escena = time.perf_counter()
-        return self.enviar_lote(paquetes, inicio_ventana=True)
+        return self.enviar_lote(paquetes, inicio_ventana=True, cpu=cpu)
 
     def vaciar(self):
         """Espera a que se transmita todo lo encolado."""
@@ -126,14 +129,16 @@ class ClienteTransporte:
                                       codigo)
             espera = 0.0
 
-    def solicitar_reporte(self):
-        """Envia SOLICITUD y espera el REPORTE correspondiente.
+    def solicitar_reporte(self, cpu=False):
+        """Envia SOLICITUD y espera el REPORTE correspondiente (el de la
+        referencia en CPU del HPS si cpu=True).
 
         Devuelve el dict de contadores; si hubo enviar_escena() en esta
         conexion agrega 'extremo_a_extremo_s'."""
         self._exigir_conexion()
         self.vaciar()
-        msg = self._mensaje(K.TIPO_SOLICITUD)
+        msg = self._mensaje(K.TIPO_SOLICITUD,
+                            banderas=K.BANDERA_CPU if cpu else 0)
         seq = self._secuencia - 1
         self._enviar_ahora(msg)
 

@@ -18,6 +18,10 @@ Contadores:
   ciclos                      ESTIMACION a partir de las maquinas de estado
                               del RTL, sin la contrapresion de la SDRAM; sirve
                               para probar el camino de vuelta, no para medir
+
+Con la bandera CPU (0x02) en LOTE y SOLICITUD responde como la referencia en
+CPU del HPS (raster_ref.c): dibuja con su propio RasterizadorCPU y el campo
+ciclos del REPORTE trae el tiempo en nanosegundos.
 """
 
 import argparse
@@ -32,10 +36,9 @@ from gfx.raster_cpu import RasterizadorCPU, Ventana
 # Estimacion de ciclos (reloj de 100 MHz, sin esperas de SDRAM)
 SOBRECARGA = 5          # decoder_fsm + arranque de processor_raster
 SPAN = 8                # pixeles por tramo en rect_fill / clear (BURST_LEN)
-# SWAP espera el flanco de VSYNC con busy en alto, y esos ciclos cuentan
-# en PERF_CYCLES. En promedio, medio cuadro: 800*525/2 relojes de pixel
-# de 25,175 MHz, pasados a ciclos de 100 MHz.
-CICLOS_SWAP = int(800 * 525 / 2 * 100e6 / 25.175e6)
+# SWAP espera el flanco de VSYNC, pero desde el 24/11/2026 esa espera (MOE-04)
+# no cuenta en PERF_CYCLES: solo la decodificacion.
+CICLOS_SWAP = 0
 
 
 def ciclos_estimados(d, emitidos, ancho, alto):
@@ -53,15 +56,23 @@ def ciclos_estimados(d, emitidos, ancho, alto):
     elif op in (K.OP_DRAW_RECT_FILL, K.OP_CLEAR):
         if op == K.OP_CLEAR:
             xa, xb, ya, yb = 0, ancho - 1, 0, alto - 1
-        else:
+        else:                                   # solo la parte visible
             xa, xb = sorted((d["x0"], d["x1"]))
             ya, yb = sorted((d["y0"], d["y1"]))
-        tramos = (xb // SPAN) - (xa // SPAN) + 1     # grupos alineados
-        m = (yb - ya + 1) * tramos + 1
+            xa, xb = max(xa, 0), min(xb, ancho - 1)
+            ya, yb = max(ya, 0), min(yb, alto - 1)
+        if xa > xb or ya > yb:
+            m = 2
+        else:
+            tramos = (xb // SPAN) - (xa // SPAN) + 1     # grupos alineados
+            m = (yb - ya + 1) * tramos + 2
     elif op == K.OP_DRAW_CIRC:
         m = 2 + (emitidos // 8) * 9             # 8 octantes + K_UPD
-    elif op == K.OP_DRAW_CIRC_FILL:
-        m = (2 * d["param"] + 1) ** 2 + 2       # cuadrado completo
+    elif op == K.OP_DRAW_CIRC_FILL:             # parte visible del cuadrado
+        r, cx, cy = d["param"], d["x0"], d["y0"]
+        w = min(r, ancho - 1 - cx) - max(-r, -cx) + 1
+        h = min(r, alto - 1 - cy) - max(-r, -cy) + 1
+        m = max(w, 0) * max(h, 0) + 3
     elif op == K.OP_DRAW_TRIA:
         m = 2 + emitidos + 3 * 3 + 1            # tres draw_line
     elif op == K.OP_DRAW_TRIA_FILL:
@@ -94,6 +105,9 @@ class ServidorSimulado:
         self.ciclos = 0
         self.publicado = dict(ciclos=0, comandos=0, pixeles=0,
                               errores=0, descartados=0)
+        # Referencia en CPU del HPS (bandera CPU)
+        self.raster_cpu = RasterizadorCPU()
+        self.publicado_cpu = dict(self.publicado)
         self.lotes_recibidos = 0
         self.historial = []          # (opcode, seq_id) de cada paquete
 
@@ -103,7 +117,26 @@ class ServidorSimulado:
 
     # -- procesamiento ----------------------------------------------------
 
+    def procesar_lote_cpu(self, banderas, carga):
+        """Como raster_ref.c: dibuja y publica el tiempo en ns."""
+        ras = self.raster_cpu
+        if banderas & K.BANDERA_INICIO_VENTANA:
+            ras.ventana = Ventana()
+        for i in range(0, len(carga), K.TAM_PAQUETE):
+            d = decodificar(carga[i:i + K.TAM_PAQUETE])
+            ras.ejecutar_campos(d["opcode"], d["x0"], d["y0"], d["x1"],
+                                d["y1"], d["x2"], d["y2"], d["param"],
+                                d["r"], d["g"], d["b"])
+            if d["opcode"] == K.OP_INF:
+                c = ras.informes[-1]
+                self.publicado_cpu = dict(
+                    ciclos=min(int(c.tiempo_s * 1e9), 0xFFFFFFFF),
+                    comandos=c.comandos, pixeles=c.pixeles,
+                    errores=c.errores, descartados=0)
+
     def procesar_lote(self, banderas, carga):
+        if banderas & K.BANDERA_CPU:
+            return self.procesar_lote_cpu(banderas, carga)
         ras = self.raster
         if banderas & K.BANDERA_INICIO_VENTANA:
             ras.ventana = Ventana()
@@ -159,7 +192,8 @@ class ServidorSimulado:
                     self.procesar_lote(banderas, carga)
 
                 elif tipo == K.TIPO_SOLICITUD:
-                    r = self.publicado
+                    r = (self.publicado_cpu if banderas & K.BANDERA_CPU
+                         else self.publicado)
                     self._log("  SOLICITUD seq={} -> REPORTE {}".format(seq, r))
                     conn.sendall(P.empaquetar(
                         K.TIPO_REPORTE, P.carga_reporte(**r), seq))

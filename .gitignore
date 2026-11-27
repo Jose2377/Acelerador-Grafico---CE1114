@@ -63,6 +63,20 @@ FPGA/**/db/
 FPGA/**/_output_files/
 FPGA/**/PLLJ_PLLSPE_INFO.txt
 
+# Respaldos, simulacion y archivos de sesion (24/11/2026)
+FPGA/**/*.bak*
+FPGA/**/*.wlf
+FPGA/**/*.qmsg
+FPGA/**/*.sld
+FPGA/**/transcript
+FPGA/**/modelsim.ini
+FPGA/work/
+FPGA/simulation/
+FPGA/.qsys_edit/
+FPGA/cr_ie_info.json
+FPGA/hps_sdram_p0_summary.csv
+*.whl
+
 # Volcado del banco de pruebas y su visualizacion
 FPGA/**/raster_dump.csv
 FPGA/**/raster_pruebas.csv
@@ -79,3 +93,7 @@ Interfaz/reportes/*.log
 # Servicio compilado en la PC
 Linux/ejemplos/servicio/gpu2d-servicio
 Linux/ejemplos/servicio/gpu2d-servicio-sim
+Linux/ejemplos/servicio/prueba_raster_ref
+
+# Intermedios de PyInstaller (el ejecutable queda en Interfaz/dist)
+Interfaz/build/

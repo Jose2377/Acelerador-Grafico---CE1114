@@ -7,7 +7,8 @@ Uso:
   python3 gfxcli.py paquetes escenas/ejemplo.gfx    muestra los paquetes W0..W5
   python3 gfxcli.py cpu    escenas/ejemplo.gfx      ejecuta en CPU (referencia)
   python3 gfxcli.py cpu --modo pixel escenas/ejemplo.gfx
-  python3 gfxcli.py comparar escenas/ejemplo.gfx    CPU vs FPGA (caso CU-04)
+  python3 gfxcli.py comparar escenas/ejemplo.gfx    CPU del HPS vs FPGA, 3 veces
+  python3 gfxcli.py comparar -n 5 escenas/ejemplo.gfx   (caso CU-04, RR-01)
   python3 gfxcli.py inf                             pide el reporte al hardware
   python3 gfxcli.py comandos                        tabla de comandos
 """
@@ -120,7 +121,8 @@ def orden_comparar(args, cfg):
     if res is None or res.rechazados:
         return 1
     _, _, hw = operaciones.comparar(res.comandos, cfg, log_consola,
-                                    args.modo, nombre_escena(args.script))
+                                    args.modo, nombre_escena(args.script),
+                                    args.repeticiones)
     return 0 if hw else 2
 
 
@@ -171,9 +173,13 @@ def main(argv=None):
     s.set_defaults(func=orden_cpu)
 
     s = sub.add_parser("comparar",
-                       help="misma escena en CPU y en FPGA (caso CU-04)")
+                       help="misma escena en la CPU del HPS y en la FPGA, "
+                            "varias veces (caso CU-04, RR-01)")
     s.add_argument("script")
-    s.add_argument("--modo", choices=RasterizadorCPU.MODOS, default="tramos")
+    s.add_argument("--modo", choices=RasterizadorCPU.MODOS, default="tramos",
+                   help="modo del modelo local que calcula la imagen esperada")
+    s.add_argument("-n", "--repeticiones", type=int, default=3,
+                   help="repeticiones de cada lado (RR-01 pide al menos 3)")
     s.set_defaults(func=orden_comparar)
 
     s = sub.add_parser("inf", help="solicita el reporte de rendimiento")

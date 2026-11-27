@@ -273,6 +273,7 @@ module Acelerador_Grafico_Top #(
   logic        perf_latch, perf_clear, comand_tick;
   logic [31:0] comand_count;
   logic        vsync_sys;             // VSYNC ya sincronizado
+  logic        px_pend;           // Queda algun pixel en camino al gestor de framebuffer
 
   decoder_fsm #(.SCREEN_W(SCREEN_W), .SCREEN_H(SCREEN_H)) u_decoder (
     .clk(clk), .rst_n(rst_n),
@@ -294,7 +295,6 @@ module Acelerador_Grafico_Top #(
   // Procesador de comandos y rasterizador 2D
   logic [31:0] pix_count;
   logic        px_ready;          // El registro intermedio acepta el pixel del rasterizador
-  logic        px_pend;           // Queda algun pixel en camino al gestor de framebuffer
   logic        ras_pend;          // Pixel en la etapa A dentro del rasterizador
 
   processor_raster #(.SCREEN_W(SCREEN_W), .SCREEN_H(SCREEN_H),
@@ -383,10 +383,16 @@ module Acelerador_Grafico_Top #(
   // ningun pixel se descarta, y asi la cuenta queda en el mismo ciclo que antes.
   assign px_n = (px_valid && px_ready) ? 4'(px_len) : 4'd0;
 
+  // MOE-04 no cuenta: la espera al flanco de VSYNC (hasta un cuadro, 16,7 ms) no
+  // es tiempo de rasterizacion y falsearia la comparacion contra la CPU, donde el
+  // intercambio es inmediato. MOE-01 tampoco, pero ya lo excluye ventana_reset.
+  logic midiendo;
+  assign midiendo = busy && enable && (modo != Acelerador_pkg::MOE_SWAP);
+
   rend_counter u_rend (
     .clk(clk), .rst_n(rst_n),
     .latch(perf_latch), .ventana_reset(ventana_reset),
-    .rasterizando(busy && enable),
+    .rasterizando(midiendo),
     .comand_tick(comand_tick), .px_n(px_n), .drop_tick(fifo_drop),
     .ciclos(ciclos), .comandos(comandos),
     .pixeles(pixeles), .descartes(descartes),

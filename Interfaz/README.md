@@ -66,7 +66,7 @@ python3 gfxcli.py send  escenas/ejemplo.gfx valida y transmite
 python3 gfxcli.py paquetes escenas/ejemplo.gfx  muestra W0..W5 en hex
 python3 gfxcli.py cpu   escenas/ejemplo.gfx ejecuta en CPU (referencia)
 python3 gfxcli.py cpu --modo pixel escenas/ejemplo.gfx
-python3 gfxcli.py comparar escenas/ejemplo.gfx  misma escena en CPU y FPGA
+python3 gfxcli.py comparar escenas/ejemplo.gfx  misma escena en la CPU del HPS y en la FPGA, 3 veces
 python3 gfxcli.py inf                       solicita el reporte
 ```
 
@@ -191,29 +191,36 @@ Dos modos, mismo resultado y distinto tiempo:
 
 Lineas, contornos y pixeles sueltos son iguales en los dos modos.
 
-### Comparacion CPU vs FPGA (CU-04)
+### Comparacion CPU vs FPGA (CU-04, RR-01)
 
 ```
 python gfxcli.py comparar escenas/ejemplo.gfx
+python gfxcli.py comparar -n 5 escenas/ejemplo.gfx
 ```
 
-Ejecuta la escena en CPU y en el acelerador (agrega `inf` si falta),
-muestra los dos reportes, la razon de tiempos CPU / FPGA y comprueba que
-comandos y pixeles coincidan. Las dos filas quedan en el CSV con
-`origen` = `cpu-tramos` / `cpu-pixel` / `fpga`.
+Ejecuta la escena (agrega `inf` si falta) en la **referencia en C del HPS**
+(`Linux/ejemplos/servicio/raster_ref.c`, en el mismo ARM Cortex-A9 que el
+acelerador descarga) y en el acelerador, alternando, 3 veces por omision
+(`-n`). Muestra el tiempo de cada repeticion, la razon CPU / FPGA de cada
+una y su promedio (RR-01 pide que sea mayor que 2), y comprueba que
+comandos, pixeles y errores coincidan en la CPU, la FPGA y el modelo local
+(`RasterizadorCPU`, que ademas da la imagen esperada). Cada repeticion deja
+dos filas en el CSV, `origen` = `cpu-hps` y `fpga`.
+
+La referencia en C viaja por el mismo protocolo con la bandera `CPU` (ver
+`PROTOCOLO.md`) y se verifica contra `RasterizadorCPU` en
+`tests/test_raster_ref_c.py` (necesita un compilador de C en la PC; si no
+hay, la prueba se omite).
 
 Al interpretar los tiempos:
 
-- **SWAP en el hardware cuenta la espera de VSYNC.** En el RTL,
-  `rasterizando = busy && enable` y `busy` sigue alto en MOE_SWAP, de modo
-  que cada `swap` suma hasta un cuadro (16,7 ms) a PERF_CYCLES. En CPU el
-  swap es instantaneo. Para comparar el rasterizado, usar escenas sin
-  `swap` o restar ese tiempo.
-- **`errores` del hardware es acumulado** desde el ultimo reinicio
-  (ERR_INFO), no de la ventana; por eso la comparacion no lo exige igual.
-- **Mismo procesador.** El diseno pide correr la referencia en el HPS
-  (ARM Cortex-A9); los tiempos de una PC no son comparables. El modulo
-  solo usa la biblioteca estandar, para poder llevarlo al HPS tal cual.
+- **SWAP no suma la espera de VSYNC** (desde el 24/11/2026): MOE-04 no
+  cuenta en PERF_CYCLES, igual que en la CPU, donde el intercambio es
+  inmediato.
+- **`errores`** de ambos lados es de la ventana (el servicio resta el
+  acumulado de ERR_INFO al abrirla).
+- `gfxcli cpu` sigue ejecutando `RasterizadorCPU` en la PC: sirve para ver
+  la imagen y los contadores, pero sus tiempos no valen para RR-01.
 - El reloj del acelerador es de 100 MHz (`Acelerador_pkg::SYS_CLK_HZ`);
   `sys_clk_hz` en `config.json` debe coincidir.
 

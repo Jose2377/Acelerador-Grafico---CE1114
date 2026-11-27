@@ -22,7 +22,13 @@
 // El vector lista marca que ranuras tienen una linea completa: 
 // se levanta al recibir la ultima columna y se baja cuando el barrido termina de mostrarla.
 //
-// El cuadro nuevo arranca en el intervalo vertical. 
+// El cuadro nuevo arranca en el intervalo vertical, RETARDO_SWAP relojes de pixel
+// despues del flanco de subida de VSYNC, y no al empezar el front porch.
+// El SWAP_BUFFER se hace efectivo en ese mismo flanco (decoder_fsm, MOE-04); si la
+// prebusqueda arrancara antes, las primeras LINES lineas del cuadro siguiente al
+// intercambio se leerian del buffer anterior (24/11/2026). El retardo cubre el viaje
+// de ida y vuelta entre dominios: VSYNC sube por sync2 al dominio de rasterizado,
+// decoder_fsm cambia buffer_sel y este baja por otro sync2 (unos 4 relojes de pixel).
 // Un llenado a medias no se corta: se anota en reiniciar y se aplica al volver a F_LIBRE, 
 // mucho antes de que el intervalo termine.
 //
@@ -73,7 +79,11 @@ module vga_controller #(
   parameter int LINES      = 4,       // Potencia de 2
   // Con menos de URGENTE lineas completas en el buffer, la lectura pasa a ser
   // urgente y el gestor de framebuffer deja de intercalar escrituras.
-  parameter int URGENTE    = 2
+  parameter int URGENTE    = 2,
+  // Relojes de pixel entre el flanco de subida de VSYNC y el arranque de la
+  // prebusqueda del cuadro nuevo. Debe superar el viaje de ida y vuelta del
+  // SWAP_BUFFER entre dominios (unos 4 relojes) y quedar dentro del pulso.
+  parameter int RETARDO_SWAP = 16
 )(
   input  logic clk_pix,
   input  logic rst_n,
@@ -140,6 +150,25 @@ module vga_controller #(
   // lista una linea que el barrido ya dejo atras.
   logic [VCW-1:0]   lin_mostrando;
 
+  // Arranque de la prebusqueda del cuadro: RETARDO_SWAP relojes despues del
+  // flanco de subida de VSYNC, cuando un SWAP_BUFFER pendiente ya llego aqui.
+  localparam int RCW = $clog2(RETARDO_SWAP + 1);
+  logic           vsync_act_q, vsync_ini, arranque_cuadro;
+  logic [RCW-1:0] cuenta_swap;
+  assign vsync_ini = vsync_act && !vsync_act_q;
+  always_ff @(posedge clk_pix or negedge rst_n) begin
+    if (!rst_n) begin
+      vsync_act_q     <= 1'b0;
+      cuenta_swap     <= '0;
+      arranque_cuadro <= 1'b0;
+    end else begin
+      vsync_act_q     <= vsync_act;
+      arranque_cuadro <= (cuenta_swap == RCW'(1));
+      if (vsync_ini)              cuenta_swap <= RCW'(RETARDO_SWAP);
+      else if (cuenta_swap != '0) cuenta_swap <= cuenta_swap - 1'b1;
+    end
+  end
+
   logic [SW-1:0] ranura_pide, ranura_lee;
 
   assign ranura_pide = lin_pide[SW-1:0];     // LINES potencia de 2
@@ -183,10 +212,11 @@ module vga_controller #(
       if (cuadro_inicio)  lin_mostrando <= '0;
       else if (linea_fin) lin_mostrando <= lin_mostrando + 1'b1;
 
-      // El cuadro nuevo empieza en el intervalo vertical. 
+      // El cuadro nuevo empieza poco despues del flanco de subida de VSYNC, cuando
+      // el SWAP_BUFFER que se aplica en ese flanco ya cruzo a este dominio.
 		// No se corta un llenado a medias: se anota y se aplica al volver a F_LIBRE, 
 		// mucho antes de que termine el intervalo.
-      if (cuadro_inicio) reiniciar <= 1'b1;
+      if (arranque_cuadro) reiniciar <= 1'b1;
 
       // El barrido termino de mostrar una linea: su ranura queda libre.
       if (linea_fin) lista[ranura_lee] <= 1'b0;

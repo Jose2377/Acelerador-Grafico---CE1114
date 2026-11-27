@@ -5,19 +5,25 @@
 #
 #   make            servicio real para la placa (usa /dev/gpu2d)
 #   make sim        version para la PC con el acelerador simulado en memoria
+#   make prueba     banco de pruebas de la referencia en CPU (raster_ref.c)
 CC ?= gcc
 CFLAGS ?= -O2
 DRIVER_DIR ?= ../driver
 EXTRA = -Wall -Wextra -I$(DRIVER_DIR) -I.
 
-gpu2d-servicio: gpu2d-servicio.c hw_dev.c hw.h
-	$(CC) $(CFLAGS) $(EXTRA) $(LDFLAGS) -o $@ gpu2d-servicio.c hw_dev.c
+gpu2d-servicio: gpu2d-servicio.c hw_dev.c raster_ref.c hw.h raster_ref.h
+	$(CC) $(CFLAGS) $(EXTRA) $(LDFLAGS) -o $@ gpu2d-servicio.c hw_dev.c raster_ref.c
 
 sim: gpu2d-servicio-sim
-gpu2d-servicio-sim: gpu2d-servicio.c hw_sim.c hw.h
-	$(CC) $(CFLAGS) $(EXTRA) -o $@ gpu2d-servicio.c hw_sim.c
+gpu2d-servicio-sim: gpu2d-servicio.c hw_sim.c raster_ref.c hw.h raster_ref.h
+	$(CC) $(CFLAGS) $(EXTRA) -o $@ gpu2d-servicio.c hw_sim.c raster_ref.c
+
+# Banco de pruebas de la referencia en CPU (lo usa Interfaz/tests)
+prueba: prueba_raster_ref
+prueba_raster_ref: prueba_raster_ref.c raster_ref.c raster_ref.h
+	$(CC) $(CFLAGS) $(EXTRA) -o $@ prueba_raster_ref.c raster_ref.c
 
 clean:
-	rm -f gpu2d-servicio gpu2d-servicio-sim
+	rm -f gpu2d-servicio gpu2d-servicio-sim prueba_raster_ref
 
-.PHONY: sim clean
+.PHONY: sim prueba clean

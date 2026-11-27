@@ -104,17 +104,25 @@ class TestComparar(ConCarpeta):
         self.assertEqual(cpu["comandos"], hw["comandos"])
         textos = " ".join(t for t, _ in self.log)
         self.assertIn("Se agrego 'inf'", textos)
-        self.assertIn("Razon de tiempos", textos)
+        self.assertIn("Razon promedio de tiempos", textos)
         self.assertIn("coinciden", textos)
+        # RR-01: tres repeticiones, CPU del HPS y FPGA alternadas
         origenes = [f["origen"] for f in self.filas()]
-        self.assertEqual(origenes, ["cpu-tramos", "fpga"])
+        self.assertEqual(origenes, ["cpu-hps", "fpga"] * 3)
+        self.assertGreater(float(cpu["rasterizacion_s"]), 0)
+
+    def test_repeticiones(self):
+        operaciones.comparar(comandos("clear"), self.cfg, self.registrar,
+                             repeticiones=5)
+        self.assertEqual(len(self.filas()), 10)
 
     def test_sin_servidor(self):
         self.cfg["puerto"] = 1
-        _, cpu, hw = operaciones.comparar(comandos("clear"), self.cfg,
-                                          self.registrar)
+        ras, cpu, hw = operaciones.comparar(comandos("clear"), self.cfg,
+                                            self.registrar)
         self.assertIsNone(hw)
-        self.assertIsNotNone(cpu)
+        self.assertIsNone(cpu)          # la referencia corre en el HPS
+        self.assertIsNotNone(ras)       # la imagen esperada si se calcula
 
 
 if __name__ == "__main__":

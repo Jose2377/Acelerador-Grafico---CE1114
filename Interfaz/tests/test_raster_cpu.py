@@ -156,8 +156,9 @@ class TestComprobacionesDelBanco(unittest.TestCase):
                     self.assertEqual(emitidos(c, modo), esp)
 
     def test_descartados_del_rect_recortado(self):
+        # draw_rect recorre solo la parte visible: no hay pixeles fuera
         _, ras = escritos([cmd(RCF, -5, -3, 12, 4)])
-        self.assertEqual(ras.ventana.recortados, 18 * 8 - 13 * 5)
+        self.assertEqual(ras.ventana.recortados, 0)
 
     def test_regla_de_relleno(self):
         for modo in MODOS:
@@ -239,13 +240,17 @@ class TestContadores(unittest.TestCase):
 # ------------------------------------------------------- oraculo literal
 
 def o_linea(x, y, xe, ye):
-    """draw_line, estado L_RUN."""
+    """draw_line, estado L_RUN (con la salida temprana se_fue)."""
     dx, dy = abs(xe - x), -abs(ye - y)
     sx, sy = (1 if x < xe else -1), (1 if y < ye else -1)
     err = dx + dy
     while True:
         yield x, y
         if x == xe and y == ye:
+            return
+        if ((x > W - 1 and (sx > 0 or dx == 0)) or (x < 0 and (sx < 0 or dx == 0))
+                or (y > H - 1 and (sy > 0 or dy == 0))
+                or (y < 0 and (sy < 0 or dy == 0))):
             return
         e2 = err + err
         en, xn, yn = err, x, y
@@ -259,8 +264,30 @@ def o_linea(x, y, xe, ye):
 
 
 def o_rect(x0, y0, x1, y1, fill):
-    """draw_rect: R_FILL por tramos alineados de 8, o R_TOP..R_RIGHT."""
+    """draw_rect: R_CLIP, luego R_FILL por tramos alineados de 8 sobre la
+    parte visible, o R_SEL / R_TOP..R_RIGHT sobre las aristas visibles."""
     xa, xb, ya, yb = min(x0, x1), max(x0, x1), min(y0, y1), max(y0, y1)
+    vxa, vxb, vya, vyb = max(xa, 0), min(xb, W - 1), max(ya, 0), min(yb, H - 1)
+    lya, lyb = max(ya + 1, 0), min(yb - 1, H - 1)
+    if not fill:
+        x_vis = vxa <= vxb
+        lados = yb > ya + 1 and lya <= lyb
+        if x_vis and 0 <= ya < H:                            # TOP
+            for x in range(vxa, vxb + 1):
+                yield x, ya
+        if x_vis and 0 <= yb < H and yb != ya:               # BOT
+            for x in range(vxa, vxb + 1):
+                yield x, yb
+        if lados and 0 <= xa < W:                            # LEFT
+            for y in range(lya, lyb + 1):
+                yield xa, y
+        if lados and 0 <= xb < W and xb != xa:               # RIGHT
+            for y in range(lya, lyb + 1):
+                yield xb, y
+        return
+    if vxa > vxb or vya > vyb:
+        return
+    xa, xb, ya, yb = vxa, vxb, vya, vyb
     cx, cy = xa, ya
     if fill:
         while True:
@@ -306,17 +333,20 @@ def o_rect(x0, y0, x1, y1, fill):
 
 
 def o_circ(cx, cy, rr, fill):
-    """draw_circle: K_FILL sobre el cuadrado, o K_OUT / K_UPD."""
+    """draw_circle: K_FILL sobre la parte visible del cuadrado, o K_OUT / K_UPD."""
     if fill:
         r2 = rr * rr
-        dx2 = dy2 = r2
-        dx = dy = -rr
+        dxi, dxf = max(-rr, -cx), min(rr, W - 1 - cx)        # K_SETUP
+        dyi, dyf = max(-rr, -cy), min(rr, H - 1 - cy)
+        if dxi > dxf or dyi > dyf:                           # K_FSET
+            return
+        dx, dy, dx2, dy2 = dxi, dyi, dxi * dxi, dyi * dyi
         while True:
             if dx2 + dy2 <= r2:
                 yield _s16(cx + dx), _s16(cy + dy)
-            if dx == rr:
-                dx, dx2 = -rr, r2
-                if dy == rr:
+            if dx == dxf:
+                dx, dx2 = dxi, dxi * dxi
+                if dy == dyf:
                     return
                 dy2 += 2 * dy + 1
                 dy += 1

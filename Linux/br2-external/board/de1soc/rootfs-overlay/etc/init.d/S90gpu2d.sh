@@ -11,8 +11,8 @@ case "$1" in
     fi
     modprobe gpu2d 2>/dev/null
     if [ -c /dev/gpu2d ] && [ -x /usr/bin/gpu2d-servicio ]; then
-        start-stop-daemon -S -b -m -p /var/run/gpu2d.pid -x /usr/bin/gpu2d-servicio -- 5000
-        echo "gpu2d-servicio iniciado (puerto 5000)"
+        start-stop-daemon -S -b -m -p /var/run/gpu2d.pid -x /usr/bin/gpu2d-servicio -- 5000 -l /var/log/gpu2d.log
+        echo "gpu2d-servicio iniciado (puerto 5000, bitacora en /var/log/gpu2d.log)"
     else
         echo "gpu2d: /dev/gpu2d no disponible (¿FPGA sin programar o driver no cargado?)"
     fi

@@ -15,7 +15,7 @@ Fuente de verdad en codigo: seccion "Protocolo de aplicacion sobre TCP" de
 | Bytes | Campo     | Tipo   | Contenido |
 |-------|-----------|--------|-----------|
 | 0     | tipo      | uint8  | 1 LOTE, 2 SOLICITUD, 3 REPORTE, 4 ERROR |
-| 1     | banderas  | uint8  | bit 0 `INICIO_VENTANA` (solo en LOTE); resto en 0 |
+| 1     | banderas  | uint8  | bit 0 `INICIO_VENTANA` (solo en LOTE); bit 1 `CPU` (LOTE y SOLICITUD); resto en 0 |
 | 2-3   | longitud  | uint16 | bytes de carga que siguen al encabezado |
 | 4-7   | secuencia | uint32 | numero de mensaje del cliente, empieza en 0 por conexion |
 
@@ -57,6 +57,13 @@ lote. El cliente la activa solo en el primer lote de cada escena, asi una
 escena de mas de 256 comandos sigue siendo una sola ventana.
 
 No hay confirmacion de lotes: el camino de ida no es bloqueante.
+
+Si `CPU` esta activa, el lote no va al acelerador sino a la implementacion
+de referencia exclusivamente en CPU del HPS (`raster_ref.c`, caso de uso
+CU-04), que lo dibuja en memoria con los mismos algoritmos. Una SOLICITUD
+con `CPU` devuelve el informe de esa referencia; en ese REPORTE el campo
+`ciclos` es el **tiempo en nanosegundos** (satura en 2^32 - 1) y
+`descartados` vale 0.
 
 ### SOLICITUD / REPORTE
 

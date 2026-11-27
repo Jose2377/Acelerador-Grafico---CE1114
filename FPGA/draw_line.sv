@@ -20,7 +20,12 @@
 // Estados:
 //   L_IDLE   Espera start y captura extremos, pendientes y direcciones
 //   L_SETUP  Inicializa el error; un ciclo aparte porque dx y dy acaban de quedar registrados y todavia no se pueden leer
-//   L_RUN    Un pixel por ciclo hasta alcanzar el extremo final
+//   L_RUN    Un pixel por ciclo hasta alcanzar el extremo final, o hasta que la
+//            linea sale de la pantalla alejandose de ella (24/11/2026). Bresenham
+//            avanza siempre en el mismo sentido en cada eje, asi que una vez fuera
+//            por ese lado ya no puede volver: el resto no se recorre. Los pixeles
+//            visibles son los mismos; una linea de -32768 a 32767 deja de costar
+//            65536 ciclos si sale pronto de la pantalla.
 //   L_DONE   Señal de fin
 //
 // draw_trian reutiliza este mismo modulo para las tres aristas del triangulo sin relleno.
@@ -41,6 +46,8 @@
 //   px_color             Color de pixel
 //=============================================================================
 module draw_line #(
+  parameter int SCREEN_W   = 64,
+  parameter int SCREEN_H   = 48,
   parameter int PIXEL_BITS = 16
 )(
   input  logic                    clk,
@@ -106,7 +113,7 @@ module draw_line #(
         end
 
         L_RUN: begin // Calculo de pixeles
-          if ((x == xe) && (y == ye)) begin // Termina si se llega a las coordenadas finales
+          if (((x == xe) && (y == ye)) || se_fue) begin // Extremo final, o ya no queda nada visible
             st <= L_DONE;
           end else begin
 			   // Recalculo de error
@@ -130,6 +137,16 @@ module draw_line #(
   end
  
   // Variables de salida.
+  // La linea quedo fuera de la pantalla por un lado hacia el que no avanza
+  // (o en un eje que no cambia, dx o dy nulos): no le queda ningun pixel visible.
+  localparam logic signed [15:0] XMAX = 16'(SCREEN_W - 1);
+  localparam logic signed [15:0] YMAX = 16'(SCREEN_H - 1);
+  logic se_fue;
+  assign se_fue = ((x > XMAX) && ((sx > 0) || (dx == 0)))
+               || ((x < 0)    && ((sx < 0) || (dx == 0)))
+               || ((y > YMAX) && ((sy > 0) || (dy == 0)))
+               || ((y < 0)    && ((sy < 0) || (dy == 0)));
+
   assign busy     = (st != L_IDLE);
   assign done     = (st == L_DONE);
   assign px_valid = (st == L_RUN);

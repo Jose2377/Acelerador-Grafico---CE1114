@@ -1,5 +1,5 @@
 # Escena de ejemplo: una instruccion por linea.
-color 255 0 0
+color 0 0 0
 clear
 color 255 255 255
 rect 40 40 280 200
