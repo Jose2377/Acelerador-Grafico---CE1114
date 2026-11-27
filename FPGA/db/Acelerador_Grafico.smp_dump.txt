@@ -6,11 +6,10 @@ wr_st.W_PIDE 1 0 1
 wr_st.W_DATOS 1 1 0 
 
 State Machine - |DE1_SoC_top_level|Acelerador_Grafico_Top:u_acelerador|framebuffer_controller:u_fbc|rd_st
-Name rd_st.R_DATOS rd_st.R_PIDE rd_st.R_AGRUPA rd_st.R_LIBRE 
-rd_st.R_LIBRE 0 0 0 0 
-rd_st.R_AGRUPA 0 0 1 1 
-rd_st.R_PIDE 0 1 0 1 
-rd_st.R_DATOS 1 0 0 1 
+Name rd_st.R_LIBRE rd_st.R_DATOS rd_st.R_PIDE 
+rd_st.R_LIBRE 0 0 0 
+rd_st.R_PIDE 1 0 1 
+rd_st.R_DATOS 1 1 0 
 
 State Machine - |DE1_SoC_top_level|Acelerador_Grafico_Top:u_acelerador|vga_controller:u_vga|fst
 Name fst.F_LIBRE fst.F_ESPERA fst.F_PIDE 

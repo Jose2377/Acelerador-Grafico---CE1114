@@ -22,9 +22,16 @@
 //   la rafaga sale y el rasterizador vuelve a presentar el pixel rechazado.
 //   Las rafagas se alinean a frontera de BURST_LEN para que no cruce nunca el limite que la memoria espera.
 //
-//   Agrupador de lectura: el barrido pide direcciones de una en una, asi que aqui se juntan las contiguas en una sola rafaga. 
-//   Esperar indefinidamente a que llegue la siguiente direccion colgaria una peticion suelta, 
-//   de modo que PACIENCIA acota la espera y la rafaga sale igual aunque este a medias.
+//   Lectura por tramos (26/11/2026): el barrido pide tramos de RD_CHUNK pixeles
+//   contiguos de una linea (no pixeles sueltos), y cada tramo se lee entero como
+//   RD_CHUNK / BURST_LEN rafagas seguidas, sin dejar entrar escrituras entre medio.
+//   El controlador de SDRAM de Platform Designer solo mantiene una fila abierta y
+//   la cierra en cada cambio lectura/escritura (unos 8 ciclos): con rafagas de 8
+//   intercaladas pagaba ese costo cada 8 palabras y el rasterizador escribia a
+//   ~19 Mpx/s. Con tramos de 64 el costo se paga una vez por tramo.
+//   El tramo solo arranca cuando caben todas sus palabras en la cola de datos
+//   (RD_FIFO_DEPTH, el doble del tramo para que un tramo se lea mientras el VGA
+//   consume el anterior).
 //
 // Arbitro de prioridad fija: la lectura del barrido gana siempre, 
 // porque el video no se puede detener sin que la imagen se rompa; 
@@ -85,7 +92,9 @@ module framebuffer_controller #(
   parameter int SD_ADDR_BITS  = 25,
   parameter int FB_BASE_A     = 0,
   parameter int FB_BASE_B     = 'h100000,
-  parameter int RD_FIFO_DEPTH = 16
+  parameter int RD_CHUNK      = 64,              // Pixeles por tramo de lectura
+  parameter int RD_FIFO_DEPTH = 2 * RD_CHUNK,    // Cola de datos hacia el VGA
+  parameter int ARF_DEPTH     = 16               // Cola de peticiones de tramo
 )(
   // Dominio de rasterizado y SDRAM
   input  logic clk,
@@ -150,6 +159,7 @@ module framebuffer_controller #(
   endfunction
 
   // Cruce de dominios del barrido
+  // Cada peticion es el indice del primer pixel de un tramo de RD_CHUNK.
   // El bit alto acompana al indice para que cada peticion lleve su propio
   // buffer y no dependa de cuando se sincronice el selector.
   logic          arf_wr, arf_full, arf_rd, arf_empty;
@@ -159,7 +169,7 @@ module framebuffer_controller #(
   assign arf_data_in        = {frame_buffer_front, frame_buffer_addr};
   assign frame_buffer_ready = !arf_full;
 
-  async_fifo #(.DATA_W(PXAW+1), .DEPTH(RD_FIFO_DEPTH)) u_arf (
+  async_fifo #(.DATA_W(PXAW+1), .DEPTH(ARF_DEPTH)) u_arf (
     .wr_clk(clk_pix), .wr_rst_n(rst_pix_n),
     .wr_ena(arf_wr), .data_in(arf_data_in), .full(arf_full), .libres(),
     .rd_clk(clk), .rd_rst_n(rst_n),
@@ -193,18 +203,19 @@ module framebuffer_controller #(
   end
 
   // Declaraciones de las dos maquinas
-  typedef enum logic [1:0] {R_LIBRE, R_AGRUPA, R_PIDE, R_DATOS} rdst_e;
-  typedef enum logic [1:0] {W_LIBRE, W_PIDE, W_DATOS}           wrst_e;
+  typedef enum logic [1:0] {R_LIBRE, R_PIDE, R_DATOS} rdst_e;
+  typedef enum logic [1:0] {W_LIBRE, W_PIDE, W_DATOS} wrst_e;
 
   rdst_e rd_st;
   wrst_e wr_st;
 
+  // Tramo de lectura en curso: rd_pedidas palabras ya pedidas (de a BURST_LEN)
+  // y rd_recibidas ya devueltas, sobre RD_CHUNK desde rd_base del buffer rd_buf.
+  localparam int CKW = $clog2(RD_CHUNK + 1);
   logic [PXAW-1:0] rd_base;
   logic            rd_buf;
-  logic [BCW-1:0]  rd_cnt, rd_recibidos;
-
-  // Senales del agrupador de lectura.
-  logic rd_contiguo, rd_frontera, rd_cabe, rd_hay_sitio, rd_listo;
+  logic [CKW-1:0]  rd_pedidas, rd_recibidas;
+  logic            rd_hay_sitio, quiere_leer;
 
   logic [PXAW-1:0]       wr_base;
   logic                  wr_buf;
@@ -213,116 +224,69 @@ module framebuffer_controller #(
   logic                  vaciar_pend;   // Hay rafaga que mandar antes de seguir
 
   // Arbitro de prioridad fija
-  // La lectura del barrido gana siempre. 
-  // La escritura solo arranca si la lectura no esta activa ni tiene trabajo esperando.
-  // Una vez arrancada se completa, no se puede detener.
-  
+  // La lectura del barrido gana siempre: si hay un tramo pedido y cabe en la
+  // cola de datos, ninguna escritura nueva arranca. Una rafaga de escritura ya
+  // arrancada se completa, y el tramo empieza al terminar ella; un tramo
+  // arrancado se lee entero antes de dejar escribir.
   logic lectura_activa, escritura_activa, permiso_escritura, permiso_lectura;
 
   assign lectura_activa    = (rd_st != R_LIBRE);
   assign escritura_activa  = (wr_st != W_LIBRE);
 
+  // El tramo solo arranca si caben todas sus palabras: async_fifo descarta en
+  // silencio lo que llega lleno, y vga_controller espera los H_VISIBLE pixeles
+  // de la linea, asi que un dato perdido detendria la prebusqueda para siempre.
+  assign rd_hay_sitio = (drf_libres >= ($clog2(RD_FIFO_DEPTH)+1)'(RD_CHUNK));
+  assign quiere_leer  = (rd_st == R_LIBRE) && !arf_empty && rd_hay_sitio;
 
   // Cuando al VGA le quedan pocas lineas listas, la escritura deja de entrar
-  // hasta que la prebusqueda se recupere. Cada cambio lectura/escritura cuesta
-  // precarga + activacion en el controlador SDRAM de Platform Designer, y la
-  // lectura de una linea solo tiene ~20 % de margen sobre lo que dura mostrarla:
-  // intercalando escrituras sin limite el barrido se queda sin datos (negro).
+  // hasta que la prebusqueda se recupere.
   logic urgente_s1, urgente_s2;
   always_ff @(posedge clk or negedge rst_n)
     if (!rst_n) {urgente_s2, urgente_s1} <= '0;
     else        {urgente_s2, urgente_s1} <= {urgente_s1, lectura_urgente};
 
-  assign permiso_escritura = !urgente_s2
-                          && ((rd_st == R_LIBRE) || ((rd_st == R_AGRUPA) && !rd_listo));
+  assign permiso_escritura = !urgente_s2 && (rd_st == R_LIBRE) && !quiere_leer;
   assign permiso_lectura   = !escritura_activa;
 
-
-  // Agrupador de lectura
-
-  // El barrido pide direcciones consecutivas de una en una. 
-  // Aqui se juntan las que lo sean en una sola rafaga.
-  // El agrupador espera un poco a que lleguen.
-  // PACIENCIA acota esa espera para que una peticion suelta no se quede retenida indefinidamente.
-  
-  localparam int PACIENCIA = 16;      // Ciclos sin direccion nueva
-
-  logic [$clog2(PACIENCIA+1)-1:0] rd_espera;
-
-  assign rd_contiguo  = !arf_empty
-                     && (arf_data_out[PXAW-1:0] == rd_base + PXAW'(rd_cnt))
-                     && (arf_data_out[PXAW] == rd_buf);
-  assign rd_frontera  = (((rd_base + PXAW'(rd_cnt)) % PXAW'(BURST_LEN)) == '0);
-  assign rd_cabe      = (rd_cnt < BCW'(BURST_LEN));
-  // La rafaga solo se pide si caben TODAS sus palabras en la cola de datos:
-  // async_fifo descarta en silencio lo que llega lleno, y vga_controller espera
-  // los H_VISIBLE pixeles de la linea, asi que un solo dato perdido detenia la
-  // prebusqueda para siempre (visto a 100 MHz: BURST_RD congelado en 0xDB62).
-  // Mientras haya una rafaga en vuelo no se pide otra, de modo que basta con
-  // mirarlo al arrancar.
-  assign rd_hay_sitio = (drf_libres >= ($clog2(RD_FIFO_DEPTH)+1)'(BURST_LEN));
-
-  // La rafaga esta lista para emitirse cuando ya no puede crecer
-  // O cuando se agote la espera por direcciones nuevas.
-  assign rd_listo = !rd_cabe || rd_frontera
-                 || (rd_espera >= $clog2(PACIENCIA+1)'(PACIENCIA));
-
-  always_comb begin
-    arf_rd = 1'b0;
-    case (rd_st)
-      R_LIBRE:  arf_rd = !arf_empty && rd_hay_sitio;
-      R_AGRUPA: arf_rd = rd_contiguo && rd_cabe && !rd_frontera;
-      default:  arf_rd = 1'b0;
-    endcase
-  end
+  // Maquina de lectura por tramos
+  assign arf_rd = quiere_leer && permiso_lectura;
 
   always_ff @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
       rd_st        <= R_LIBRE;
       rd_base      <= '0;
       rd_buf       <= 1'b0;
-      rd_cnt       <= '0;
-      rd_recibidos <= '0;
-      rd_espera    <= '0;
+      rd_pedidas   <= '0;
+      rd_recibidas <= '0;
       burst_reads  <= '0;
     end else begin
+      // Los datos llegan en orden y se cuentan aparte de los pedidos:
+      // pueden seguir llegando despues de pedir la ultima rafaga.
+      if (sd_readdatavalid && lectura_activa) rd_recibidas <= rd_recibidas + 1'b1;
       case (rd_st)
         R_LIBRE: if (arf_rd) begin
-          rd_base   <= arf_data_out[PXAW-1:0];
-          rd_buf    <= arf_data_out[PXAW];
-          rd_cnt    <= BCW'(1);
-          rd_espera <= '0;
-          rd_st     <= R_AGRUPA;
+          rd_base      <= arf_data_out[PXAW-1:0];
+          rd_buf       <= arf_data_out[PXAW];
+          rd_pedidas   <= '0;
+          rd_recibidas <= '0;
+          rd_st        <= R_PIDE;
         end
-
-        R_AGRUPA: begin
-          if (arf_rd) begin
-            rd_cnt    <= rd_cnt + 1'b1;
-            rd_espera <= '0;
-          end else if (rd_listo && permiso_lectura) begin
-            rd_st <= R_PIDE;
-          end else if (!rd_listo) begin
-            rd_espera <= rd_espera + 1'b1;
-          end
-        end
-
+        // Rafagas de BURST_LEN seguidas hasta pedir el tramo entero
         R_PIDE: if (!sd_waitrequest) begin
-          burst_reads  <= burst_reads + 32'd1;
-          rd_recibidos <= '0;
-          rd_st        <= R_DATOS;
+          burst_reads <= burst_reads + 32'd1;
+          rd_pedidas  <= rd_pedidas + CKW'(BURST_LEN);
+          if (rd_pedidas == CKW'(RD_CHUNK - BURST_LEN)) rd_st <= R_DATOS;
         end
-
-        R_DATOS: if (sd_readdatavalid) begin
-          if (rd_recibidos == rd_cnt - 1'b1) rd_st <= R_LIBRE;
-          else rd_recibidos <= rd_recibidos + 1'b1;
-        end
-
+        // Espera a que llegue la ultima palabra del tramo
+        R_DATOS: if ((rd_recibidas == CKW'(RD_CHUNK - 1)) && sd_readdatavalid)
+          rd_st <= R_LIBRE;
         default: rd_st <= R_LIBRE;
       endcase
     end
   end
 
-  assign drf_wr      = sd_readdatavalid && (rd_st == R_DATOS);
+  assign drf_wr      = sd_readdatavalid && lectura_activa;
   assign drf_data_in = sd_readdata;
 
   // Combinador de escritura
@@ -446,8 +410,8 @@ module framebuffer_controller #(
       sd_address    = base_de(wr_buf) + SD_ADDR_BITS'(wr_base);
       sd_burstcount = BCW'(wr_cnt);
     end else begin
-      sd_address    = base_de(rd_buf) + SD_ADDR_BITS'(rd_base);
-      sd_burstcount = BCW'(rd_cnt);
+      sd_address    = base_de(rd_buf) + SD_ADDR_BITS'(rd_base) + SD_ADDR_BITS'(rd_pedidas);
+      sd_burstcount = BCW'(BURST_LEN);
     end
   end
 
@@ -459,6 +423,11 @@ module framebuffer_controller #(
     if ((BURST_LEN < 2) || ((BURST_LEN & (BURST_LEN - 1)) != 0))
       $error("framebuffer_controller: BURST_LEN (%0d) debe ser potencia de dos",
              BURST_LEN);
+    if ((RD_CHUNK % BURST_LEN) != 0 || (SCREEN_W % RD_CHUNK) != 0)
+      $error("framebuffer_controller: RD_CHUNK (%0d) debe ser multiplo de BURST_LEN y dividir SCREEN_W",
+             RD_CHUNK);
+    if (RD_FIFO_DEPTH < RD_CHUNK)
+      $error("framebuffer_controller: RD_FIFO_DEPTH debe ser al menos RD_CHUNK");
   end
 `endif
 

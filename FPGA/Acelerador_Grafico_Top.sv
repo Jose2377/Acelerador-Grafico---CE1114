@@ -457,7 +457,8 @@ module Acelerador_Grafico_Top #(
     .V_SYNC(V_SYNC),       .V_BACK(V_BACK),
     .H_POL(Acelerador_pkg::VGA_HS_POL),    .V_POL(Acelerador_pkg::VGA_VS_POL),
     .PIXEL_BITS(PIXEL_BITS),
-    .LINES(Acelerador_pkg::LINE_BUF_LINES)
+    .LINES(Acelerador_pkg::LINE_BUF_LINES),
+    .CHUNK(Acelerador_pkg::RD_CHUNK)
   ) u_vga (
     .clk_pix(clk_pix), .rst_n(rst_pix_n),
     .front_buffer(front_buffer_pix),
@@ -493,7 +494,8 @@ module Acelerador_Grafico_Top #(
     .BURST_LEN(Acelerador_pkg::BURST_LEN),
     .SD_ADDR_BITS(Acelerador_pkg::SD_ADDR_BITS),
     .FB_BASE_A(Acelerador_pkg::FB_BASE_A),
-    .FB_BASE_B(Acelerador_pkg::FB_BASE_B)
+    .FB_BASE_B(Acelerador_pkg::FB_BASE_B),
+    .RD_CHUNK(Acelerador_pkg::RD_CHUNK)
   ) u_fbc (
     .clk(clk), .rst_n(rst_n),
     .px_valid(q_valid), .px_addr(q_addr), .px_len(q_len), .px_color(q_color),

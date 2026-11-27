@@ -1,15 +1,15 @@
-Fitter Status : Successful - Thu Nov 26 19:53:14 2026
+Fitter Status : Successful - Thu Nov 26 22:39:16 2026
 Quartus Prime Version : 18.1.0 Build 625 09/12/2018 SJ Lite Edition
 Revision Name : Acelerador_Grafico
 Top-level Entity Name : DE1_SoC_top_level
 Family : Cyclone V
 Device : 5CSEMA5F31C6
 Timing Models : Final
-Logic utilization (in ALMs) : 3,510 / 32,070 ( 11 % )
-Total registers : 4995
+Logic utilization (in ALMs) : 3,497 / 32,070 ( 11 % )
+Total registers : 4972
 Total pins : 177 / 457 ( 39 % )
 Total virtual pins : 0
-Total block memory bits : 80,704 / 4,065,280 ( 2 % )
+Total block memory bits : 82,400 / 4,065,280 ( 2 % )
 Total RAM Blocks : 15 / 397 ( 4 % )
 Total DSP Blocks : 11 / 87 ( 13 % )
 Total HSSI RX PCSs : 0

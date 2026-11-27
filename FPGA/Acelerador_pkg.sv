@@ -119,6 +119,10 @@ package Acelerador_pkg;
   parameter int FB_BASE_B = 25'h100000;
 
   parameter int BURST_LEN      = 8;   // palabras por rafaga hacia la SDRAM
+  // Pixeles por tramo de lectura del barrido (26/11/2026): el VGA pide tramos
+  // contiguos y el gestor de framebuffer los lee de corrido, RD_CHUNK / BURST_LEN
+  // rafagas seguidas. Debe dividir SCREEN_W (64 y 640) y ser multiplo de BURST_LEN.
+  parameter int RD_CHUNK       = 64;
   parameter int LINE_BUF_LINES = 4;   // lineas que el VGA lleva prellenadas
 
   //------------------------------------- Temporizacion VESA 640 x 480 a 60 Hz

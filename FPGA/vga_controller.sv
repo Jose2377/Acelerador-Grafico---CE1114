@@ -16,6 +16,8 @@
 // Con LINES = 4 el barrido lleva hasta tres lineas de margen, suficiente para absorber las esperas de la SDRAM.
 //
 // El motor pide una linea entera y espera a tenerla completa antes de empezar la siguiente (estados F_LIBRE, F_PIDE, F_ESPERA). 
+// Desde el 26/11/2026 la pide por tramos de CHUNK pixeles contiguos (una peticion por tramo),
+// para que el gestor de framebuffer lea cada tramo de corrido sin intercalar escrituras. 
 // Las ranuras se indexan por los bits bajos del numero de linea, 
 // de modo que el buffer es circular sin ninguna comparacion; 
 // por eso LINES debe ser potencia de dos.
@@ -83,7 +85,10 @@ module vga_controller #(
   // Relojes de pixel entre el flanco de subida de VSYNC y el arranque de la
   // prebusqueda del cuadro nuevo. Debe superar el viaje de ida y vuelta del
   // SWAP_BUFFER entre dominios (unos 4 relojes) y quedar dentro del pulso.
-  parameter int RETARDO_SWAP = 16
+  parameter int RETARDO_SWAP = 16,
+  // Pixeles por peticion de lectura: cada peticion es el primer pixel de un
+  // tramo contiguo de CHUNK. Debe dividir H_VISIBLE.
+  parameter int CHUNK      = 64
 )(
   input  logic clk_pix,
   input  logic rst_n,
@@ -234,10 +239,10 @@ module vga_controller #(
           end
         end
 
-        F_PIDE: begin
+        F_PIDE: begin // Un tramo de CHUNK pixeles por peticion
           if (frame_buffer_ready) begin
-            if (pedidos == (XW+1)'(H_VISIBLE - 1)) fst <= F_ESPERA;
-            pedidos <= pedidos + 1'b1;
+            if (pedidos == (XW+1)'(H_VISIBLE - CHUNK)) fst <= F_ESPERA;
+            pedidos <= pedidos + (XW+1)'(CHUNK);
           end
         end
 
@@ -336,6 +341,8 @@ module vga_controller #(
   initial begin
     if ((LINES < 2) || ((LINES & (LINES - 1)) != 0))
       $error("vga_controller: LINES (%0d) debe ser potencia de dos", LINES);
+    if ((H_VISIBLE % CHUNK) != 0)
+      $error("vga_controller: CHUNK (%0d) debe dividir H_VISIBLE (%0d)", CHUNK, H_VISIBLE);
   end
 `endif
 

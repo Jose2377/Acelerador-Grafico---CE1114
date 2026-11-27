@@ -131,8 +131,14 @@ module framebuffer_onchip #(
                                                         : espera_cnt + 1'b1;
   end
 
-  assign sd_waitrequest = (STALL_PERIOD != 0)
-                       && (espera_cnt < SPW'(STALL_BUSY));
+  logic [BCW-1:0]  rd_quedan;     // Palabras de la lectura en curso que faltan por entregar
+
+  // Ademas no acepta una lectura nueva mientras entrega la anterior: el gestor
+  // de framebuffer pide las rafagas de un tramo seguidas (26/11/2026) y, sin
+  // esta espera, la segunda se perderia.
+  assign sd_waitrequest = ((STALL_PERIOD != 0)
+                           && (espera_cnt < SPW'(STALL_BUSY)))
+                       || (sd_read && (rd_quedan != '0));
 
   // Escritura de rafaga
   // La direccion llega con el primer latido y avanza sola mientras write siga alto y waitrequest en bajo. 
@@ -159,7 +165,6 @@ module framebuffer_onchip #(
   // y el que espera la maquina R_DATOS del gestor.
   logic            rd_arranca, rd_sigue, rd_busca;
   logic [MEMW-1:0] rd_ptr, rd_idx;
-  logic [BCW-1:0]  rd_quedan;
 
   assign rd_arranca = sd_read && !sd_waitrequest && (rd_quedan == '0);
   assign rd_sigue   = (rd_quedan != '0);
